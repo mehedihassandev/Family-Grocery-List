@@ -13,29 +13,20 @@ const firebaseConfig = {
   measurementId: process.env.EXPO_PUBLIC_FIREBASE_MEASUREMENT_ID,
 };
 
-// Initialize Firebase
 const app = initializeApp(firebaseConfig);
 
-// Initialize Analytics (Web only)
-export const analytics = typeof window !== 'undefined' ? getAnalytics(app) : null;
+export const analytics = typeof window !== "undefined" ? getAnalytics(app) : null;
 
-// Initialize Auth
 export const auth = getAuth(app);
 
-// Initialize Firestore
 export const db = getFirestore(app);
 
-// Enable Offline Persistence
 enableIndexedDbPersistence(db).catch((err) => {
-    if (err.code == 'failed-precondition') {
-        // Multiple tabs open, persistence can only be enabled
-        // in one tab at a a time.
-        console.warn('Persistence failed: Multiple tabs open');
-    } else if (err.code == 'unimplemented-state') {
-        // The current browser does not support all of the
-        // features required to enable persistence
-        console.warn('Persistence failed: Browser not supported');
-    }
+  if (err.code == "failed-precondition") {
+    console.warn("Persistence failed: Multiple tabs open");
+  } else if (err.code == "unimplemented-state") {
+    console.warn("Persistence failed: Browser not supported");
+  }
 });
 
 export default app;

@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { 
   View, 
   Text, 
-  SafeAreaView, 
   TouchableOpacity, 
   TextInput, 
   KeyboardAvoidingView, 
@@ -10,6 +9,7 @@ import {
   ActivityIndicator,
   Alert
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Users, Plus, ArrowRight, LogOut } from 'lucide-react-native';
 import { createFamily, joinFamily } from '../services/family';
 import { signOut } from '../services/auth';

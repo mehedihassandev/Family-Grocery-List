@@ -110,7 +110,7 @@ export const mockSignIn = async () => {
 export const signOut = async () => {
     try {
         await firebaseSignOut(auth);
-        await GoogleSignin.signOut();
+        await getGoogleSignin()?.signOut();
         useAuthStore.getState().setUser(null);
     } catch (error) {
         console.error("Sign-Out Error:", error);
