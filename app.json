@@ -2,6 +2,7 @@
   "expo": {
     "name": "Family-Grocery-List",
     "slug": "Family-Grocery-List",
+    "scheme": "familygrocerylist",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",

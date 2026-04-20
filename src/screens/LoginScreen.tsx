@@ -1,82 +1,199 @@
-import React from 'react';
-import { View, Text, TouchableOpacity, Image } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { LogIn } from 'lucide-react-native';
-import { mockSignIn, signInWithGoogle } from '../services/auth';
-import { useAuthStore } from '../store/useAuthStore';
+import React, { useEffect, useState } from "react";
+import { Alert, Image, Text, TouchableOpacity, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { LogIn } from "lucide-react-native";
+import {
+    getGoogleSignInSetupMessage,
+    getGoogleSignInErrorMessage,
+    getGoogleTokensFromResponse,
+    hasGoogleSignInConfiguration,
+    mockSignIn,
+    signInWithGoogleTokens,
+    useGoogleAuthRequest,
+} from "../services/auth";
+import { useAuthStore } from "../store/useAuthStore";
 
 const LoginScreen = () => {
-  const { setLoading } = useAuthStore();
+    const { loading, setLoading } = useAuthStore();
+    const [request, response, promptAsync] = useGoogleAuthRequest();
+    const [googleBusy, setGoogleBusy] = useState(false);
 
-  const handleGoogleSignIn = async () => {
-    try {
-      setLoading(true);
-      await signInWithGoogle();
-    } catch (error) {
-      console.error(error);
-    } finally {
-      setLoading(false);
-    }
-  };
+    useEffect(() => {
+        let mounted = true;
 
-  const handleMockSignIn = async () => {
-    setLoading(true);
-    await mockSignIn();
-    setLoading(false);
-  };
+        const finishGoogleSignIn = async () => {
+            if (!response) {
+                return;
+            }
 
-  return (
-    <SafeAreaView className="flex-1 bg-white">
-      <View className="flex-1 px-10 justify-center">
-        <View className="items-center mb-16">
-          <View
-            className="w-28 h-28 bg-emerald-50 rounded-[40px] items-center justify-center mb-10 shadow-sm shadow-emerald-100"
-          >
-            <Image 
-              source={{ uri: 'https://cdn-icons-png.flaticon.com/512/3724/3724720.png' }} 
-              className="w-16 h-16"
-            />
-          </View>
-          
-          <Text className="text-4xl font-black text-gray-900 text-center mb-3 tracking-tighter">
-            Freshly<Text className="text-emerald-500">.</Text>
-          </Text>
-          <Text className="text-base text-gray-400 text-center px-4 leading-6 font-medium">
-            The elegant way to manage your family grocery list together.
-          </Text>
-        </View>
+            if (response.type === "dismiss" || response.type === "cancel") {
+                if (mounted) {
+                    setGoogleBusy(false);
+                    setLoading(false);
+                }
+                return;
+            }
 
-        <View className="gap-4">
-          <TouchableOpacity 
-            onPress={handleGoogleSignIn}
-            activeOpacity={0.8}
-            className="w-full border flex-row items-center justify-center py-5 rounded-3xl shadow-sm bg-white border-gray-100 shadow-gray-100"
-          >
-            <Image 
-              source={{ uri: 'https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg' }} 
-              className="w-6 h-6 mr-4"
-            />
-            <Text className="text-base font-bold text-gray-800">Continue with Google</Text>
-          </TouchableOpacity>
+            if (response.type === "error") {
+                const errorMessage =
+                    "error" in response && response.error?.message
+                        ? response.error.message
+                        : "Google account selection could not be completed.";
 
-          <TouchableOpacity 
-            onPress={handleMockSignIn}
-            activeOpacity={0.9}
-            className="w-full bg-emerald-500 flex-row items-center justify-center py-5 rounded-3xl shadow-lg shadow-emerald-200"
-          >
-            <LogIn stroke="white" size={20} strokeWidth={2.5} className="mr-3" />
-            <Text className="text-base font-bold text-white">Guest Sign In</Text>
-          </TouchableOpacity>
-        </View>
+                if (mounted) {
+                    setGoogleBusy(false);
+                    setLoading(false);
+                    Alert.alert("Google Sign-In Failed", errorMessage);
+                }
+                return;
+            }
 
-        <View className="mt-20 items-center">
-          <Text className="text-gray-300 text-[10px] font-bold uppercase tracking-[2px]">
-            Family Grocery • v1.0.0
-          </Text>
-        </View>
-      </View>
-    </SafeAreaView>
-  );
+            if (response.type !== "success") {
+                if (mounted) {
+                    setGoogleBusy(false);
+                    setLoading(false);
+                }
+                return;
+            }
+
+            try {
+                const { accessToken, idToken } =
+                    getGoogleTokensFromResponse(response);
+
+                if (!accessToken && !idToken) {
+                    throw new Error(
+                        "Google did not return a usable authentication token.",
+                    );
+                }
+
+                await signInWithGoogleTokens({ accessToken, idToken });
+            } catch (error) {
+                if (mounted) {
+                    Alert.alert(
+                        "Google Sign-In Failed",
+                        getGoogleSignInErrorMessage(error),
+                    );
+                }
+            } finally {
+                if (mounted) {
+                    setGoogleBusy(false);
+                    setLoading(false);
+                }
+            }
+        };
+
+        void finishGoogleSignIn();
+
+        return () => {
+            mounted = false;
+        };
+    }, [response, setLoading]);
+
+    const handleGoogleSignIn = async () => {
+        if (!hasGoogleSignInConfiguration()) {
+            Alert.alert(
+                "Google Sign-In Needs Setup",
+                getGoogleSignInSetupMessage(),
+            );
+            return;
+        }
+
+        if (!request) {
+            Alert.alert(
+                "Google Sign-In Not Ready",
+                "The Google login request is still loading. Try again in a moment.",
+            );
+            return;
+        }
+
+        try {
+            setGoogleBusy(true);
+            setLoading(true);
+            await promptAsync();
+        } catch (error) {
+            setGoogleBusy(false);
+            setLoading(false);
+            Alert.alert(
+                "Google Sign-In Failed",
+                getGoogleSignInErrorMessage(error),
+            );
+        }
+    };
+
+    const handleMockSignIn = async () => {
+        setLoading(true);
+        await mockSignIn();
+        setLoading(false);
+    };
+
+    return (
+        <SafeAreaView className="flex-1 bg-white">
+            <View className="flex-1 justify-center px-10">
+                <View className="mb-16 items-center">
+                    <View className="mb-10 h-28 w-28 items-center justify-center rounded-[40px] bg-emerald-50 shadow-sm shadow-emerald-100">
+                        <Image
+                            source={{
+                                uri: "https://cdn-icons-png.flaticon.com/512/3724/3724720.png",
+                            }}
+                            className="h-16 w-16"
+                        />
+                    </View>
+
+                    <Text className="mb-3 text-center text-4xl font-black tracking-tighter text-gray-900">
+                        Freshly<Text className="text-emerald-500">.</Text>
+                    </Text>
+                    <Text className="px-4 text-center text-base font-medium leading-6 text-gray-400">
+                        The elegant way to manage your family grocery list
+                        together.
+                    </Text>
+                </View>
+
+                <View className="gap-4">
+                    <TouchableOpacity
+                        onPress={handleGoogleSignIn}
+                        activeOpacity={0.8}
+                        disabled={googleBusy || loading}
+                        className="w-full flex-row items-center justify-center rounded-3xl border border-gray-100 bg-white py-5 shadow-sm shadow-gray-100 disabled:opacity-60"
+                    >
+                        <Image
+                            source={{
+                                uri: "https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg",
+                            }}
+                            className="mr-4 h-6 w-6"
+                        />
+                        <Text className="text-base font-bold text-gray-800">
+                            {googleBusy
+                                ? "Opening Google..."
+                                : "Continue with Google"}
+                        </Text>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                        onPress={handleMockSignIn}
+                        activeOpacity={0.9}
+                        disabled={loading}
+                        className="w-full flex-row items-center justify-center rounded-3xl bg-emerald-500 py-5 shadow-lg shadow-emerald-200 disabled:opacity-60"
+                    >
+                        <LogIn
+                            stroke="white"
+                            size={20}
+                            strokeWidth={2.5}
+                            className="mr-3"
+                        />
+                        <Text className="text-base font-bold text-white">
+                            Guest Sign In
+                        </Text>
+                    </TouchableOpacity>
+                </View>
+
+                <View className="mt-20 items-center">
+                    <Text className="text-[10px] font-bold uppercase tracking-[2px] text-gray-300">
+                        Family Grocery • v1.0.0
+                    </Text>
+                </View>
+            </View>
+        </SafeAreaView>
+    );
 };
 
 export default LoginScreen;
