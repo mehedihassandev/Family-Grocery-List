@@ -29,8 +29,8 @@ if (Platform.OS === "web") {
 
 const createNativeAuth = () => {
     try {
-        // The RN persistence helper is only typed on Firebase's RN entrypoint,
-        // so we load it dynamically to keep TypeScript happy here.
+        // Load from firebase/auth so React Native can resolve its RN auth
+        // entrypoint and expose getReactNativePersistence at runtime.
         // eslint-disable-next-line @typescript-eslint/no-var-requires
         const { getReactNativePersistence } = require("@firebase/auth") as {
             getReactNativePersistence?: (storage: unknown) => unknown;

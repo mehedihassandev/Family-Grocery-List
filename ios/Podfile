@@ -104,7 +104,13 @@ target 'FamilyGroceryList' do
     end
 
     # Xcode/AppleClang can fail to resolve aligned operator new/delete overloads
-    # in RCT-Folly's New.h on some setups. Patch in a safe fallback.
+    # in RCT-Folly's New.h when __cpp_aligned_new is not defined.
+    #
+    # Root cause: the affected operator() overloads are NON-TEMPLATE member
+    # functions of operator_new_fn / operator_delete_fn.  `if constexpr` only
+    # discards the false branch for *dependent* expressions inside templates,
+    # so both branches are always type-checked here.  We therefore use
+    # preprocessor `#if` guards which truly exclude the dead code.
     folly_new_h = File.join(installer.sandbox.root.to_s, 'RCT-Folly', 'folly', 'lang', 'New.h')
     if File.exist?(folly_new_h)
       new_h_contents = File.read(folly_new_h)
@@ -113,36 +119,36 @@ target 'FamilyGroceryList' do
       unless new_h_contents.include?(folly_patch_marker)
         replacements = {
           '    return detail::op_new_<detail::cpp_aligned_new_>(s, a);' => <<~'CPP'.rstrip,
-    // FGL_FOLLY_ALIGNED_FALLBACK
-    if constexpr (detail::cpp_aligned_new_) {
-      return detail::op_new_<detail::cpp_aligned_new_>(s, a);
-    } else {
-      return detail::op_new_<true>(s);
-    }
+    // FGL_FOLLY_ALIGNED_FALLBACK — preprocessor guard required (non-template fn)
+    #if defined(__cpp_aligned_new) && __cpp_aligned_new >= 201606
+        return detail::op_new_<detail::cpp_aligned_new_>(s, a);
+    #else
+        return detail::op_new_<true>(s);
+    #endif
           CPP
           '    return detail::op_new_<detail::cpp_aligned_new_>(s, a, nt);' => <<~'CPP'.rstrip,
     // FGL_FOLLY_ALIGNED_FALLBACK
-    if constexpr (detail::cpp_aligned_new_) {
-      return detail::op_new_<detail::cpp_aligned_new_>(s, a, nt);
-    } else {
-      return detail::op_new_<true>(s, nt);
-    }
+    #if defined(__cpp_aligned_new) && __cpp_aligned_new >= 201606
+        return detail::op_new_<detail::cpp_aligned_new_>(s, a, nt);
+    #else
+        return detail::op_new_<true>(s, nt);
+    #endif
           CPP
           '    return detail::op_del_<detail::cpp_aligned_new_>(p, a);' => <<~'CPP'.rstrip,
     // FGL_FOLLY_ALIGNED_FALLBACK
-    if constexpr (detail::cpp_aligned_new_) {
-      return detail::op_del_<detail::cpp_aligned_new_>(p, a);
-    } else {
-      return detail::op_del_<true>(p);
-    }
+    #if defined(__cpp_aligned_new) && __cpp_aligned_new >= 201606
+        return detail::op_del_<detail::cpp_aligned_new_>(p, a);
+    #else
+        return detail::op_del_<true>(p);
+    #endif
           CPP
           '    return detail::do_op_del_sized_<detail::cpp_aligned_new_>(p, s, a);' => <<~'CPP'.rstrip,
     // FGL_FOLLY_ALIGNED_FALLBACK
-    if constexpr (detail::cpp_aligned_new_) {
-      return detail::do_op_del_sized_<detail::cpp_aligned_new_>(p, s, a);
-    } else {
-      return detail::do_op_del_sized_<true>(p, s);
-    }
+    #if defined(__cpp_aligned_new) && __cpp_aligned_new >= 201606
+        return detail::do_op_del_sized_<detail::cpp_aligned_new_>(p, s, a);
+    #else
+        return detail::do_op_del_sized_<true>(p, s);
+    #endif
           CPP
         }
 
