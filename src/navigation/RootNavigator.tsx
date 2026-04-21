@@ -12,14 +12,14 @@ import FamilySetupScreen from '../screens/FamilySetupScreen';
 const Stack = createNativeStackNavigator();
 
 const RootNavigator = () => {
-    const { user, loading } = useAuthStore();
+    const { user, loading, hasHydrated } = useAuthStore();
 
     useEffect(() => {
         const unsubscribe = listenToAuthChanges();
         return () => unsubscribe();
     }, []);
 
-    if (loading) {
+    if (!hasHydrated || loading) {
         return (
             <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: 'white' }}>
                 <ActivityIndicator size="large" color="#0ea5e9" />
