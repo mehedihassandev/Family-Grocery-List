@@ -15,7 +15,7 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.anonymous.FamilyGroceryList"
+      "bundleIdentifier": "com.mehedi.FamilyGroceryList"
     },
     "android": {
       "adaptiveIcon": {
@@ -24,7 +24,7 @@
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
-      "package": "com.anonymous.FamilyGroceryList"
+      "package": "com.mehedi.FamilyGroceryList"
     },
     "web": {
       "favicon": "./assets/favicon.png"
