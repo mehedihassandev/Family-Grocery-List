@@ -24,19 +24,19 @@ Create OAuth client IDs:
 
 Use these values:
 
-- Android package name: `com.anonymous.FamilyGroceryList`
-- iOS bundle ID: `com.anonymous.FamilyGroceryList`
+- Android package name: `com.mehedi.FamilyGroceryList`
+- iOS bundle ID: `com.mehedi.FamilyGroceryList`
 - For native Google OAuth in Expo, use platform client IDs that match the real app identity instead of a custom redirect URI.
 - If you also run the app on web, add your local web origin and redirect URL for that environment separately.
 
 For Android:
 
-- Package name: `com.anonymous.FamilyGroceryList`
+- Package name: `com.mehedi.FamilyGroceryList`
 - SHA-1: use the signing certificate for the build you run
 
 For iOS:
 
-- Bundle ID: `com.anonymous.FamilyGroceryList`
+- Bundle ID: `com.mehedi.FamilyGroceryList`
 
 ## 2. Firebase
 

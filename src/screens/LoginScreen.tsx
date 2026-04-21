@@ -1,8 +1,11 @@
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { Alert, Image, Text, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { LogIn } from "lucide-react-native";
+import { AuthSessionResult } from "expo-auth-session";
 import {
+    exchangeGoogleCodeForTokens,
+    getGoogleCodeFromResponse,
     getGoogleSignInSetupMessage,
     getGoogleSignInErrorMessage,
     getGoogleTokensFromResponse,
@@ -15,79 +18,55 @@ import { useAuthStore } from "../store/useAuthStore";
 
 const LoginScreen = () => {
     const { loading, setLoading } = useAuthStore();
-    const [request, response, promptAsync] = useGoogleAuthRequest();
+    const [request, , promptAsync] = useGoogleAuthRequest();
     const [googleBusy, setGoogleBusy] = useState(false);
 
-    useEffect(() => {
-        let mounted = true;
+    const finishGoogleSignIn = async (response: AuthSessionResult | null) => {
+        if (!response) {
+            return;
+        }
 
-        const finishGoogleSignIn = async () => {
-            if (!response) {
-                return;
+        if (response.type === "dismiss" || response.type === "cancel") {
+            return;
+        }
+
+        if (response.type === "error") {
+            const errorMessage =
+                "error" in response && response.error?.message
+                    ? response.error.message
+                    : "Google account selection could not be completed.";
+            throw new Error(errorMessage);
+        }
+
+        if (response.type !== "success") {
+            return;
+        }
+
+        let { accessToken, idToken } = getGoogleTokensFromResponse(response);
+
+        if (!accessToken && !idToken) {
+            const code = getGoogleCodeFromResponse(response);
+
+            if (code) {
+                const exchangedTokens = await exchangeGoogleCodeForTokens({
+                    code,
+                    redirectUri: request?.redirectUri,
+                    codeVerifier: request?.codeVerifier,
+                });
+
+                accessToken = exchangedTokens.accessToken ?? null;
+                idToken = exchangedTokens.idToken ?? null;
             }
+        }
 
-            if (response.type === "dismiss" || response.type === "cancel") {
-                if (mounted) {
-                    setGoogleBusy(false);
-                    setLoading(false);
-                }
-                return;
-            }
+        if (!accessToken && !idToken) {
+            throw new Error(
+                "Google did not return a usable authentication token.",
+            );
+        }
 
-            if (response.type === "error") {
-                const errorMessage =
-                    "error" in response && response.error?.message
-                        ? response.error.message
-                        : "Google account selection could not be completed.";
-
-                if (mounted) {
-                    setGoogleBusy(false);
-                    setLoading(false);
-                    Alert.alert("Google Sign-In Failed", errorMessage);
-                }
-                return;
-            }
-
-            if (response.type !== "success") {
-                if (mounted) {
-                    setGoogleBusy(false);
-                    setLoading(false);
-                }
-                return;
-            }
-
-            try {
-                const { accessToken, idToken } =
-                    getGoogleTokensFromResponse(response);
-
-                if (!accessToken && !idToken) {
-                    throw new Error(
-                        "Google did not return a usable authentication token.",
-                    );
-                }
-
-                await signInWithGoogleTokens({ accessToken, idToken });
-            } catch (error) {
-                if (mounted) {
-                    Alert.alert(
-                        "Google Sign-In Failed",
-                        getGoogleSignInErrorMessage(error),
-                    );
-                }
-            } finally {
-                if (mounted) {
-                    setGoogleBusy(false);
-                    setLoading(false);
-                }
-            }
-        };
-
-        void finishGoogleSignIn();
-
-        return () => {
-            mounted = false;
-        };
-    }, [response, setLoading]);
+        await signInWithGoogleTokens({ accessToken, idToken });
+    };
 
     const handleGoogleSignIn = async () => {
         if (!hasGoogleSignInConfiguration()) {
@@ -109,14 +88,16 @@ const LoginScreen = () => {
         try {
             setGoogleBusy(true);
             setLoading(true);
-            await promptAsync();
+            const response = await promptAsync();
+            await finishGoogleSignIn(response);
         } catch (error) {
-            setGoogleBusy(false);
-            setLoading(false);
             Alert.alert(
                 "Google Sign-In Failed",
                 getGoogleSignInErrorMessage(error),
             );
+        } finally {
+            setGoogleBusy(false);
+            setLoading(false);
         }
     };
 

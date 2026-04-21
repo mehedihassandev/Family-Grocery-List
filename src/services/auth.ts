@@ -27,30 +27,179 @@ const googleClientIds = {
     iosClientId: process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID,
     webClientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID,
 };
+const firebaseProjectNumber = process.env.EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID;
+
+type GoogleClientIdKey = keyof typeof googleClientIds;
+
+const googleClientEnvVarMap: Record<GoogleClientIdKey, string> = {
+    androidClientId: "EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID",
+    iosClientId: "EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID",
+    webClientId: "EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID",
+};
+
+const AUTH_OPERATION_TIMEOUT_MS = 15000;
+const FIRESTORE_PROFILE_READ_TIMEOUT_MESSAGE =
+    "Timed out while reading your profile from Firestore.";
+const FIRESTORE_PROFILE_CREATE_TIMEOUT_MESSAGE =
+    "Timed out while creating your profile in Firestore.";
+
+type FirebaseProfileUser = {
+    uid: string;
+    email: string | null;
+    displayName: string | null;
+    photoURL: string | null;
+};
+
+const withTimeout = async <T>(
+    operation: Promise<T>,
+    timeoutMs: number,
+    timeoutMessage: string,
+): Promise<T> => {
+    let timeoutId: ReturnType<typeof setTimeout> | undefined;
+
+    try {
+        return await Promise.race([
+            operation,
+            new Promise<T>((_, reject) => {
+                timeoutId = setTimeout(() => {
+                    reject(new Error(timeoutMessage));
+                }, timeoutMs);
+            }),
+        ]);
+    } finally {
+        if (timeoutId) {
+            clearTimeout(timeoutId);
+        }
+    }
+};
+
+const mapFirebaseUserToAppUser = (
+    firebaseUser: FirebaseProfileUser,
+    overrides?: Partial<User>,
+): User => ({
+    uid: firebaseUser.uid,
+    email: overrides?.email ?? firebaseUser.email ?? "",
+    displayName: overrides?.displayName ?? firebaseUser.displayName ?? "Anonymous",
+    photoURL: overrides?.photoURL ?? firebaseUser.photoURL ?? "",
+    familyId: overrides?.familyId ?? null,
+    role: overrides?.role === "owner" ? "owner" : "member",
+});
+
+const isFirestoreProfileTimeoutError = (error: unknown) =>
+    error instanceof Error &&
+    (error.message === FIRESTORE_PROFILE_READ_TIMEOUT_MESSAGE ||
+        error.message === FIRESTORE_PROFILE_CREATE_TIMEOUT_MESSAGE);
+
+const getGoogleClientIdForPlatform = () => {
+    if (Platform.OS === "ios") {
+        return googleClientIds.iosClientId;
+    }
+
+    if (Platform.OS === "android") {
+        return googleClientIds.androidClientId;
+    }
+
+    return googleClientIds.webClientId;
+};
+
+const encodeFormBody = (payload: Record<string, string>) =>
+    Object.entries(payload)
+        .map(
+            ([key, value]) =>
+                `${encodeURIComponent(key)}=${encodeURIComponent(value)}`,
+        )
+        .join("&");
+
+const getGoogleRedirectUriOptions = () => {
+    if (Platform.OS !== "ios" || !googleClientIds.iosClientId) {
+        return {};
+    }
+
+    // Google iOS OAuth expects the reverse client-id URL scheme.
+    const iosClientIdPrefix = googleClientIds.iosClientId.replace(
+        ".apps.googleusercontent.com",
+        "",
+    );
+
+    if (!iosClientIdPrefix) {
+        return {};
+    }
+
+    return {
+        native: `com.googleusercontent.apps.${iosClientIdPrefix}:/oauthredirect`,
+    };
+};
 
 type GoogleConfigStatus = {
     isConfigured: boolean;
     missingEnvVars: string[];
+    invalidFormatEnvVars: string[];
+    mismatchedProjectEnvVars: string[];
+};
+
+const getRequiredGoogleClientIdKeysForPlatform = (): GoogleClientIdKey[] => {
+    if (Platform.OS === "android") {
+        return ["webClientId", "androidClientId"];
+    }
+
+    if (Platform.OS === "ios") {
+        return ["webClientId", "iosClientId"];
+    }
+
+    return ["webClientId"];
+};
+
+const getProjectNumberFromGoogleClientId = (clientId: string) => {
+    const match = clientId
+        .trim()
+        .match(/^(\d+)-[A-Za-z0-9_-]+\.apps\.googleusercontent\.com$/);
+    return match?.[1] ?? null;
 };
 
 export const getGoogleSignInConfigurationStatus = (): GoogleConfigStatus => {
     const missingEnvVars: string[] = [];
+    const invalidFormatEnvVars: string[] = [];
+    const mismatchedProjectEnvVars: string[] = [];
 
-    if (!googleClientIds.webClientId) {
-        missingEnvVars.push("EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID");
+    if (!firebaseProjectNumber) {
+        missingEnvVars.push("EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID");
     }
 
-    if (Platform.OS === "android" && !googleClientIds.androidClientId) {
-        missingEnvVars.push("EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID");
-    }
+    for (const clientIdKey of getRequiredGoogleClientIdKeysForPlatform()) {
+        const envVarName = googleClientEnvVarMap[clientIdKey];
+        const clientIdValue = googleClientIds[clientIdKey];
 
-    if (Platform.OS === "ios" && !googleClientIds.iosClientId) {
-        missingEnvVars.push("EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID");
+        if (!clientIdValue) {
+            missingEnvVars.push(envVarName);
+            continue;
+        }
+
+        const clientProjectNumber =
+            getProjectNumberFromGoogleClientId(clientIdValue);
+
+        if (!clientProjectNumber) {
+            invalidFormatEnvVars.push(envVarName);
+            continue;
+        }
+
+        if (
+            firebaseProjectNumber &&
+            clientProjectNumber !== firebaseProjectNumber
+        ) {
+            mismatchedProjectEnvVars.push(
+                `${envVarName} (${clientProjectNumber} != ${firebaseProjectNumber})`,
+            );
+        }
     }
 
     return {
-        isConfigured: missingEnvVars.length === 0,
+        isConfigured:
+            missingEnvVars.length === 0 &&
+            invalidFormatEnvVars.length === 0 &&
+            mismatchedProjectEnvVars.length === 0,
         missingEnvVars,
+        invalidFormatEnvVars,
+        mismatchedProjectEnvVars,
     };
 };
 
@@ -58,13 +207,36 @@ export const hasGoogleSignInConfiguration = () =>
     getGoogleSignInConfigurationStatus().isConfigured;
 
 export const getGoogleSignInSetupMessage = () => {
-    const { missingEnvVars } = getGoogleSignInConfigurationStatus();
+    const { missingEnvVars, invalidFormatEnvVars, mismatchedProjectEnvVars } =
+        getGoogleSignInConfigurationStatus();
 
-    if (missingEnvVars.length === 0) {
+    if (
+        missingEnvVars.length === 0 &&
+        invalidFormatEnvVars.length === 0 &&
+        mismatchedProjectEnvVars.length === 0
+    ) {
         return "Google Sign-In is configured.";
     }
 
-    return `Add the following environment variable${missingEnvVars.length > 1 ? "s" : ""} before trying again:\n\n${missingEnvVars.join("\n")}`;
+    const issues: string[] = [];
+
+    if (missingEnvVars.length > 0) {
+        issues.push(`Missing env vars:\n${missingEnvVars.join("\n")}`);
+    }
+
+    if (invalidFormatEnvVars.length > 0) {
+        issues.push(
+            `Invalid Google client ID format:\n${invalidFormatEnvVars.join("\n")}`,
+        );
+    }
+
+    if (mismatchedProjectEnvVars.length > 0) {
+        issues.push(
+            `Project mismatch (Google client ID project number must match EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID):\n${mismatchedProjectEnvVars.join("\n")}`,
+        );
+    }
+
+    return `Fix Google Sign-In configuration:\n\n${issues.join("\n\n")}`;
 };
 
 const createUnavailableGoogleAuthRequest = () =>
@@ -83,35 +255,44 @@ export const useGoogleAuthRequest = () =>
               {
                   ...googleClientIds,
                   scopes: googleScopes,
-                  shouldAutoExchangeCode: false,
                   selectAccount: true,
+                  shouldAutoExchangeCode: false,
               },
+              getGoogleRedirectUriOptions(),
           )
         : createUnavailableGoogleAuthRequest();
 
-const upsertUserProfile = async (firebaseUser: {
-    uid: string;
-    email: string | null;
-    displayName: string | null;
-    photoURL: string | null;
-}) => {
-    const userDocRef = doc(db, "users", firebaseUser.uid);
-    const userDoc = await getDoc(userDocRef);
+const upsertUserProfile = async (firebaseUser: FirebaseProfileUser) => {
+    const fallbackUser = mapFirebaseUserToAppUser(firebaseUser);
 
-    if (!userDoc.exists()) {
-        const newUser: User = {
-            uid: firebaseUser.uid,
-            email: firebaseUser.email || "",
-            displayName: firebaseUser.displayName || "Anonymous",
-            photoURL: firebaseUser.photoURL || "",
-            familyId: null,
-            role: "member",
-        };
-        await setDoc(userDocRef, newUser);
-        return newUser;
+    try {
+        const userDocRef = doc(db, "users", firebaseUser.uid);
+        const userDoc = await withTimeout(
+            getDoc(userDocRef),
+            AUTH_OPERATION_TIMEOUT_MS,
+            FIRESTORE_PROFILE_READ_TIMEOUT_MESSAGE,
+        );
+
+        if (!userDoc.exists()) {
+            await withTimeout(
+                setDoc(userDocRef, fallbackUser),
+                AUTH_OPERATION_TIMEOUT_MS,
+                FIRESTORE_PROFILE_CREATE_TIMEOUT_MESSAGE,
+            );
+            return fallbackUser;
+        }
+
+        return mapFirebaseUserToAppUser(
+            firebaseUser,
+            userDoc.data() as Partial<User>,
+        );
+    } catch (error) {
+        if (isFirestoreProfileTimeoutError(error)) {
+            return fallbackUser;
+        }
+
+        throw error;
     }
-
-    return userDoc.data() as User;
 };
 
 export const signInWithGoogleTokens = async ({
@@ -123,8 +304,13 @@ export const signInWithGoogleTokens = async ({
         accessToken ?? null,
     );
 
-    const userCredential = await signInWithCredential(auth, googleCredential);
-    return upsertUserProfile(userCredential.user);
+    const userCredential = await withTimeout(
+        signInWithCredential(auth, googleCredential),
+        AUTH_OPERATION_TIMEOUT_MS,
+        "Timed out while signing in with Firebase.",
+    );
+
+    return mapFirebaseUserToAppUser(userCredential.user);
 };
 
 export const getGoogleTokensFromResponse = (
@@ -150,9 +336,98 @@ export const getGoogleTokensFromResponse = (
     };
 };
 
+export const getGoogleCodeFromResponse = (
+    response: AuthSessionResult | null,
+) => {
+    if (response?.type !== "success") {
+        return null;
+    }
+
+    const params = "params" in response ? response.params : undefined;
+    return typeof params?.code === "string" ? params.code : null;
+};
+
+export const exchangeGoogleCodeForTokens = async ({
+    code,
+    redirectUri,
+    codeVerifier,
+}: {
+    code: string;
+    redirectUri?: string;
+    codeVerifier?: string;
+}): Promise<GoogleTokens> => {
+    const clientId = getGoogleClientIdForPlatform();
+
+    if (!clientId) {
+        throw new Error("Google client ID is missing for this platform.");
+    }
+
+    if (!redirectUri) {
+        throw new Error("Google redirect URI is missing.");
+    }
+
+    if (!codeVerifier) {
+        throw new Error("Google PKCE code verifier is missing.");
+    }
+
+    const response = await withTimeout(
+        fetch("https://oauth2.googleapis.com/token", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/x-www-form-urlencoded",
+            },
+            body: encodeFormBody({
+                client_id: clientId,
+                grant_type: "authorization_code",
+                code,
+                redirect_uri: redirectUri,
+                code_verifier: codeVerifier,
+            }),
+        }),
+        AUTH_OPERATION_TIMEOUT_MS,
+        "Timed out while exchanging Google authorization code.",
+    );
+
+    let payload: Record<string, unknown> = {};
+
+    try {
+        payload = (await response.json()) as Record<string, unknown>;
+    } catch {
+        payload = {};
+    }
+
+    if (!response.ok) {
+        const details =
+            typeof payload.error_description === "string"
+                ? payload.error_description
+                : typeof payload.error === "string"
+                  ? payload.error
+                  : `HTTP ${response.status}`;
+        throw new Error(`Google token exchange failed: ${details}`);
+    }
+
+    return {
+        accessToken:
+            typeof payload.access_token === "string"
+                ? payload.access_token
+                : null,
+        idToken:
+            typeof payload.id_token === "string" ? payload.id_token : null,
+    };
+};
+
 export const getGoogleSignInErrorMessage = (error: unknown) => {
     if (error instanceof Error && error.message.trim()) {
-        return error.message;
+        const message = error.message.trim();
+
+        if (
+            message.includes("auth/invalid-credential") ||
+            message.includes("Invalid Idp Response")
+        ) {
+            return `Google OAuth token audience does not match this Firebase project.\n\n${getGoogleSignInSetupMessage()}`;
+        }
+
+        return message;
     }
 
     return "Unable to continue with Google Sign-In right now.";
@@ -184,13 +459,28 @@ export const listenToAuthChanges = () => {
     const { setUser, setLoading } = useAuthStore.getState();
 
     return onAuthStateChanged(auth, async (firebaseUser) => {
-        if (firebaseUser) {
-            const user = await upsertUserProfile(firebaseUser);
-            setUser(user);
-        } else {
-            setUser(null);
-        }
+        try {
+            if (firebaseUser) {
+                // Never block UI on Firestore; show fallback user immediately.
+                setUser(mapFirebaseUserToAppUser(firebaseUser));
 
-        setLoading(false);
+                const user = await upsertUserProfile(firebaseUser);
+                setUser(user);
+            } else {
+                setUser(null);
+            }
+        } catch (error) {
+            if (__DEV__) {
+                console.warn("Auth State Sync Warning:", error);
+            }
+
+            if (firebaseUser) {
+                setUser(mapFirebaseUserToAppUser(firebaseUser));
+            } else {
+                setUser(null);
+            }
+        } finally {
+            setLoading(false);
+        }
     });
 };
