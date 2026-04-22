@@ -1,5 +1,5 @@
 import React from "react";
-import { View, Text, Image } from "react-native";
+import { View, Text } from "react-native";
 import { ShoppingBasket } from "lucide-react-native";
 
 interface EmptyStateProps {
@@ -9,14 +9,16 @@ interface EmptyStateProps {
 
 const EmptyState = ({ title, description }: EmptyStateProps) => {
   return (
-    <View className="flex-1 justify-center items-center px-8">
-      <View className="w-32 h-32 bg-primary-50 rounded-full items-center justify-center mb-6">
-        <ShoppingBasket stroke="#59AC77" size={60} />
+    <View className="flex-1 items-center justify-center px-8">
+      <View className="mb-5 h-20 w-20 items-center justify-center rounded-full bg-primary-50">
+        <ShoppingBasket stroke="#59AC77" size={34} strokeWidth={2.2} />
       </View>
-      <Text className="text-2xl font-bold text-text-primary mb-2 text-center">
+      <Text className="mb-2 text-center text-xl font-bold text-text-primary">
         {title}
       </Text>
-      <Text className="text-text-muted text-center text-lg">{description}</Text>
+      <Text className="text-center text-[15px] leading-6 text-text-muted">
+        {description}
+      </Text>
     </View>
   );
 };

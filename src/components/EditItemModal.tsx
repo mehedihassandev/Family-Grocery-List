@@ -147,75 +147,79 @@ const EditItemModal = ({
     >
       <View
         className="flex-1 justify-end"
-        style={{ backgroundColor: "rgba(0,0,0,0.4)" }}
+        style={{ backgroundColor: "rgba(0,0,0,0.28)" }}
       >
         <KeyboardAvoidingView
           behavior={Platform.OS === "ios" ? "padding" : "height"}
-          className="rounded-t-[50px] bg-surface px-8 pb-16 pt-10 shadow-2xl"
+          className="rounded-t-[30px] bg-surface px-5 pb-8 pt-3 shadow-2xl"
         >
-          <View className="mb-8 flex-row items-center justify-between">
+          <View className="mb-4 items-center">
+            <View className="h-1 w-12 rounded-full bg-border-muted" />
+          </View>
+
+          <View className="mb-5 flex-row items-center justify-between">
             <View>
-              <Text className="mb-1 text-[10px] font-black uppercase tracking-[2px] text-primary-600">
+              <Text className="mb-1 text-[10px] font-bold uppercase tracking-[2px] text-primary-600">
                 Edit Entry
               </Text>
-              <Text className="text-3xl font-black tracking-tight text-text-primary">
+              <Text className="text-[34px] font-black tracking-tight text-text-primary">
                 Update Item
               </Text>
             </View>
             <TouchableOpacity
               onPress={onClose}
               activeOpacity={0.7}
-              className="rounded-2xl border border-border-muted bg-surface-muted p-2.5"
+              className="rounded-xl border border-border-muted bg-surface-muted p-2"
             >
-              <X stroke="#748379" size={24} strokeWidth={2.5} />
+              <X stroke="#748379" size={20} strokeWidth={2.5} />
             </TouchableOpacity>
           </View>
 
           <ScrollView
             showsVerticalScrollIndicator={false}
-            className="max-h-[60vh]"
-            contentContainerStyle={{ paddingBottom: 20 }}
+            className="max-h-[68vh]"
+            contentContainerStyle={{ paddingBottom: 16 }}
           >
-            <View className="mb-8">
-              <Text className="ml-1 mb-3 text-[11px] font-black uppercase tracking-[2px] text-text-muted">
-                ITEM NAME
+            <View className="mb-5">
+              <Text className="mb-2 ml-1 text-[11px] font-bold uppercase tracking-[2px] text-text-muted">
+                Item Name
               </Text>
               <TextInput
                 value={name}
                 onChangeText={setName}
                 placeholder="What needs to be bought?"
                 placeholderTextColor="#95a39a"
-                className="rounded-3xl border border-border-muted bg-surface-muted p-5 text-lg font-bold text-text-primary"
+                className="h-12 rounded-xl border border-border-muted bg-surface-muted px-4 text-[15px] font-semibold text-text-primary"
               />
             </View>
 
-            <View className="mb-8 flex-row">
-              <View className="mr-4 flex-1">
-                <Text className="ml-1 mb-3 text-[11px] font-black uppercase tracking-[2px] text-text-muted">
-                  QUANTITY
+            <View className="mb-5 flex-row">
+              <View className="mr-3 flex-1">
+                <Text className="mb-2 ml-1 text-[11px] font-bold uppercase tracking-[2px] text-text-muted">
+                  Quantity
                 </Text>
                 <TextInput
                   value={quantity}
                   onChangeText={setQuantity}
                   placeholder="e.g. 2L, 5pcs"
                   placeholderTextColor="#95a39a"
-                  className="rounded-3xl border border-border-muted bg-surface-muted p-5 text-lg font-bold text-text-primary"
+                  className="h-12 rounded-xl border border-border-muted bg-surface-muted px-4 text-[15px] font-semibold text-text-primary"
                 />
               </View>
               <View className="flex-[1.5]">
-                <Text className="ml-1 mb-3 text-[11px] font-black uppercase tracking-[2px] text-text-muted">
-                  PRIORITY
+                <Text className="mb-2 ml-1 text-[11px] font-bold uppercase tracking-[2px] text-text-muted">
+                  Priority
                 </Text>
-                <View className="flex-row rounded-3xl border border-border-muted bg-surface-muted p-1.5">
+                <View className="flex-row rounded-xl border border-border-muted bg-surface-muted p-1">
                   {PRIORITIES.map((level) => (
                     <TouchableOpacity
                       key={level}
                       onPress={() => setPriority(level)}
                       activeOpacity={0.7}
-                      className={`flex-1 items-center rounded-2xl py-3.5 ${priority === level ? "bg-surface shadow-sm shadow-secondary-100/30" : ""}`}
+                      className={`flex-1 items-center rounded-lg py-2.5 ${priority === level ? "bg-surface" : ""}`}
                     >
                       <Text
-                        className={`text-[10px] font-black uppercase tracking-widest ${priority === level ? "text-primary-600" : "text-text-muted"}`}
+                        className={`text-[10px] font-bold uppercase tracking-widest ${priority === level ? "text-primary-700" : "text-text-muted"}`}
                       >
                         {level}
                       </Text>
@@ -225,37 +229,37 @@ const EditItemModal = ({
               </View>
             </View>
 
-            <View className="mb-8">
-              <View className="mb-3 flex-row items-center justify-between px-1">
-                <Text className="text-[11px] font-black uppercase tracking-[2px] text-text-muted">
-                  CATEGORY
+            <View className="mb-5">
+              <View className="mb-2 flex-row items-center justify-between px-1">
+                <Text className="text-[11px] font-bold uppercase tracking-[2px] text-text-muted">
+                  Category
                 </Text>
                 <TouchableOpacity
                   onPress={() => setShowAddCat((prev) => !prev)}
                   activeOpacity={0.7}
-                  className="rounded-xl border border-primary-100 bg-primary-50 px-3 py-1.5"
+                  className="rounded-md px-2 py-1"
                 >
-                  <Text className="text-[10px] font-black uppercase tracking-wider text-primary-600">
+                  <Text className="text-[10px] font-bold uppercase tracking-wider text-primary-700">
                     + Custom
                   </Text>
                 </TouchableOpacity>
               </View>
 
               {showAddCat ? (
-                <View className="mb-4 flex-row">
+                <View className="mb-3 flex-row">
                   <TextInput
                     value={newCatInput}
                     onChangeText={setNewCatInput}
                     placeholder="New Category"
                     placeholderTextColor="#95a39a"
-                    className="mr-3 flex-1 rounded-2xl border border-border-muted bg-surface-muted p-4 font-bold text-text-primary"
+                    className="mr-2 h-11 flex-1 rounded-xl border border-border-muted bg-surface-muted px-3 font-semibold text-text-primary"
                   />
                   <TouchableOpacity
                     onPress={handleAddCategory}
                     activeOpacity={0.8}
-                    className="items-center justify-center rounded-2xl bg-primary-600 px-6 shadow-sm shadow-primary-200"
+                    className="items-center justify-center rounded-xl bg-primary-600 px-5"
                   >
-                    <Text className="text-xs font-black uppercase tracking-widest text-text-inverse">
+                    <Text className="text-xs font-bold uppercase tracking-wide text-text-inverse">
                       Add
                     </Text>
                   </TouchableOpacity>
@@ -272,10 +276,10 @@ const EditItemModal = ({
                     key={cat}
                     onPress={() => setCategory(cat)}
                     activeOpacity={0.8}
-                    className={`mr-3 rounded-full border px-8 py-3.5 ${category === cat ? "border-primary-600 bg-primary-600 shadow-md shadow-primary-200" : "border-border-muted bg-surface-muted"}`}
+                    className={`mr-2 rounded-lg border px-4 py-2.5 ${category === cat ? "border-primary-300 bg-primary-50" : "border-border-muted bg-surface-muted"}`}
                   >
                     <Text
-                      className={`text-xs font-black uppercase tracking-widest ${category === cat ? "text-text-inverse" : "text-text-muted"}`}
+                      className={`text-[10px] font-bold uppercase tracking-wide ${category === cat ? "text-primary-700" : "text-text-muted"}`}
                     >
                       {cat}
                     </Text>
@@ -284,9 +288,9 @@ const EditItemModal = ({
               </ScrollView>
             </View>
 
-            <View className="mb-10">
-              <Text className="ml-1 mb-3 text-[11px] font-black uppercase tracking-[2px] text-text-muted">
-                NOTES (OPTIONAL)
+            <View className="mb-7">
+              <Text className="mb-2 ml-1 text-[11px] font-bold uppercase tracking-[2px] text-text-muted">
+                Notes (Optional)
               </Text>
               <TextInput
                 value={notes}
@@ -296,22 +300,22 @@ const EditItemModal = ({
                 multiline
                 numberOfLines={3}
                 textAlignVertical="top"
-                className="rounded-[30px] border border-border-muted bg-surface-muted p-5 text-base font-bold text-text-primary"
+                className="rounded-xl border border-border-muted bg-surface-muted px-4 py-3 text-sm font-semibold text-text-primary"
               />
             </View>
           </ScrollView>
 
-          <View className="flex-row items-center gap-3">
+          <View className="flex-row items-center gap-2">
             <TouchableOpacity
               onPress={confirmDelete}
               disabled={saving || deleting}
               activeOpacity={0.9}
-              className={`flex-1 rounded-[30px] border border-urgent/25 py-5 ${saving || deleting ? "bg-surface-subtle" : "bg-urgent/10"}`}
+              className={`h-12 flex-1 items-center justify-center rounded-xl border border-urgent/25 ${saving || deleting ? "bg-surface-subtle" : "bg-urgent/10"}`}
             >
               {deleting ? (
                 <ActivityIndicator color="#c36262" />
               ) : (
-                <Text className="text-center text-base font-black uppercase tracking-[1px] text-urgent">
+                <Text className="text-center text-[13px] font-bold uppercase tracking-wide text-urgent">
                   Delete
                 </Text>
               )}
@@ -321,13 +325,13 @@ const EditItemModal = ({
               onPress={handleSave}
               disabled={saving || deleting || !name.trim()}
               activeOpacity={0.9}
-              className={`flex-1 rounded-[30px] py-5 ${saving || deleting || !name.trim() ? "bg-surface-subtle" : "bg-primary-600 shadow-xl shadow-primary-200"}`}
+              className={`h-12 flex-1 items-center justify-center rounded-xl ${saving || deleting || !name.trim() ? "bg-surface-subtle" : "bg-primary-600"}`}
             >
               {saving ? (
                 <ActivityIndicator color="#f6fbf7" />
               ) : (
                 <Text
-                  className={`text-center text-base font-black uppercase tracking-[1px] ${saving || deleting || !name.trim() ? "text-text-subtle" : "text-text-inverse"}`}
+                  className={`text-center text-[13px] font-bold uppercase tracking-wide ${saving || deleting || !name.trim() ? "text-text-subtle" : "text-text-inverse"}`}
                 >
                   Save
                 </Text>

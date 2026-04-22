@@ -2,7 +2,6 @@ import React from "react";
 import { View, Text, TouchableOpacity } from "react-native";
 import { CheckCircle2, Circle, AlertCircle, Clock } from "lucide-react-native";
 import { GroceryItem } from "../types";
-import CategoryBadge from "./CategoryBadge";
 import { formatDistanceToNow } from "date-fns";
 
 interface ItemCardProps {
@@ -20,18 +19,6 @@ const ItemCard = ({
 }: ItemCardProps) => {
   const isCompleted = item.status === "completed";
 
-  const priorityColors = {
-    Urgent: "text-urgent",
-    Medium: "text-medium",
-    Low: "text-primary-600",
-  };
-
-  const priorityBg = {
-    Urgent: "bg-urgent/10",
-    Medium: "bg-medium/15",
-    Low: "bg-primary-50",
-  };
-
   const timeAgo = item.createdAt
     ? formatDistanceToNow(item.createdAt.toDate(), { addSuffix: true })
     : "just now";
@@ -40,46 +27,36 @@ const ItemCard = ({
     <TouchableOpacity
       onPress={() => onPress(item)}
       activeOpacity={0.8}
-      className={`bg-surface p-5 rounded-3xl mb-4 border border-border-muted flex-row items-center shadow-sm shadow-secondary-100/40`}
-      style={
-        isCompleted
-          ? { opacity: 0.6 }
-          : {
-              elevation: 2,
-              shadowColor: "#516171",
-              shadowOffset: { width: 0, height: 4 },
-              shadowOpacity: 0.06,
-              shadowRadius: 10,
-            }
-      }
+      className="mb-1 flex-row items-start border-b border-border-muted/80 px-1 py-3.5"
+      style={isCompleted ? { opacity: 0.6 } : undefined}
     >
       <TouchableOpacity
         onPress={() => onToggle(item)}
-        className="mr-5"
+        className="mr-4 mt-0.5"
         activeOpacity={0.6}
       >
         <View
-          className={`w-8 h-8 rounded-full items-center justify-center ${isCompleted ? "bg-primary-50" : "bg-surface-muted border border-border-muted"}`}
+          className={`h-8 w-8 items-center justify-center rounded-full ${isCompleted ? "bg-primary-50" : "border border-border-muted bg-surface-muted"}`}
         >
           {isCompleted ? (
-            <CheckCircle2 stroke="#59AC77" size={20} strokeWidth={3} />
+            <CheckCircle2 stroke="#59AC77" size={19} strokeWidth={2.8} />
           ) : (
-            <Circle stroke="#b8c6bd" size={20} strokeWidth={2} />
+            <Circle stroke="#b8c6bd" size={19} strokeWidth={2} />
           )}
         </View>
       </TouchableOpacity>
 
       <View className="flex-1">
-        <View className="flex-row justify-between items-start mb-1.5">
+        <View className="mb-1 flex-row items-start justify-between">
           <Text
-            className={`text-lg font-bold flex-1 tracking-tight ${isCompleted ? "text-text-muted" : "text-text-primary"}`}
+            className={`flex-1 text-[18px] font-semibold tracking-tight ${isCompleted ? "text-text-muted" : "text-text-primary"}`}
             style={
               isCompleted ? { textDecorationLine: "line-through" } : undefined
             }
           >
             {item.name}
             {item.quantity ? (
-              <Text className="text-text-muted font-medium">
+              <Text className="text-[15px] font-medium text-text-muted">
                 {" "}
                 ({item.quantity})
               </Text>
@@ -88,38 +65,37 @@ const ItemCard = ({
             )}
           </Text>
           {!isCompleted && item.priority === "Urgent" && (
-            <View className="bg-urgent/10 p-1 rounded-lg">
+            <View className="rounded-lg bg-urgent/10 p-1">
               <AlertCircle stroke="#c36262" size={14} strokeWidth={2.5} />
             </View>
           )}
         </View>
 
-        <View className="flex-row items-center flex-wrap gap-2">
-          <CategoryBadge category={item.category} />
-          <View
-            className={`px-2.5 py-0.5 rounded-full ${priorityBg[item.priority]}`}
-          >
-            <Text
-              className={`text-[10px] font-extrabold uppercase tracking-widest ${priorityColors[item.priority]}`}
-            >
-              {item.priority}
-            </Text>
-          </View>
-          <View className="flex-row items-center ml-auto">
-            <Clock stroke="#95a39a" size={10} className="mr-1" />
-            <Text className="text-[10px] text-text-muted font-medium">
+        <View className="flex-row items-center">
+          <Text className="text-[12px] text-text-secondary">
+            {item.category} · {item.priority}
+          </Text>
+          <View className="ml-auto flex-row items-center">
+            <Clock stroke="#95a39a" size={10} />
+            <Text className="ml-1 text-[11px] font-medium text-text-muted">
               {timeAgo}
             </Text>
           </View>
         </View>
 
-        <View className="flex-row items-center mt-3 pt-3 border-t border-border-muted">
-          <View className="w-5 h-5 bg-surface-subtle rounded-full items-center justify-center mr-2">
-            <Text className="text-[8px] font-bold text-text-secondary">
+        {item.notes?.trim() ? (
+          <Text className="mt-1 text-[13px] leading-5 text-text-secondary">
+            {item.notes}
+          </Text>
+        ) : null}
+
+        <View className="mt-2 flex-row items-center">
+          <View className="mr-2 h-5 w-5 items-center justify-center rounded-full bg-surface-subtle">
+            <Text className="text-[9px] font-bold text-text-secondary">
               {item.addedBy.name.charAt(0)}
             </Text>
           </View>
-          <Text className="text-[10px] text-text-muted">
+          <Text className="text-[11px] text-text-muted">
             Added by{" "}
             <Text className="font-bold text-text-secondary">
               {currentUserId && item.addedBy.uid === currentUserId
@@ -130,9 +106,9 @@ const ItemCard = ({
         </View>
 
         {isCompleted && item.completedBy && (
-          <View className="flex-row items-center mt-2 bg-primary-50/60 p-2 rounded-xl">
-            <View className="w-1.5 h-1.5 bg-primary-500 rounded-full mr-2" />
-            <Text className="text-[10px] text-primary-700 font-semibold">
+          <View className="mt-1 flex-row items-center">
+            <View className="mr-2 h-1.5 w-1.5 rounded-full bg-primary-500" />
+            <Text className="text-[11px] font-semibold text-primary-700">
               Completed by {item.completedBy.name}
             </Text>
           </View>
