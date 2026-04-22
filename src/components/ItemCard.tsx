@@ -9,9 +9,15 @@ interface ItemCardProps {
   item: GroceryItem;
   onToggle: (item: GroceryItem) => void;
   onPress: (item: GroceryItem) => void;
+  currentUserId?: string;
 }
 
-const ItemCard = ({ item, onToggle, onPress }: ItemCardProps) => {
+const ItemCard = ({
+  item,
+  onToggle,
+  onPress,
+  currentUserId,
+}: ItemCardProps) => {
   const isCompleted = item.status === "completed";
 
   const priorityColors = {
@@ -116,7 +122,7 @@ const ItemCard = ({ item, onToggle, onPress }: ItemCardProps) => {
           <Text className="text-[10px] text-text-muted">
             Added by{" "}
             <Text className="font-bold text-text-secondary">
-              {item.addedBy.uid === item.addedBy.uid
+              {currentUserId && item.addedBy.uid === currentUserId
                 ? "You"
                 : item.addedBy.name}
             </Text>

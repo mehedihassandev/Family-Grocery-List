@@ -1,70 +1,229 @@
-import React, { useEffect, useState, useMemo } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
-  View,
-  Text,
-  TouchableOpacity,
-  FlatList,
   ActivityIndicator,
-  RefreshControl,
+  SectionList,
   StatusBar,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+  ScrollView,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { Plus, LayoutGrid, ListFilter, Search } from "lucide-react-native";
+import {
+  ListFilter,
+  Plus,
+  RefreshCw,
+  Search,
+  Users,
+} from "lucide-react-native";
 import { useAuthStore } from "../store/useAuthStore";
 import {
   subscribeToGroceryList,
   toggleItemCompletion,
 } from "../services/grocery";
-import { GroceryItem } from "../types";
+import { Family, GroceryItem } from "../types";
 import ItemCard from "../components/ItemCard";
 import AddItemModal from "../components/AddItemModal";
+import EditItemModal from "../components/EditItemModal";
 import EmptyState from "../components/EmptyState";
+import {
+  GROCERY_CATEGORIES,
+  sortLegacyGroceryItemsForHome,
+} from "../features/grocery";
+import { getFamilyDetails, subscribeToFamilyMembers } from "../services/family";
+import { AppHeader, Chip } from "../components/ui";
+
+type StatusFilter = "all" | "pending" | "completed";
+
+type GrocerySection = {
+  key: string;
+  title: string;
+  data: GroceryItem[];
+};
+
+const STATUS_FILTERS: Array<{ key: StatusFilter; label: string }> = [
+  { key: "all", label: "All" },
+  { key: "pending", label: "Pending" },
+  { key: "completed", label: "Completed" },
+];
+
+const ALL_CATEGORY = "All";
+const SEARCH_PLACEHOLDER = "Search items, categories, notes";
+const PERMISSION_ERROR_LABEL = "Missing Firestore permission for this query.";
+const getFirebaseErrorMessage = (error: Error) => {
+  const message = error.message || "";
+  if (message.includes("permission-denied")) {
+    return PERMISSION_ERROR_LABEL;
+  }
+  if (message.includes("requires an index")) {
+    return "Firestore index required. Create index from console link.";
+  }
+  return "Could not load grocery items. Check internet and retry.";
+};
 
 const HomeScreen = () => {
   const { user } = useAuthStore();
   const [items, setItems] = useState<GroceryItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [isModalVisible, setModalVisible] = useState(false);
-  const [filter, setFilter] = useState<"Active" | "Completed">("Active");
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
+  const [activeCategory, setActiveCategory] = useState<string>(ALL_CATEGORY);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [familyName, setFamilyName] = useState("Our Family");
+  const [listError, setListError] = useState<string | null>(null);
+  const [refreshSeed, setRefreshSeed] = useState(0);
+  const [memberCount, setMemberCount] = useState(0);
+  const [editingItemId, setEditingItemId] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!user?.familyId) return;
-
-    const unsubscribe = subscribeToGroceryList(user.familyId, (newItems) => {
-      setItems(newItems);
+    if (!user?.familyId) {
+      setItems([]);
       setLoading(false);
-    });
+      setListError(null);
+      return;
+    }
+
+    setLoading(true);
+    setListError(null);
+
+    const unsubscribe = subscribeToGroceryList(
+      user.familyId,
+      (newItems) => {
+        setItems(newItems);
+        setListError(null);
+        setLoading(false);
+      },
+      (error) => {
+        setListError(getFirebaseErrorMessage(error));
+        setLoading(false);
+      },
+    );
+
+    return () => unsubscribe();
+  }, [user?.familyId, refreshSeed]);
+
+  useEffect(() => {
+    if (!user?.familyId) {
+      setFamilyName("Our Family");
+      return;
+    }
+
+    let isMounted = true;
+
+    void getFamilyDetails(user.familyId)
+      .then((family) => {
+        if (!isMounted) return;
+        const name = (family as Family | undefined)?.name?.trim();
+        setFamilyName(name || "Our Family");
+      })
+      .catch(() => {
+        if (!isMounted) return;
+        setFamilyName("Our Family");
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [user?.familyId]);
+
+  useEffect(() => {
+    if (!user?.familyId) {
+      setMemberCount(0);
+      return;
+    }
+
+    const unsubscribe = subscribeToFamilyMembers(
+      user.familyId,
+      (members) => {
+        setMemberCount(members.length);
+      },
+      (error) => {
+        const message = error.message || "";
+        if (__DEV__) {
+          console.warn("[HomeScreen] member subscription error:", message);
+        }
+        setMemberCount(0);
+      },
+    );
 
     return () => unsubscribe();
   }, [user?.familyId]);
 
-  const sortedItems = useMemo(() => {
-    const filtered = items.filter((item) =>
-      filter === "Active"
-        ? item.status === "pending"
-        : item.status === "completed",
-    );
+  const sortedItems = useMemo(
+    () => sortLegacyGroceryItemsForHome(items),
+    [items],
+  );
 
-    if (filter === "Active") {
-      // Sort priority: Urgent (1), Medium (2), Low (3)
-      const priorityMap: Record<string, number> = {
-        Urgent: 0,
-        Medium: 1,
-        Low: 2,
-      };
-      return [...filtered].sort((a, b) => {
-        if (priorityMap[a.priority] !== priorityMap[b.priority]) {
-          return priorityMap[a.priority] - priorityMap[b.priority];
-        }
-        return (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0);
+  const editingItem = useMemo(
+    () =>
+      editingItemId
+        ? (items.find((item) => item.id === editingItemId) ?? null)
+        : null,
+    [items, editingItemId],
+  );
+
+  useEffect(() => {
+    if (editingItemId && !editingItem) {
+      setEditingItemId(null);
+    }
+  }, [editingItemId, editingItem]);
+
+  const filteredItems = useMemo(() => {
+    const query = searchQuery.trim().toLowerCase();
+
+    return sortedItems.filter((item) => {
+      if (statusFilter !== "all" && item.status !== statusFilter) {
+        return false;
+      }
+
+      if (activeCategory !== ALL_CATEGORY && item.category !== activeCategory) {
+        return false;
+      }
+
+      if (!query) {
+        return true;
+      }
+
+      const searchText = [
+        item.name,
+        item.category,
+        item.notes ?? "",
+        item.quantity ?? "",
+        item.addedBy?.name ?? "",
+      ]
+        .join(" ")
+        .toLowerCase();
+
+      return searchText.includes(query);
+    });
+  }, [sortedItems, statusFilter, activeCategory, searchQuery]);
+
+  const sections = useMemo<GrocerySection[]>(() => {
+    const pending = filteredItems.filter((item) => item.status === "pending");
+    const completed = filteredItems.filter(
+      (item) => item.status === "completed",
+    );
+    const output: GrocerySection[] = [];
+
+    if (statusFilter !== "completed" && pending.length > 0) {
+      output.push({
+        key: "pending",
+        title: "Pending Items",
+        data: pending,
       });
     }
 
-    // For completed, just show latest first
-    return [...filtered].sort(
-      (a, b) => (b.completedAt?.seconds || 0) - (a.completedAt?.seconds || 0),
-    );
-  }, [items, filter]);
+    if (statusFilter !== "pending" && completed.length > 0) {
+      output.push({
+        key: "completed",
+        title: "Completed Items",
+        data: completed,
+      });
+    }
+
+    return output;
+  }, [filteredItems, statusFilter]);
 
   const handleToggle = async (item: GroceryItem) => {
     if (!user) return;
@@ -74,89 +233,172 @@ const HomeScreen = () => {
     });
   };
 
-  const activeCount = items.filter((i) => i.status === "pending").length;
+  const pendingCount = items.filter((i) => i.status === "pending").length;
+  const completedCount = items.filter((i) => i.status === "completed").length;
+  const visibleCount = filteredItems.length;
+  const categoryOptions = useMemo(() => {
+    const fromItems = Array.from(
+      new Set(sortedItems.map((item) => item.category).filter(Boolean)),
+    );
+
+    const merged = [...GROCERY_CATEGORIES, ...fromItems].filter(
+      (category, index, self) => self.indexOf(category) === index,
+    );
+
+    return [ALL_CATEGORY, ...merged];
+  }, [sortedItems]);
 
   return (
     <SafeAreaView className="flex-1 bg-background">
       <StatusBar barStyle="dark-content" />
 
-      {/* Header */}
-      <View className="px-6 pt-4 pb-6 bg-surface/85 border-b border-border-muted flex-row justify-between items-end">
-        <View>
-          <Text className="text-primary-600 font-bold uppercase tracking-[2px] text-[10px] mb-1">
-            Shared Grocery
-          </Text>
-          <Text className="text-3xl font-extrabold text-text-primary tracking-tight">
-            Our List
-          </Text>
-        </View>
-        <TouchableOpacity className="w-10 h-10 bg-surface-muted rounded-full items-center justify-center border border-border-muted">
-          <Search stroke="#748379" size={20} />
-        </TouchableOpacity>
-      </View>
-
-      {/* Filter Toggles */}
-      <View className="px-6 py-4 flex-row justify-between items-center">
-        <View className="flex-row bg-surface-subtle/90 p-1 rounded-2xl border border-border-muted">
-          {(["Active", "Completed"] as const).map((t) => (
-            <TouchableOpacity
-              key={t}
-              onPress={() => setFilter(t)}
-              className={`px-5 py-2.5 rounded-xl ${filter === t ? "bg-surface shadow-sm shadow-secondary-100" : ""}`}
-            >
-              <Text
-                className={`text-xs font-bold tracking-wide ${filter === t ? "text-primary-600" : "text-text-muted"}`}
-              >
-                {t}{" "}
-                {t === "Active" && activeCount > 0 ? `(${activeCount})` : ""}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-        <TouchableOpacity className="p-2 bg-primary-50 rounded-lg">
-          <ListFilter stroke="#59AC77" size={18} />
-        </TouchableOpacity>
-      </View>
-
-      {/* List */}
-      <View className="flex-1 px-4">
-        {loading ? (
-          <View className="flex-1 justify-center items-center">
-            <ActivityIndicator color="#59AC77" size="large" />
+      <AppHeader
+        eyebrow="Shared Grocery"
+        title={familyName}
+        right={
+          <View className="h-10 w-10 items-center justify-center rounded-full border border-border-muted bg-surface-muted">
+            <Users stroke="#59AC77" size={20} />
+            {memberCount > 0 ? (
+              <View className="absolute -right-1 -top-1 h-5 min-w-[20px] items-center justify-center rounded-full bg-primary-600 px-1">
+                <Text className="text-[10px] font-bold text-text-inverse">
+                  {memberCount > 9 ? "9+" : memberCount}
+                </Text>
+              </View>
+            ) : null}
           </View>
-        ) : sortedItems.length === 0 ? (
-          <EmptyState
-            title={
-              filter === "Active" ? "The list is empty" : "No completed items"
-            }
-            description={
-              filter === "Active"
-                ? "Tap the '+' button below to add your first grocery item."
-                : "Items you complete will show up here for future reference."
-            }
-          />
-        ) : (
-          <FlatList
-            data={sortedItems}
-            keyExtractor={(item) => item.id}
-            showsVerticalScrollIndicator={false}
-            contentContainerStyle={{ paddingBottom: 120, paddingTop: 10 }}
-            renderItem={({ item }) => (
+        }
+      />
+
+      {loading ? (
+        <View className="flex-1 items-center justify-center">
+          <ActivityIndicator color="#59AC77" size="large" />
+        </View>
+      ) : listError ? (
+        <View className="flex-1 items-center justify-center px-8">
+          <EmptyState title="Unable to load list" description={listError} />
+          <TouchableOpacity
+            onPress={() => setRefreshSeed((prev) => prev + 1)}
+            activeOpacity={0.85}
+            className="mt-4 flex-row items-center rounded-full bg-primary-600 px-5 py-3"
+          >
+            <RefreshCw color="#f6fbf7" size={16} strokeWidth={2.4} />
+            <Text className="ml-2 text-sm font-semibold text-text-inverse">
+              Retry
+            </Text>
+          </TouchableOpacity>
+        </View>
+      ) : (
+        <SectionList
+          sections={sections}
+          keyExtractor={(item) => item.id}
+          showsVerticalScrollIndicator={false}
+          stickySectionHeadersEnabled={false}
+          contentContainerStyle={{ paddingBottom: 140 }}
+          ListHeaderComponent={
+            <View className="px-5 pt-4">
+              <View className="rounded-3xl border border-border bg-surface p-5 shadow-sm shadow-secondary-100/40">
+                <Text className="text-[10px] font-bold uppercase tracking-[2px] text-primary-600">
+                  Family Summary
+                </Text>
+                <Text className="mt-1 text-2xl font-extrabold text-text-primary">
+                  {pendingCount} pending
+                </Text>
+                <Text className="mt-1 text-sm text-text-secondary">
+                  {completedCount} completed · {items.length} total
+                </Text>
+                <Text className="mt-2 text-xs text-text-muted">
+                  {memberCount} member{memberCount === 1 ? "" : "s"} synced live
+                </Text>
+              </View>
+
+              <View className="mt-4 flex-row items-center rounded-2xl border border-border bg-surface px-4 py-1">
+                <Search stroke="#748379" size={18} />
+                <TextInput
+                  value={searchQuery}
+                  onChangeText={setSearchQuery}
+                  placeholder={SEARCH_PLACEHOLDER}
+                  placeholderTextColor="#95a39a"
+                  className="ml-3 h-11 flex-1 text-[15px] text-text-primary"
+                />
+              </View>
+
+              <View className="mt-4 flex-row items-center">
+                <View className="rounded-xl bg-primary-50 p-2 mr-3">
+                  <ListFilter stroke="#59AC77" size={16} />
+                </View>
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  contentContainerStyle={{ gap: 8, paddingRight: 8 }}
+                >
+                  {STATUS_FILTERS.map((option) => (
+                    <Chip
+                      key={option.key}
+                      label={option.label}
+                      selected={statusFilter === option.key}
+                      onPress={() => setStatusFilter(option.key)}
+                    />
+                  ))}
+                </ScrollView>
+              </View>
+
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                className="mt-4"
+                contentContainerStyle={{ gap: 8, paddingRight: 8 }}
+              >
+                {categoryOptions.map((category) => (
+                  <Chip
+                    key={category}
+                    label={category}
+                    selected={activeCategory === category}
+                    onPress={() => setActiveCategory(category)}
+                  />
+                ))}
+              </ScrollView>
+
+              <Text className="mt-4 mb-2 px-1 text-xs font-semibold uppercase tracking-[1.5px] text-text-muted">
+                Showing {visibleCount} item{visibleCount === 1 ? "" : "s"}
+              </Text>
+            </View>
+          }
+          renderSectionHeader={({ section }) => (
+            <View className="px-5 pb-2 pt-3">
+              <Text className="text-base font-bold text-text-primary">
+                {section.title}
+              </Text>
+            </View>
+          )}
+          renderItem={({ item }) => (
+            <View className="px-4">
               <ItemCard
                 item={item}
                 onToggle={handleToggle}
-                onPress={() => {}}
+                onPress={(currentItem) => setEditingItemId(currentItem.id)}
+                currentUserId={user?.uid}
               />
-            )}
-          />
-        )}
-      </View>
+            </View>
+          )}
+          ListEmptyComponent={
+            <View className="px-5 pt-10">
+              <EmptyState
+                title="No items found"
+                description={
+                  searchQuery || activeCategory !== ALL_CATEGORY
+                    ? "Try a different search or category filter."
+                    : "Tap '+' to add your first grocery item."
+                }
+              />
+            </View>
+          }
+        />
+      )}
 
-      {/* FAB */}
       <TouchableOpacity
         onPress={() => setModalVisible(true)}
-        activeOpacity={0.8}
-        className="absolute bottom-32 right-6 w-16 h-16 bg-primary-600 rounded-2xl items-center justify-center shadow-xl shadow-primary-200"
+        activeOpacity={0.85}
+        className="absolute bottom-32 right-6 h-16 w-16 items-center justify-center rounded-2xl bg-primary-600 shadow-xl shadow-primary-200"
         style={{
           elevation: 8,
           shadowColor: "#59AC77",
@@ -165,7 +407,7 @@ const HomeScreen = () => {
           shadowRadius: 15,
         }}
       >
-        <Plus color="white" size={32} strokeWidth={2.5} />
+        <Plus color="white" size={32} strokeWidth={2.4} />
       </TouchableOpacity>
 
       <AddItemModal
@@ -173,6 +415,13 @@ const HomeScreen = () => {
         onClose={() => setModalVisible(false)}
         familyId={user?.familyId || ""}
         user={{ uid: user?.uid || "", name: user?.displayName || "Anonymous" }}
+      />
+
+      <EditItemModal
+        visible={Boolean(editingItemId)}
+        onClose={() => setEditingItemId(null)}
+        item={editingItem}
+        familyId={user?.familyId || ""}
       />
     </SafeAreaView>
   );

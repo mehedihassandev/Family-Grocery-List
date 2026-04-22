@@ -18,20 +18,9 @@ import {
   subscribeToCategories,
   CustomCategory,
 } from "../services/categories";
+import { GROCERY_CATEGORIES } from "../features/grocery";
 
-const CATEGORIES: Category[] = [
-  "Fruits",
-  "Vegetables",
-  "Meat",
-  "Fish",
-  "Dairy",
-  "Snacks",
-  "Drinks",
-  "Household",
-  "Beauty",
-  "Medicine",
-  "Other",
-];
+const CATEGORIES: Category[] = [...GROCERY_CATEGORIES];
 
 const PRIORITIES: Priority[] = ["Low", "Medium", "Urgent"];
 
@@ -67,7 +56,16 @@ const AddItemModal = ({
   }, [familyId, visible]);
 
   const allCategories = useMemo(() => {
-    return [...CATEGORIES, ...customCategories.map((c) => c.name)];
+    const normalizedCustomCategories = customCategories
+      .map((categoryItem) => categoryItem.name.trim())
+      .filter(Boolean);
+
+    return [...CATEGORIES, ...normalizedCustomCategories].filter(
+      (categoryName, index, source) =>
+        source.findIndex(
+          (value) => value.toLowerCase() === categoryName.toLowerCase(),
+        ) === index,
+    );
   }, [customCategories]);
 
   const handleAddCategory = async () => {

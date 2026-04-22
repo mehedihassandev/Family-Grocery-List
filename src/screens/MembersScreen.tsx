@@ -19,18 +19,33 @@ const MembersScreen = () => {
   const [members, setMembers] = useState<User[]>([]);
   const [family, setFamily] = useState<Family | null>(null);
   const [loading, setLoading] = useState(true);
+  const [membersError, setMembersError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!user?.familyId) return;
 
     // Fetch family details (invite code)
-    getFamilyDetails(user.familyId).then(setFamily);
+    getFamilyDetails(user.familyId)
+      .then(setFamily)
+      .catch((error) => {
+        console.error("Get Family Details Error:", error);
+      });
 
     // Subscribe to members
     const unsubscribe = subscribeToFamilyMembers(
       user.familyId,
       (newMembers) => {
         setMembers(newMembers);
+        setMembersError(null);
+        setLoading(false);
+      },
+      (error) => {
+        const message = error.message || "";
+        if (message.includes("permission-denied")) {
+          setMembersError("Missing Firestore permission to read members.");
+        } else {
+          setMembersError("Could not load family members.");
+        }
         setLoading(false);
       },
     );
@@ -100,6 +115,9 @@ const MembersScreen = () => {
         <Text className="text-xl font-black text-text-primary mb-5 tracking-tight px-1">
           Family Members ({members.length})
         </Text>
+        {membersError ? (
+          <Text className="mb-4 px-1 text-sm text-urgent">{membersError}</Text>
+        ) : null}
 
         {loading ? (
           <ActivityIndicator color="#59AC77" size="large" />
