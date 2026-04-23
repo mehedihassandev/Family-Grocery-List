@@ -14,8 +14,12 @@
     "clean:android": "cd android && ./gradlew clean -x app:externalNativeBuildCleanDebug -x app:externalNativeBuildCleanRelease && rm -rf build && rm -rf app/build && rm -rf app/.cxx && cd ..",
     "clean:ios": "cd ios && rm -rf Pods Podfile.lock build && pod install && cd ..",
     "build:android": "cd android && ./gradlew assembleRelease && cd ..",
+    "lint": "eslint .",
+    "lint:fix": "npm run lint -- --fix",
     "format": "prettier --check ./src/**/*.{ts,tsx}",
-    "format:fix": "prettier --write ./src/**/*.{ts,tsx}"
+    "format:fix": "prettier --write ./src/**/*.{ts,tsx}",
+    "prepare": "husky",
+    "commitlint": "commitlint --from HEAD~1 --to HEAD --verbose"
   },
   "dependencies": {
     "@react-native-async-storage/async-storage": "2.2.0",
@@ -47,8 +51,14 @@
     "zustand": "^5.0.12"
   },
   "devDependencies": {
+    "@commitlint/cli": "^19.8.1",
+    "@commitlint/config-conventional": "^19.8.1",
     "@types/react": "~19.1.0",
     "@types/react-native": "^0.72.8",
+    "eslint": "^9.39.4",
+    "eslint-config-expo": "~10.0.0",
+    "eslint-config-prettier": "^10.1.8",
+    "husky": "^9.1.7",
     "prettier": "^3.8.3",
     "typescript": "~5.9.2"
   },
