@@ -188,8 +188,6 @@ const LoginScreen = () => {
 
   return (
     <SafeAreaView className="flex-1 bg-background">
-      <View className="absolute -left-32 -top-28 h-72 w-72 rounded-full bg-primary-100 opacity-75" />
-      <View className="absolute -bottom-32 -right-28 h-80 w-80 rounded-full bg-secondary-100 opacity-65" />
 
       <KeyboardAvoidingView
         className="flex-1"
@@ -214,7 +212,7 @@ const LoginScreen = () => {
             </Text>
           </View>
 
-          <View className="mt-10 flex-row rounded-full border border-border-muted bg-surface/85 p-1">
+          <View className="mt-10 flex-row rounded-full border border-border-muted bg-surface p-1">
             <TouchableOpacity
               activeOpacity={0.9}
               onPress={() => setAuthMode("signIn")}
@@ -359,7 +357,7 @@ const LoginScreen = () => {
             onPress={handleGoogleSignIn}
             activeOpacity={0.88}
             disabled={isBusy || !request || !googleConfigured}
-            className="flex-row items-center justify-center rounded-full border border-border bg-surface/80 py-3 disabled:opacity-60"
+            className="flex-row items-center justify-center rounded-full border border-border bg-surface py-3 disabled:opacity-60"
           >
             <Image
               source={{

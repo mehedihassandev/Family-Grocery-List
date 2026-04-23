@@ -51,3 +51,19 @@ export interface GroceryItem {
   updatedAt: any;
   completedAt?: any | null;
 }
+
+export type NotificationType = 'item_added' | 'item_completed' | 'urgent_item';
+
+export interface AppNotification {
+  id: string;
+  familyId: string;
+  type: NotificationType;
+  title: string;
+  message: string;
+  actorId: string;
+  actorName: string;
+  itemId?: string;
+  itemName?: string;
+  readBy: string[];
+  createdAt: any;
+}

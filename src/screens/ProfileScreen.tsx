@@ -1,254 +1,209 @@
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import {
-    View,
-    Text,
-    TouchableOpacity,
-    Image,
-    ScrollView,
-    StatusBar,
-    Share,
+  View,
+  Text,
+  TouchableOpacity,
+  Image,
+  ScrollView,
+  StatusBar,
+  Alert,
+  ActivityIndicator,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { useNavigation } from "@react-navigation/native";
 import {
-    LogOut,
-    Bell,
-    Shield,
-    HelpCircle,
-    ChevronRight,
-    User as UserIcon,
-    UserCircle2,
-    Share2,
+  LogOut,
+  Shield,
+  HelpCircle,
+  ChevronRight,
+  User as UserIcon,
+  Edit3,
+  Users
 } from "lucide-react-native";
 import { useAuthStore } from "../store/useAuthStore";
 import { signOut } from "../services/auth";
-import { getFamilyDetails } from "../services/family";
-import { Family } from "../types";
+import { leaveFamily } from "../services/family";
+import { AppHeader, Card } from "../components/ui";
+
+const getFamilyActionErrorMessage = (error: unknown, fallback: string) => {
+  const rawMessage = error instanceof Error ? error.message : "";
+  const normalized = rawMessage.toLowerCase();
+
+  if (normalized.includes("permission-denied") || normalized.includes("insufficient permissions")) {
+    return "Permission denied. Publish Firestore rules from FIRESTORE_RULES_SETUP.md";
+  }
+
+  if (rawMessage.trim()) {
+    return rawMessage.trim();
+  }
+
+  return fallback;
+};
+
+const getInitials = (name?: string | null) => {
+  if (!name) return "U";
+  const parts = name.trim().split(" ");
+  if (parts.length > 1) {
+    return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+  }
+  return parts[0][0].toUpperCase();
+};
 
 const ProfileScreen = () => {
-    const { user } = useAuthStore();
-    const [family, setFamily] = useState<Family | null>(null);
+  const { user, setUser } = useAuthStore();
+  const navigation = useNavigation<any>();
+  const [leavingFamily, setLeavingFamily] = useState(false);
 
-    useEffect(() => {
-        if (!user?.familyId) return;
+  const handleLeaveFamily = () => {
+    if (!user?.uid || !user.familyId || leavingFamily) return;
 
-        getFamilyDetails(user.familyId)
-            .then(setFamily)
-            .catch((error) => {
-                console.error("Get Family Details Error:", error);
+    const isOwner = user.role === "owner";
+    const confirmMessage = isOwner
+      ? "You are owner. If other members exist, ownership will transfer automatically. Continue?"
+      : "Do you want to leave this family?";
+
+    Alert.alert("Leave Family", confirmMessage, [
+      { text: "Cancel", style: "cancel" },
+      {
+        text: "Leave",
+        style: "destructive",
+        onPress: async () => {
+          try {
+            setLeavingFamily(true);
+            await leaveFamily({
+              userId: user.uid,
+              familyId: user.familyId!,
+              role: user.role,
             });
-    }, [user?.familyId]);
-
-    const handleShareInvite = async () => {
-        if (!family) return;
-        try {
-            await Share.share({
-                message: `Join our family grocery list! Use invite code: ${family.inviteCode}`,
-            });
-        } catch (error) {
-            console.error(error);
-        }
-    };
-
-    const menuItems = [
-        {
-            icon: Bell,
-            title: "Notifications",
-            iconBg: "bg-primary-50",
-            iconColor: "#59AC77",
+            setUser({ ...user, familyId: null, role: "member" });
+            navigation.navigate("Main");
+          } catch (error) {
+            const message = getFamilyActionErrorMessage(error, "Could not leave family.");
+            Alert.alert("Leave Failed", message);
+          } finally {
+            setLeavingFamily(false);
+          }
         },
-        {
-            icon: Shield,
-            title: "Privacy & Security",
-            iconBg: "bg-primary-50",
-            iconColor: "#59AC77",
-        },
-        {
-            icon: HelpCircle,
-            title: "Help & Support",
-            iconBg: "bg-primary-50",
-            iconColor: "#59AC77",
-        },
-    ];
+      },
+    ]);
+  };
 
-    return (
-        <SafeAreaView
-            edges={["top", "left", "right"]}
-            className="flex-1 bg-background"
-        >
-            <StatusBar barStyle="dark-content" />
-            <View
-                className="absolute -left-24 -top-20 h-56 w-56 rounded-full bg-primary-100"
-                style={{ opacity: 0.45 }}
-            />
-            <View
-                className="absolute -right-24 top-44 h-52 w-52 rounded-full bg-secondary-100"
-                style={{ opacity: 0.55 }}
-            />
-            <View className="px-6 pt-4">
-                <View
-                    className="relative mb-6 flex-row items-start justify-between overflow-hidden rounded-3xl border border-border-muted/80 px-5 py-4"
-                    style={{
-                        backgroundColor: "rgba(255,255,255,0.72)",
-                        shadowColor: "#4f5f56",
-                        shadowOffset: { width: 0, height: 8 },
-                        shadowOpacity: 0.08,
-                        shadowRadius: 14,
-                        elevation: 3,
-                    }}
-                >
-                    <View
-                        pointerEvents="none"
-                        className="absolute -right-12 -top-16 h-40 w-40 rounded-full bg-white/45"
-                    />
-                    <View
-                        pointerEvents="none"
-                        className="absolute -left-10 bottom-0 h-20 w-48 rounded-full bg-white/25"
-                    />
-                    <View
-                        pointerEvents="none"
-                        className="absolute left-0 right-0 top-0 h-10 bg-white/30"
-                    />
-                    <View className="flex-1 pr-4">
-                        <Text className="text-[11px] font-semibold uppercase tracking-[2px] text-primary-700">
-                            Account
-                        </Text>
-                        <Text className="mt-1 text-[35px] font-black tracking-tight text-text-primary">
-                            Profile
-                        </Text>
-                        <Text className="mt-1 text-[15px] leading-6 text-text-secondary">
-                            Manage your family account
-                        </Text>
-                    </View>
-                    <View className="items-center">
-                        <View className="h-11 w-11 items-center justify-center rounded-full border border-border-muted bg-surface/95">
-                            <UserCircle2
-                                stroke="#59AC77"
-                                size={19}
-                                strokeWidth={2.3}
-                            />
-                        </View>
-                        <Text className="mt-1 text-[11px] font-medium text-text-muted">
-                            You
-                        </Text>
-                    </View>
-                </View>
+  const menuItems = [
+    {
+      icon: Shield,
+      title: "Privacy & Security",
+      onPress: () => navigation.navigate("PrivacySecurity"),
+    },
+    {
+      icon: HelpCircle,
+      title: "Help & Support",
+      onPress: () => navigation.navigate("HelpSupport"),
+    },
+  ];
+
+  if (user?.familyId) {
+    menuItems.push({
+      icon: Users,
+      title: "Leave Family",
+      onPress: handleLeaveFamily,
+    });
+  }
+
+  menuItems.push({
+    icon: LogOut,
+    title: "Logout",
+    onPress: () => signOut(),
+  });
+
+  return (
+    <SafeAreaView edges={["top", "left", "right"]} className="flex-1 bg-background">
+      <StatusBar barStyle="dark-content" />
+      
+      <AppHeader
+        title="Profile"
+      />
+
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ paddingBottom: 60 }}
+      >
+        <View className="px-5 pt-2">
+          {/* Top Profile Card */}
+          <View className="mb-6 flex-row items-center rounded-2xl bg-primary-50/80 p-5">
+            <View className="mr-4 h-16 w-16 items-center justify-center overflow-hidden rounded-full bg-surface shadow-sm">
+              {user?.photoURL ? (
+                <Image source={{ uri: user.photoURL }} className="h-full w-full" />
+              ) : (
+                <Text className="text-[22px] font-bold text-primary-700">
+                  {getInitials(user?.displayName)}
+                </Text>
+              )}
             </View>
-            <ScrollView
-                showsVerticalScrollIndicator={false}
-                contentContainerStyle={{ paddingBottom: 150, paddingTop: 2 }}
-            >
-                <View
-                    className="mx-6 rounded-3xl border border-border-muted/80 px-6 pb-7 pt-7"
-                    style={{
-                        backgroundColor: "rgba(255,255,255,0.62)",
-                        shadowColor: "#4f5f56",
-                        shadowOffset: { width: 0, height: 8 },
-                        shadowOpacity: 0.06,
-                        shadowRadius: 14,
-                        elevation: 2,
-                    }}
+            <View className="flex-1 justify-center">
+              <Text className="text-[18px] font-bold text-text-primary">
+                {user?.displayName || "User"}
+              </Text>
+              <View className="mt-1 flex-row items-center">
+                <Text className="text-[13px] font-medium text-text-muted mr-3">
+                  {user?.email || "No Email Associated"}
+                </Text>
+                <TouchableOpacity
+                  activeOpacity={0.7}
+                  onPress={() => navigation.navigate("EditProfile")}
+                  hitSlop={{ top: 10, right: 10, bottom: 10, left: 10 }}
+                  className="bg-primary-100 rounded-full p-1.5"
                 >
-                    <View className="mb-5 flex-row items-center">
-                        <View className="mr-4 h-16 w-16 items-center justify-center overflow-hidden rounded-full border border-border-muted bg-primary-50">
-                            {user?.photoURL ? (
-                                <Image
-                                    source={{ uri: user.photoURL }}
-                                    className="h-full w-full"
-                                />
-                            ) : (
-                                <UserIcon
-                                    stroke="#59AC77"
-                                    size={30}
-                                    strokeWidth={1.8}
-                                />
-                            )}
-                        </View>
-                        <View className="flex-1">
-                            <Text className="text-[24px] font-black tracking-tight text-text-primary">
-                                {user?.displayName}
-                            </Text>
-                            <Text className="mt-1 text-[14px] text-text-muted">
-                                {user?.email}
-                            </Text>
-                        </View>
-                    </View>
+                  <Edit3 stroke="#59AC77" size={12} strokeWidth={2.5} />
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
 
-                    <TouchableOpacity
-                        activeOpacity={0.8}
-                        className="items-center justify-center rounded-2xl bg-primary-600 py-3.5"
-                    >
-                        <Text className="text-[14px] font-semibold tracking-wide text-text-inverse">
-                            Edit Profile
-                        </Text>
-                    </TouchableOpacity>
-                </View>
+          {/* Unified Settings List Card */}
+          <Card className="py-2">
+            {menuItems.map((item, index) => {
+              const isLast = index === menuItems.length - 1;
+              const isLeaveFamily = item.title === "Leave Family";
+              const isDestructive = isLeaveFamily || item.title === "Logout";
+              const tintColor = isDestructive ? "#ef4444" : "#59AC77";
+              const bgColor = isDestructive ? "bg-urgent/10" : "bg-primary-50";
 
-                <View className="px-6 pt-7">
-                    <Text className="mb-4 text-[12px] font-semibold uppercase tracking-[1.3px] text-text-muted">
-                        Preferences
-                    </Text>
-                    <View
-                        className="mb-8 rounded-3xl border border-border-muted/80 p-2"
-                        style={{ backgroundColor: "rgba(255,255,255,0.58)" }}
-                    >
-                        {menuItems.map((item, index) => (
-                            <TouchableOpacity
-                                key={index}
-                                activeOpacity={0.6}
-                                className={`flex-row items-center px-3 py-4 ${index !== menuItems.length - 1 ? "border-b border-border-muted/70" : ""}`}
-                            >
-                                <View
-                                    className={`mr-4 rounded-xl p-2.5 ${item.iconBg}`}
-                                >
-                                    <item.icon
-                                        stroke={item.iconColor}
-                                        size={18}
-                                        strokeWidth={2}
-                                    />
-                                </View>
-                                <Text className="flex-1 text-[16px] font-semibold tracking-tight text-text-primary">
-                                    {item.title}
-                                </Text>
-                                <ChevronRight
-                                    stroke="#95a39a"
-                                    size={18}
-                                    strokeWidth={2.5}
-                                />
-                            </TouchableOpacity>
-                        ))}
-                    </View>
+              return (
+                <TouchableOpacity
+                  key={index}
+                  activeOpacity={0.6}
+                  onPress={item.onPress}
+                  disabled={isLeaveFamily && leavingFamily}
+                  className={`mx-5 flex-row items-center py-3.5 ${
+                    !isLast ? "border-b border-border-muted/60" : ""
+                  }`}
+                >
+                  <View className={`mr-4 items-center justify-center h-9 w-9 rounded-xl ${bgColor}`}>
+                    {isLeaveFamily && leavingFamily ? (
+                      <ActivityIndicator color={tintColor} size="small" />
+                    ) : (
+                      <item.icon stroke={tintColor} size={18} strokeWidth={2.2} />
+                    )}
+                  </View>
+                  <Text className={`flex-1 text-[15px] font-medium ${isDestructive ? 'text-urgent' : 'text-text-primary'}`}>
+                    {item.title}
+                  </Text>
+                  <ChevronRight stroke="#95a39a" size={18} strokeWidth={2} />
+                </TouchableOpacity>
+              );
+            })}
+          </Card>
 
-                    <TouchableOpacity
-                        onPress={() => signOut()}
-                        activeOpacity={0.8}
-                        className="flex-row items-center rounded-2xl border border-urgent/30 bg-urgent/10 px-4 py-4"
-                    >
-                        <View className="mr-4 rounded-xl bg-urgent/20 p-2.5">
-                            <LogOut
-                                stroke="#c36262"
-                                size={20}
-                                strokeWidth={2.5}
-                            />
-                        </View>
-                        <Text className="flex-1 text-[16px] font-semibold tracking-tight text-urgent">
-                            Sign Out
-                        </Text>
-                        <ChevronRight
-                            stroke="#c36262"
-                            size={18}
-                            strokeWidth={2.5}
-                        />
-                    </TouchableOpacity>
-
-                    <View className="mt-12 items-center">
-                        <Text className="text-[10px] font-black uppercase tracking-[3px] text-text-subtle">
-                            Family Grocery v1.0.0
-                        </Text>
-                    </View>
-                </View>
-            </ScrollView>
-        </SafeAreaView>
-    );
+          {/* Version Text */}
+          <View className="mt-8 items-center">
+            <Text className="text-[11px] font-medium tracking-wide text-text-muted/60">
+              Version 1.02
+            </Text>
+          </View>
+        </View>
+      </ScrollView>
+    </SafeAreaView>
+  );
 };
 
 export default ProfileScreen;

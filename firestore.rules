@@ -1,0 +1,114 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function userDocPath(uid) {
+      return /databases/$(database)/documents/users/$(uid);
+    }
+
+    function requesterDocExists() {
+      return signedIn() && exists(userDocPath(request.auth.uid));
+    }
+
+    function requesterData() {
+      return get(userDocPath(request.auth.uid)).data;
+    }
+
+    function requesterFamilyId() {
+      return requesterData().familyId;
+    }
+
+    function isRequester(uid) {
+      return signedIn() && request.auth.uid == uid;
+    }
+
+    function isFamilyMember(familyId) {
+      return requesterDocExists()
+        && requesterFamilyId() != null
+        && requesterFamilyId() == familyId;
+    }
+
+    function isOwnerOf(familyId) {
+      return isFamilyMember(familyId)
+        && exists(/databases/$(database)/documents/families/$(familyId))
+        && get(/databases/$(database)/documents/families/$(familyId)).data.ownerId == request.auth.uid;
+    }
+
+    match /families/{familyId} {
+      // Needed for invite-code join lookup.
+      allow read: if signedIn();
+
+      allow create: if signedIn()
+        && request.resource.data.ownerId == request.auth.uid
+        && request.resource.data.id == familyId;
+
+      allow update, delete: if isOwnerOf(familyId);
+    }
+
+    match /users/{uid} {
+      allow read: if isRequester(uid)
+        || (
+          requesterDocExists()
+          && resource.data.familyId != null
+          && requesterFamilyId() == resource.data.familyId
+        );
+
+      // User can create their own profile doc.
+      allow create: if isRequester(uid)
+        && request.resource.data.uid == uid;
+
+      // User can update own profile.
+      // Family owner can remove/transfer family membership for another member.
+      allow update: if isRequester(uid)
+        || (
+          requesterDocExists()
+          && resource.data.familyId != null
+          && isOwnerOf(resource.data.familyId)
+          && request.resource.data.uid == resource.data.uid
+          && request.resource.data.email == resource.data.email
+          && request.resource.data.displayName == resource.data.displayName
+          && request.resource.data.photoURL == resource.data.photoURL
+          && request.resource.data.diff(resource.data).changedKeys().hasOnly(["familyId", "role", "updatedAt"])
+          && (
+            // Remove member from family.
+            (request.resource.data.familyId == null && request.resource.data.role == "member")
+            // Transfer/change role within same family.
+            || (
+              request.resource.data.familyId == resource.data.familyId
+              && (request.resource.data.role == "owner" || request.resource.data.role == "member")
+            )
+          )
+        );
+
+      allow delete: if false;
+    }
+
+    match /grocery_items/{itemId} {
+      allow read: if signedIn() && isFamilyMember(resource.data.familyId);
+      allow create: if signedIn()
+        && request.resource.data.familyId != null
+        && isFamilyMember(request.resource.data.familyId);
+      allow update, delete: if signedIn() && isFamilyMember(resource.data.familyId);
+    }
+
+    match /categories/{categoryId} {
+      allow read: if signedIn() && isFamilyMember(resource.data.familyId);
+      allow create: if signedIn()
+        && request.resource.data.familyId != null
+        && isFamilyMember(request.resource.data.familyId);
+      allow update, delete: if signedIn() && isFamilyMember(resource.data.familyId);
+    }
+
+    match /notifications/{notifId} {
+      allow read: if signedIn() && isFamilyMember(resource.data.familyId);
+      allow create: if signedIn()
+        && request.resource.data.familyId != null
+        && isFamilyMember(request.resource.data.familyId);
+      allow update: if signedIn() && isFamilyMember(resource.data.familyId);
+      allow delete: if signedIn() && isFamilyMember(resource.data.familyId);
+    }
+  }
+}

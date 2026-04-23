@@ -11,6 +11,7 @@ import {
 } from "firebase/firestore";
 import { db } from "./firebaseConfig";
 import { GroceryItem, Priority } from "../types";
+import { createNotification } from "./notification";
 
 export const addGroceryItem = async (
   familyId: string,
@@ -34,6 +35,16 @@ export const addGroceryItem = async (
     };
 
     await setDoc(itemRef, newItem);
+    
+    // Create an "item_added" notification (or "urgent_item" if priority is Urgent)
+    await createNotification(
+      familyId,
+      newItem.priority === "Urgent" ? "urgent_item" : "item_added",
+      `${user.name} added ${newItem.name}`,
+      user,
+      { id: newItem.id, name: newItem.name }
+    );
+
     return newItem;
   } catch (error) {
     console.error("Add Item Error:", error);
@@ -58,13 +69,12 @@ export const updateGroceryItem = async (
 };
 
 export const toggleItemCompletion = async (
-  itemId: string,
-  currentStatus: "pending" | "completed",
+  item: { id: string; name: string; status: "pending" | "completed"; familyId: string },
   user: { uid: string; name: string },
 ) => {
   try {
-    const itemRef = doc(db, "grocery_items", itemId);
-    const isCompleting = currentStatus === "pending";
+    const itemRef = doc(db, "grocery_items", item.id);
+    const isCompleting = item.status === "pending";
 
     await updateDoc(itemRef, {
       status: isCompleting ? "completed" : "pending",
@@ -72,6 +82,16 @@ export const toggleItemCompletion = async (
       completedAt: isCompleting ? serverTimestamp() : null,
       updatedAt: serverTimestamp(),
     });
+
+    if (isCompleting) {
+      await createNotification(
+        item.familyId,
+        "item_completed",
+        `${user.name} checked off ${item.name}`,
+        user,
+        { id: item.id, name: item.name }
+      );
+    }
   } catch (error) {
     console.error("Toggle Completion Error:", error);
     throw error;

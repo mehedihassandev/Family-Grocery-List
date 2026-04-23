@@ -12,10 +12,7 @@ import {
   View,
   ScrollView,
 } from "react-native";
-import {
-  SafeAreaView,
-  useSafeAreaInsets,
-} from "react-native-safe-area-context";
+import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import {
   Plus,
   RefreshCw,
@@ -27,20 +24,17 @@ import {
   ChevronUp,
 } from "lucide-react-native";
 import { useAuthStore } from "../store/useAuthStore";
-import {
-  subscribeToGroceryList,
-  toggleItemCompletion,
-} from "../services/grocery";
+import { subscribeToGroceryList, toggleItemCompletion } from "../services/grocery";
 import { Family, GroceryItem } from "../types";
 import ItemCard from "../components/ItemCard";
 import AddItemModal from "../components/AddItemModal";
 import EditItemModal from "../components/EditItemModal";
 import EmptyState from "../components/EmptyState";
-import {
-  GROCERY_CATEGORIES,
-  sortLegacyGroceryItemsForHome,
-} from "../features/grocery";
+import { GROCERY_CATEGORIES, sortLegacyGroceryItemsForHome } from "../features/grocery";
 import { getFamilyDetails, subscribeToFamilyMembers } from "../services/family";
+import { AppHeader } from "../components/ui";
+import ItemDetailModal from "../components/ItemDetailModal";
+import NotificationModal from "../components/NotificationModal";
 
 type StatusFilter = "all" | "pending" | "completed";
 
@@ -83,7 +77,11 @@ const HomeScreen = () => {
   const [listError, setListError] = useState<string | null>(null);
   const [refreshSeed, setRefreshSeed] = useState(0);
   const [memberCount, setMemberCount] = useState(0);
+
+  const [viewingItemId, setViewingItemId] = useState<string | null>(null);
   const [editingItemId, setEditingItemId] = useState<string | null>(null);
+  const [isNotifOpen, setNotifOpen] = useState(false);
+
   const [isRefreshing, setRefreshing] = useState(false);
   const [showCompleted, setShowCompleted] = useState(false);
   const [isCategoryFilterOpen, setCategoryFilterOpen] = useState(false);
@@ -163,16 +161,15 @@ const HomeScreen = () => {
     return () => unsubscribe();
   }, [user?.familyId]);
 
-  const sortedItems = useMemo(
-    () => sortLegacyGroceryItemsForHome(items),
-    [items],
+  const sortedItems = useMemo(() => sortLegacyGroceryItemsForHome(items), [items]);
+
+  const viewingItem = useMemo(
+    () => (viewingItemId ? (items.find((item) => item.id === viewingItemId) ?? null) : null),
+    [items, viewingItemId],
   );
 
   const editingItem = useMemo(
-    () =>
-      editingItemId
-        ? (items.find((item) => item.id === editingItemId) ?? null)
-        : null,
+    () => (editingItemId ? (items.find((item) => item.id === editingItemId) ?? null) : null),
     [items, editingItemId],
   );
 
@@ -181,6 +178,12 @@ const HomeScreen = () => {
       setEditingItemId(null);
     }
   }, [editingItemId, editingItem]);
+
+  useEffect(() => {
+    if (viewingItemId && !viewingItem) {
+      setViewingItemId(null);
+    }
+  }, [viewingItemId, viewingItem]);
 
   const filteredItems = useMemo(() => {
     const query = searchQuery.trim().toLowerCase();
@@ -214,17 +217,26 @@ const HomeScreen = () => {
 
   const sections = useMemo<GrocerySection[]>(() => {
     const pending = filteredItems.filter((item) => item.status === "pending");
-    const completed = filteredItems.filter(
-      (item) => item.status === "completed",
-    );
+    const completed = filteredItems.filter((item) => item.status === "completed");
     const output: GrocerySection[] = [];
 
     if (statusFilter !== "completed" && pending.length > 0) {
-      output.push({
-        key: "pending",
-        title: "Pending Items",
-        data: pending,
-      });
+      const grouped = pending.reduce<Record<string, GroceryItem[]>>((acc, item) => {
+        const cat = item.category || "Uncategorized";
+        if (!acc[cat]) acc[cat] = [];
+        acc[cat].push(item);
+        return acc;
+      }, {});
+
+      Object.keys(grouped)
+        .sort()
+        .forEach((cat) => {
+          output.push({
+            key: `pending-${cat}`,
+            title: cat,
+            data: grouped[cat],
+          });
+        });
     }
 
     if (
@@ -244,22 +256,17 @@ const HomeScreen = () => {
 
   const handleToggle = async (item: GroceryItem) => {
     if (!user) return;
-    await toggleItemCompletion(item.id, item.status, {
+    await toggleItemCompletion(item, {
       uid: user.uid,
       name: user.displayName,
     });
   };
 
-  const pendingCount = items.filter((i) => i.status === "pending").length;
-  const completedCount = items.filter((i) => i.status === "completed").length;
-  const filteredCompletedCount = filteredItems.filter(
-    (item) => item.status === "completed",
-  ).length;
+  const filteredCompletedCount = filteredItems.filter((item) => item.status === "completed").length;
   const visibleCount = filteredItems.length;
+
   const categoryOptions = useMemo(() => {
-    const fromItems = Array.from(
-      new Set(sortedItems.map((item) => item.category).filter(Boolean)),
-    );
+    const fromItems = Array.from(new Set(sortedItems.map((item) => item.category).filter(Boolean)));
 
     const merged = [...GROCERY_CATEGORIES, ...fromItems].filter(
       (category, index, self) => self.indexOf(category) === index,
@@ -305,18 +312,13 @@ const HomeScreen = () => {
   };
 
   return (
-    <SafeAreaView
-      edges={["top", "left", "right"]}
-      className="flex-1 bg-background"
-    >
+    <SafeAreaView edges={["top", "left", "right"]} className="flex-1 bg-background">
       <StatusBar barStyle="dark-content" />
-      <View
-        className="absolute -left-24 -top-20 h-56 w-56 rounded-full bg-primary-100"
-        style={{ opacity: 0.45 }}
-      />
-      <View
-        className="absolute -right-24 top-44 h-52 w-52 rounded-full bg-secondary-100"
-        style={{ opacity: 0.55 }}
+
+      <AppHeader
+        title="Grocery List"
+        eyebrow="My Family"
+        onNotificationPress={() => setNotifOpen(true)}
       />
 
       {loading ? (
@@ -332,9 +334,7 @@ const HomeScreen = () => {
             className="mt-4 flex-row items-center rounded-full bg-primary-600 px-5 py-3"
           >
             <RefreshCw color="#f6fbf7" size={16} strokeWidth={2.4} />
-            <Text className="ml-2 text-sm font-semibold text-text-inverse">
-              Retry
-            </Text>
+            <Text className="ml-2 text-sm font-semibold text-text-inverse">Retry</Text>
           </TouchableOpacity>
         </View>
       ) : (
@@ -357,67 +357,13 @@ const HomeScreen = () => {
           ListHeaderComponent={
             <View className="px-6 pt-4">
               <View
-                className="relative mb-6 flex-row items-start justify-between overflow-hidden rounded-3xl border border-border-muted/80 px-5 py-4"
+                className="mb-4 flex-row items-center rounded-2xl border border-border-muted bg-surface px-4"
                 style={{
-                  backgroundColor: "rgba(255,255,255,0.72)",
-                  shadowColor: "#4f5f56",
-                  shadowOffset: { width: 0, height: 8 },
-                  shadowOpacity: 0.08,
-                  shadowRadius: 14,
-                  elevation: 3,
-                }}
-              >
-                <View
-                  pointerEvents="none"
-                  className="absolute -right-12 -top-16 h-40 w-40 rounded-full bg-white/45"
-                />
-                <View
-                  pointerEvents="none"
-                  className="absolute -left-10 bottom-0 h-20 w-48 rounded-full bg-white/25"
-                />
-                <View
-                  pointerEvents="none"
-                  className="absolute left-0 right-0 top-0 h-10 bg-white/30"
-                />
-                <View className="flex-1 pr-4">
-                  <Text className="text-[11px] font-semibold uppercase tracking-[2px] text-primary-700">
-                    Shared Grocery
-                  </Text>
-                  <Text className="mt-1 text-[35px] font-black tracking-tight text-text-primary">
-                    {familyName}
-                  </Text>
-                  <Text className="mt-1 text-[16px] font-medium leading-6 text-text-primary/75">
-                    {pendingCount} pending · {completedCount} completed ·{" "}
-                    {items.length} total
-                  </Text>
-                </View>
-                <View className="items-center">
-                  <View className="h-11 w-11 items-center justify-center rounded-full border border-border-muted bg-surface">
-                    <Users stroke="#59AC77" size={19} />
-                    {memberCount > 0 ? (
-                      <View className="absolute -right-1 -top-1 h-5 min-w-[20px] items-center justify-center rounded-full bg-primary-600 px-1">
-                        <Text className="text-[10px] font-bold text-text-inverse">
-                          {memberCount > 9 ? "9+" : memberCount}
-                        </Text>
-                      </View>
-                    ) : null}
-                  </View>
-                  <Text className="mt-1 text-[12px] font-medium text-text-secondary">
-                    {memberCount} member
-                    {memberCount === 1 ? "" : "s"}
-                  </Text>
-                </View>
-              </View>
-
-              <View
-                className="mb-4 flex-row items-center rounded-2xl border border-border-muted/80 px-4"
-                style={{
-                  backgroundColor: "rgba(255,255,255,0.62)",
-                  shadowColor: "#4f5f56",
-                  shadowOffset: { width: 0, height: 6 },
-                  shadowOpacity: 0.05,
-                  shadowRadius: 12,
-                  elevation: 2,
+                  shadowColor: "#1f2a25",
+                  shadowOffset: { width: 0, height: 2 },
+                  shadowOpacity: 0.02,
+                  shadowRadius: 8,
+                  elevation: 1,
                 }}
               >
                 <Search stroke="#748379" size={18} />
@@ -440,21 +386,12 @@ const HomeScreen = () => {
                       className={`mr-2 rounded-full border px-4 py-2.5 ${
                         statusFilter === option.key
                           ? "border-primary-300 bg-primary-50"
-                          : "border-border-muted/80"
+                          : "border-border-muted bg-surface"
                       }`}
-                      style={
-                        statusFilter === option.key
-                          ? undefined
-                          : {
-                              backgroundColor: "rgba(255,255,255,0.56)",
-                            }
-                      }
                     >
                       <Text
                         className={`text-[15px] font-semibold ${
-                          statusFilter === option.key
-                            ? "text-primary-700"
-                            : "text-text-muted"
+                          statusFilter === option.key ? "text-primary-700" : "text-text-muted"
                         }`}
                       >
                         {option.label}
@@ -469,15 +406,8 @@ const HomeScreen = () => {
                   className={`rounded-full border p-2.5 ${
                     isCategoryFilterOpen || activeCategory !== ALL_CATEGORY
                       ? "border-primary-300 bg-primary-50"
-                      : "border-border-muted/80"
+                      : "border-border-muted bg-surface"
                   }`}
-                  style={
-                    isCategoryFilterOpen || activeCategory !== ALL_CATEGORY
-                      ? undefined
-                      : {
-                          backgroundColor: "rgba(255,255,255,0.56)",
-                        }
-                  }
                 >
                   <SlidersHorizontal
                     stroke={
@@ -490,10 +420,7 @@ const HomeScreen = () => {
                 </TouchableOpacity>
               </View>
 
-              <Animated.View
-                className="overflow-hidden"
-                style={categoryPanelStyle}
-              >
+              <Animated.View className="overflow-hidden" style={categoryPanelStyle}>
                 <ScrollView
                   horizontal
                   showsHorizontalScrollIndicator={false}
@@ -508,21 +435,12 @@ const HomeScreen = () => {
                       className={`mr-2 rounded-full border px-4 py-2.5 ${
                         activeCategory === category
                           ? "border-primary-300 bg-primary-50"
-                          : "border-border-muted/80"
+                          : "border-border-muted bg-surface"
                       }`}
-                      style={
-                        activeCategory === category
-                          ? undefined
-                          : {
-                              backgroundColor: "rgba(255,255,255,0.56)",
-                            }
-                      }
                     >
                       <Text
                         className={`text-[15px] font-semibold ${
-                          activeCategory === category
-                            ? "text-primary-700"
-                            : "text-text-muted"
+                          activeCategory === category ? "text-primary-700" : "text-text-muted"
                         }`}
                       >
                         {category}
@@ -532,7 +450,7 @@ const HomeScreen = () => {
                 </ScrollView>
               </Animated.View>
 
-              <Text className="my-2 text-[12px] font-semibold uppercase tracking-[1.3px] text-text-muted">
+              <Text className="my-4 pt-1 text-[12px] font-semibold uppercase tracking-[1.3px] text-text-muted">
                 Showing {visibleCount} item
                 {visibleCount === 1 ? "" : "s"}
               </Text>
@@ -550,7 +468,7 @@ const HomeScreen = () => {
               <ItemCard
                 item={item}
                 onToggle={handleToggle}
-                onPress={(currentItem) => setEditingItemId(currentItem.id)}
+                onPress={(currentItem) => setViewingItemId(currentItem.id)}
                 currentUserId={user?.uid}
               />
             </View>
@@ -621,12 +539,24 @@ const HomeScreen = () => {
         }}
       />
 
+      <ItemDetailModal
+        visible={Boolean(viewingItemId)}
+        onClose={() => setViewingItemId(null)}
+        item={viewingItem}
+        onEdit={(item) => {
+          setViewingItemId(null);
+          setEditingItemId(item.id);
+        }}
+      />
+
       <EditItemModal
         visible={Boolean(editingItemId)}
         onClose={() => setEditingItemId(null)}
         item={editingItem}
         familyId={user?.familyId || ""}
       />
+
+      <NotificationModal visible={isNotifOpen} onClose={() => setNotifOpen(false)} />
     </SafeAreaView>
   );
 };

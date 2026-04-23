@@ -5,3 +5,6 @@ export { default as PrimaryButton } from "./PrimaryButton";
 export { default as PriorityBadge } from "./PriorityBadge";
 export { default as SecondaryButton } from "./SecondaryButton";
 export { default as SectionHeader } from "./SectionHeader";
+export { default as ShortcutCard } from "./ShortcutCard";
+export { Card } from "./Card";
+export { SubHeader } from "./SubHeader";

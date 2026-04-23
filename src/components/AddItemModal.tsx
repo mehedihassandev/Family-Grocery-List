@@ -152,7 +152,7 @@ const AddItemModal = ({
             className="max-h-[68vh]"
             contentContainerStyle={{ paddingBottom: 16 }}
           >
-            <View className="mb-5">
+            <View className="mb-6">
               <Text className="mb-2 ml-1 text-[11px] font-bold uppercase tracking-[2px] text-text-muted">
                 Item Name
               </Text>
@@ -161,13 +161,13 @@ const AddItemModal = ({
                 placeholderTextColor="#95a39a"
                 value={name}
                 onChangeText={setName}
-                className="h-12 rounded-xl border border-border-muted bg-surface-muted px-4 text-[15px] font-semibold text-text-primary"
+                className="h-[52px] rounded-2xl border border-border-muted bg-surface-muted px-4 text-[16px] font-semibold text-text-primary"
                 autoFocus
               />
             </View>
 
-            <View className="mb-5 flex-row">
-              <View className="mr-3 flex-1">
+            <View className="mb-6 flex-row">
+              <View className="mr-4 flex-1">
                 <Text className="mb-2 ml-1 text-[11px] font-bold uppercase tracking-[2px] text-text-muted">
                   Quantity
                 </Text>
@@ -176,23 +176,23 @@ const AddItemModal = ({
                   placeholderTextColor="#95a39a"
                   value={quantity}
                   onChangeText={setQuantity}
-                  className="h-12 rounded-xl border border-border-muted bg-surface-muted px-4 text-[15px] font-semibold text-text-primary"
+                  className="h-[52px] rounded-2xl border border-border-muted bg-surface-muted px-4 text-[16px] font-semibold text-text-primary"
                 />
               </View>
               <View className="flex-[1.5]">
                 <Text className="mb-2 ml-1 text-[11px] font-bold uppercase tracking-[2px] text-text-muted">
                   Priority
                 </Text>
-                <View className="flex-row rounded-xl border border-border-muted bg-surface-muted p-1">
+                <View className="h-[52px] flex-row rounded-2xl border border-border-muted bg-surface-muted p-1 items-center">
                   {PRIORITIES.map((p) => (
                     <TouchableOpacity
                       key={p}
                       onPress={() => setPriority(p)}
                       activeOpacity={0.7}
-                      className={`flex-1 items-center rounded-lg py-2.5 ${priority === p ? "bg-surface" : ""}`}
+                      className={`flex-1 items-center justify-center rounded-xl h-full ${priority === p ? "bg-surface" : ""}`}
                     >
                       <Text
-                        className={`text-[10px] font-bold uppercase tracking-widest ${priority === p ? "text-primary-700" : "text-text-muted"}`}
+                        className={`text-[11px] font-bold uppercase tracking-widest ${priority === p ? "text-primary-700" : "text-text-muted"}`}
                       >
                         {p}
                       </Text>
@@ -283,13 +283,13 @@ const AddItemModal = ({
             onPress={handleSave}
             disabled={loading || !name.trim()}
             activeOpacity={0.9}
-            className={`w-full h-12 rounded-xl flex-row items-center justify-center ${loading || !name.trim() ? "bg-surface-subtle" : "bg-primary-600"}`}
+            className={`w-full h-14 rounded-2xl flex-row items-center justify-center ${loading || !name.trim() ? "bg-surface-subtle" : "bg-primary-600"}`}
           >
             {loading ? (
               <ActivityIndicator color="white" />
             ) : (
               <Text
-                className={`font-bold text-[15px] uppercase tracking-[1px] ${loading || !name.trim() ? "text-text-subtle" : "text-text-inverse"}`}
+                className={`font-bold text-[16px] uppercase tracking-[1px] ${loading || !name.trim() ? "text-text-subtle" : "text-text-inverse"}`}
               >
                 Add to List
               </Text>

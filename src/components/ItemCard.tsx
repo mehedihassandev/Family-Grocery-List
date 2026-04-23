@@ -27,7 +27,7 @@ const ItemCard = ({
     <TouchableOpacity
       onPress={() => onPress(item)}
       activeOpacity={0.8}
-      className="mb-1 flex-row items-start border-b border-border-muted/80 px-1 py-3.5"
+      className="mb-1 flex-row items-start border-b border-border-muted px-1 py-3.5"
       style={isCompleted ? { opacity: 0.6 } : undefined}
     >
       <TouchableOpacity
@@ -36,7 +36,7 @@ const ItemCard = ({
         activeOpacity={0.6}
       >
         <View
-          className={`h-8 w-8 items-center justify-center rounded-full ${isCompleted ? "bg-primary-50" : "border border-border-muted bg-surface-muted"}`}
+          className={`h-8 w-8 items-center justify-center rounded-full ${isCompleted ? "bg-primary-50" : "border border-border-muted bg-surface"}`}
         >
           {isCompleted ? (
             <CheckCircle2 stroke="#59AC77" size={19} strokeWidth={2.8} />

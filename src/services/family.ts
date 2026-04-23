@@ -2,6 +2,8 @@ import {
   collection,
   doc,
   setDoc,
+  updateDoc,
+  writeBatch,
   query,
   where,
   getDoc,
@@ -94,9 +96,7 @@ async function getFirestoreConfigurationIssue(): Promise<string | null> {
 
     const errorBody = payload.error;
     const details = errorBody?.details ?? [];
-    const disabledDetail = details.find(
-      (detail) => detail.reason === "SERVICE_DISABLED",
-    );
+    const disabledDetail = details.find((detail) => detail.reason === "SERVICE_DISABLED");
     const activationUrl = disabledDetail?.metadata?.activationUrl;
 
     if (disabledDetail) {
@@ -124,11 +124,7 @@ async function getFirestoreConfigurationIssue(): Promise<string | null> {
   return null;
 }
 
-const upsertUserFamilyMembership = async (
-  userId: string,
-  familyId: string,
-  role: User["role"],
-) => {
+const upsertUserFamilyMembership = async (userId: string, familyId: string, role: User["role"]) => {
   console.log("[FamilyService] membership:write:start", {
     userId,
     familyId,
@@ -190,10 +186,7 @@ export const createFamily = async (userId: string, familyName: string) => {
 
     return newFamily;
   } catch (error) {
-    if (
-      error instanceof Error &&
-      error.message.toLowerCase().includes("timed out")
-    ) {
+    if (error instanceof Error && error.message.toLowerCase().includes("timed out")) {
       const configIssue = await getFirestoreConfigurationIssue();
       if (configIssue) {
         throw new Error(configIssue);
@@ -217,10 +210,7 @@ export const joinFamily = async (userId: string, inviteCode: string) => {
       userId,
       inviteCode: normalizedInviteCode,
     });
-    const q = query(
-      familiesRef,
-      where("inviteCode", "==", normalizedInviteCode),
-    );
+    const q = query(familiesRef, where("inviteCode", "==", normalizedInviteCode));
     const querySnapshot = await getDocs(q);
     console.log("[FamilyService] joinFamily:lookup:success", {
       userId,
@@ -238,10 +228,7 @@ export const joinFamily = async (userId: string, inviteCode: string) => {
     await upsertUserFamilyMembership(userId, familyData.id, "member");
     return familyData;
   } catch (error) {
-    if (
-      error instanceof Error &&
-      error.message.toLowerCase().includes("timed out")
-    ) {
+    if (error instanceof Error && error.message.toLowerCase().includes("timed out")) {
       const configIssue = await getFirestoreConfigurationIssue();
       if (configIssue) {
         throw new Error(configIssue);
@@ -278,4 +265,142 @@ export const getFamilyDetails = async (familyId: string) => {
   const familyRef = doc(db, "families", familyId);
   const familyDoc = await getDoc(familyRef);
   return familyDoc.data() as Family;
+};
+
+type LeaveFamilyInput = {
+  userId: string;
+  familyId: string;
+  role?: User["role"];
+};
+
+type LeaveFamilyResult = {
+  ownerTransferredTo: string | null;
+  familyDeleted: boolean;
+};
+
+export const leaveFamily = async ({
+  userId,
+  familyId,
+  role,
+}: LeaveFamilyInput): Promise<LeaveFamilyResult> => {
+  if (!userId) {
+    throw new Error("User is required.");
+  }
+
+  if (!familyId) {
+    throw new Error("Family is required.");
+  }
+
+  const userRef = doc(db, "users", userId);
+  const familyRef = doc(db, "families", familyId);
+
+  const [familySnapshot, membersSnapshot] = await Promise.all([
+    withFirestoreWriteTimeout(getDoc(familyRef), "Family lookup timed out while leaving family."),
+    withFirestoreWriteTimeout(
+      getDocs(query(collection(db, "users"), where("familyId", "==", familyId))),
+      "Family members lookup timed out while leaving family.",
+    ),
+  ]);
+
+  const familyData = familySnapshot.data() as Family | undefined;
+  const isOwner = familyData?.ownerId === userId || role === "owner";
+
+  const batch = writeBatch(db);
+  batch.update(userRef, {
+    familyId: null,
+    role: "member",
+    updatedAt: serverTimestamp(),
+  });
+
+  if (!isOwner) {
+    await withFirestoreWriteTimeout(batch.commit(), "Leave family write timed out.");
+    return { ownerTransferredTo: null, familyDeleted: false };
+  }
+
+  const remainingMembers = membersSnapshot.docs
+    .map((memberDoc) => memberDoc.data() as User)
+    .filter((member) => member.uid !== userId);
+
+  if (remainingMembers.length === 0) {
+    if (familySnapshot.exists()) {
+      batch.delete(familyRef);
+    }
+    await withFirestoreWriteTimeout(batch.commit(), "Owner leave write timed out.");
+    return { ownerTransferredTo: null, familyDeleted: true };
+  }
+
+  const nextOwnerId = remainingMembers[0].uid;
+  batch.update(doc(db, "users", nextOwnerId), {
+    role: "owner",
+    updatedAt: serverTimestamp(),
+  });
+
+  if (familySnapshot.exists()) {
+    batch.update(familyRef, {
+      ownerId: nextOwnerId,
+      updatedAt: serverTimestamp(),
+    });
+  }
+
+  await withFirestoreWriteTimeout(batch.commit(), "Owner transfer write timed out.");
+
+  return { ownerTransferredTo: nextOwnerId, familyDeleted: false };
+};
+
+type RemoveMemberAsOwnerInput = {
+  ownerId: string;
+  familyId: string;
+  targetUserId: string;
+};
+
+export const removeMemberAsOwner = async ({
+  ownerId,
+  familyId,
+  targetUserId,
+}: RemoveMemberAsOwnerInput) => {
+  if (!ownerId || !familyId || !targetUserId) {
+    throw new Error("Owner, family, and target member are required.");
+  }
+
+  if (ownerId === targetUserId) {
+    throw new Error("Owner cannot remove themselves. Use leave family.");
+  }
+
+  const familyRef = doc(db, "families", familyId);
+  const targetUserRef = doc(db, "users", targetUserId);
+
+  const [familySnapshot, targetSnapshot] = await Promise.all([
+    withFirestoreWriteTimeout(getDoc(familyRef), "Family lookup timed out while removing member."),
+    withFirestoreWriteTimeout(
+      getDoc(targetUserRef),
+      "Member lookup timed out while removing member.",
+    ),
+  ]);
+
+  if (!familySnapshot.exists()) {
+    throw new Error("Family not found.");
+  }
+
+  const family = familySnapshot.data() as Family;
+  if (family.ownerId !== ownerId) {
+    throw new Error("Only owner can remove members.");
+  }
+
+  if (!targetSnapshot.exists()) {
+    throw new Error("Member not found.");
+  }
+
+  const targetUser = targetSnapshot.data() as User;
+  if (targetUser.familyId !== familyId) {
+    throw new Error("Selected user is not in your family.");
+  }
+
+  await withFirestoreWriteTimeout(
+    updateDoc(targetUserRef, {
+      familyId: null,
+      role: "member",
+      updatedAt: serverTimestamp(),
+    }),
+    "Remove member write timed out.",
+  );
 };

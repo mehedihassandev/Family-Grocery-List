@@ -30,14 +30,14 @@ module.exports = {
           900: "#38434e",
         },
         background: {
-          DEFAULT: "#f5f7f4",
-          soft: "#edf2ee",
-          elevated: "#e5ece7",
+          DEFAULT: "#ffffff",
+          soft: "#fafafa",
+          elevated: "#ffffff",
         },
         surface: {
           DEFAULT: "#ffffff",
-          muted: "#f8faf8",
-          subtle: "#f2f6f3",
+          muted: "#f8f8f8",
+          subtle: "#f1f1f1",
         },
         text: {
           primary: "#1f2a25",

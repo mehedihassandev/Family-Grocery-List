@@ -44,16 +44,16 @@ Family Grocery List is a React Native app (Expo + native projects) where family 
 
 ## Tech Stack
 
-| Layer | Tools |
-| --- | --- |
-| Mobile framework | React Native + Expo (Dev Client / bare workflow) |
-| Language | TypeScript |
-| Styling | NativeWind (Tailwind CSS for React Native) |
-| Code quality | ESLint + Prettier |
-| State | Zustand + persisted AsyncStorage |
-| Navigation | React Navigation v7 (Native Stack + Bottom Tabs) |
-| Backend | Firebase Authentication + Firestore |
-| Auth providers | Email/Password, Google OAuth (`expo-auth-session`) |
+| Layer            | Tools                                              |
+| ---------------- | -------------------------------------------------- |
+| Mobile framework | React Native + Expo (Dev Client / bare workflow)   |
+| Language         | TypeScript                                         |
+| Styling          | NativeWind (Tailwind CSS for React Native)         |
+| Code quality     | ESLint + Prettier                                  |
+| State            | Zustand + persisted AsyncStorage                   |
+| Navigation       | React Navigation v7 (Native Stack + Bottom Tabs)   |
+| Backend          | Firebase Authentication + Firestore                |
+| Auth providers   | Email/Password, Google OAuth (`expo-auth-session`) |
 
 ## Features
 
@@ -167,18 +167,18 @@ EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID=123456789012-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx.a
 
 ### Variable reference
 
-| Variable | Required | Source |
-| --- | --- | --- |
-| `EXPO_PUBLIC_FIREBASE_API_KEY` | Yes | Firebase project settings -> Web app config |
-| `EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN` | Yes | Firebase web config |
-| `EXPO_PUBLIC_FIREBASE_PROJECT_ID` | Yes | Firebase web config |
-| `EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET` | Yes | Firebase web config |
-| `EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID` | Yes | Firebase web config / project number |
-| `EXPO_PUBLIC_FIREBASE_APP_ID` | Yes | Firebase web config |
-| `EXPO_PUBLIC_FIREBASE_MEASUREMENT_ID` | Optional | Firebase Analytics (web) |
-| `EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID` | Yes | Google Cloud OAuth client (Web) |
-| `EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID` | Yes (Android runtime) | Google Cloud OAuth client (Android) |
-| `EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID` | Yes (iOS runtime) | Google Cloud OAuth client (iOS) |
+| Variable                                   | Required              | Source                                      |
+| ------------------------------------------ | --------------------- | ------------------------------------------- |
+| `EXPO_PUBLIC_FIREBASE_API_KEY`             | Yes                   | Firebase project settings -> Web app config |
+| `EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN`         | Yes                   | Firebase web config                         |
+| `EXPO_PUBLIC_FIREBASE_PROJECT_ID`          | Yes                   | Firebase web config                         |
+| `EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET`      | Yes                   | Firebase web config                         |
+| `EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID` | Yes                   | Firebase web config / project number        |
+| `EXPO_PUBLIC_FIREBASE_APP_ID`              | Yes                   | Firebase web config                         |
+| `EXPO_PUBLIC_FIREBASE_MEASUREMENT_ID`      | Optional              | Firebase Analytics (web)                    |
+| `EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID`         | Yes                   | Google Cloud OAuth client (Web)             |
+| `EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID`     | Yes (Android runtime) | Google Cloud OAuth client (Android)         |
+| `EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID`         | Yes (iOS runtime)     | Google Cloud OAuth client (iOS)             |
 
 Notes:
 
@@ -204,73 +204,73 @@ Minimum checklist:
 
 ## Available Scripts
 
-| Script | What it does |
-| --- | --- |
-| `npm run start` | Start Expo server |
-| `npm run start:clear` | Start Expo server with cleared cache |
-| `npm run start:dev` | Start Expo dev client server on port `8090` |
-| `npm run android` | Build and run Android app (`expo run:android`) |
-| `npm run ios` | Build and run iOS app (`expo run:ios --no-bundler`) |
-| `npm run ios:dev` | Run iOS build, then start dev client server |
-| `npm run web` | Run Expo web |
-| `npm run clean` | Reinstall node modules |
-| `npm run clean:android` | Clean Android build artifacts |
-| `npm run clean:ios` | Clean iOS pods/build and reinstall pods |
-| `npm run build:android` | Build Android release APK/AAB via Gradle |
-| `npm run lint` | Lint JS/TS code |
-| `npm run lint:fix` | Lint and auto-fix where possible |
-| `npm run format` | Check formatting under `src/` |
-| `npm run format:fix` | Fix formatting under `src/` |
+| Script                  | What it does                                        |
+| ----------------------- | --------------------------------------------------- |
+| `npm run start`         | Start Expo server                                   |
+| `npm run start:clear`   | Start Expo server with cleared cache                |
+| `npm run start:dev`     | Start Expo dev client server on port `8090`         |
+| `npm run android`       | Build and run Android app (`expo run:android`)      |
+| `npm run ios`           | Build and run iOS app (`expo run:ios --no-bundler`) |
+| `npm run ios:dev`       | Run iOS build, then start dev client server         |
+| `npm run web`           | Run Expo web                                        |
+| `npm run clean`         | Reinstall node modules                              |
+| `npm run clean:android` | Clean Android build artifacts                       |
+| `npm run clean:ios`     | Clean iOS pods/build and reinstall pods             |
+| `npm run build:android` | Build Android release APK/AAB via Gradle            |
+| `npm run lint`          | Lint JS/TS code                                     |
+| `npm run lint:fix`      | Lint and auto-fix where possible                    |
+| `npm run format`        | Check formatting under `src/`                       |
+| `npm run format:fix`    | Fix formatting under `src/`                         |
 
 ## Firestore Data Model
 
 ### `users` collection
 
-| Field | Type | Description |
-| --- | --- | --- |
-| `uid` | string | Firebase Auth UID |
-| `email` | string | User email |
-| `displayName` | string | Display name |
-| `photoURL` | string | Optional avatar URL |
-| `familyId` | string \| null | Current family |
-| `role` | `"owner"` \| `"member"` | Family role |
-| `updatedAt` | timestamp | Last update |
+| Field         | Type                    | Description         |
+| ------------- | ----------------------- | ------------------- |
+| `uid`         | string                  | Firebase Auth UID   |
+| `email`       | string                  | User email          |
+| `displayName` | string                  | Display name        |
+| `photoURL`    | string                  | Optional avatar URL |
+| `familyId`    | string \| null          | Current family      |
+| `role`        | `"owner"` \| `"member"` | Family role         |
+| `updatedAt`   | timestamp               | Last update         |
 
 ### `families` collection
 
-| Field | Type | Description |
-| --- | --- | --- |
-| `id` | string | Family document id |
-| `name` | string | Family name |
-| `inviteCode` | string | 6-character join code |
-| `ownerId` | string | Creator UID |
-| `createdAt` | timestamp | Created time |
+| Field        | Type      | Description           |
+| ------------ | --------- | --------------------- |
+| `id`         | string    | Family document id    |
+| `name`       | string    | Family name           |
+| `inviteCode` | string    | 6-character join code |
+| `ownerId`    | string    | Creator UID           |
+| `createdAt`  | timestamp | Created time          |
 
 ### `grocery_items` collection
 
-| Field | Type |
-| --- | --- |
-| `id` | string |
-| `familyId` | string |
-| `name` | string |
-| `category` | string |
-| `priority` | `"Urgent"` \| `"Medium"` \| `"Low"` |
-| `quantity` | string |
-| `notes` | string |
-| `status` | `"pending"` \| `"completed"` |
-| `addedBy` | `{ uid: string; name: string }` |
+| Field         | Type                                    |
+| ------------- | --------------------------------------- |
+| `id`          | string                                  |
+| `familyId`    | string                                  |
+| `name`        | string                                  |
+| `category`    | string                                  |
+| `priority`    | `"Urgent"` \| `"Medium"` \| `"Low"`     |
+| `quantity`    | string                                  |
+| `notes`       | string                                  |
+| `status`      | `"pending"` \| `"completed"`            |
+| `addedBy`     | `{ uid: string; name: string }`         |
 | `completedBy` | `{ uid: string; name: string } \| null` |
-| `createdAt` | timestamp |
-| `updatedAt` | timestamp |
-| `completedAt` | timestamp \| null |
+| `createdAt`   | timestamp                               |
+| `updatedAt`   | timestamp                               |
+| `completedAt` | timestamp \| null                       |
 
 ### `categories` collection
 
-| Field | Type |
-| --- | --- |
-| `id` | string |
+| Field      | Type   |
+| ---------- | ------ |
+| `id`       | string |
 | `familyId` | string |
-| `name` | string |
+| `name`     | string |
 
 ## Auth and Navigation Flow
 
@@ -360,7 +360,7 @@ npm run ios
 
 ### Firestore errors
 
-- `permission-denied`: fix Firestore security rules.
+- `permission-denied`: publish rules from `firestore.rules` (see `FIRESTORE_RULES_SETUP.md`).
 - `requires an index`: create index from Firebase console link in error.
 - timeout during family create/join: verify Firestore is created and API enabled.
 
