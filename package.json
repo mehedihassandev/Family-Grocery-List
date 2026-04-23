@@ -34,7 +34,7 @@
     "date-fns": "^4.1.0",
     "expo": "~55.0.17",
     "expo-auth-session": "~7.0.10",
-    "expo-crypto": "~15.0.8",
+    "expo-crypto": "~55.0.14",
     "expo-dev-client": "~6.0.20",
     "expo-status-bar": "~3.0.9",
     "expo-web-browser": "~15.0.10",
