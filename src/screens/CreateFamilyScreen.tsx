@@ -1,22 +1,100 @@
 import React, { useState } from "react";
-import { View, Text, TextInput, TouchableOpacity, ActivityIndicator } from "react-native";
+import { View, Text, TouchableOpacity, ActivityIndicator, Alert } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useNavigation } from "@react-navigation/native";
 import { PlusCircle } from "lucide-react-native";
-import { SubHeader } from "../components/ui";
+import { useForm } from "react-hook-form";
+import { yupResolver } from "@hookform/resolvers/yup";
+import { FirebaseError } from "firebase/app";
+import { SubHeader, RhfTextfield } from "../components/ui";
+import type { RootStackNavigationProp } from "../types";
+import { createFamily } from "../services/family";
+import { useAuthStore } from "../store/useAuthStore";
+import { createFamilySchema, type CreateFamilyFormValues } from "../utils/validationSchemas";
+
+const FAMILY_ACTION_TIMEOUT_MS = 15000;
+
+const getFamilyErrorMessage = (error: unknown) => {
+  if (error instanceof FirebaseError) {
+    switch (error.code) {
+      case "permission-denied":
+        return "Permission denied by Firestore rules.";
+      case "unavailable":
+        return "Network unavailable. Try again.";
+      case "failed-precondition":
+        return "Firestore index/rules are not ready.";
+      default:
+        return error.message || "Unexpected Firestore error.";
+    }
+  }
+
+  if (error instanceof Error && error.message.trim()) {
+    return error.message.trim();
+  }
+
+  return "Unexpected error. Try again.";
+};
+
+async function withFamilyActionTimeout<T>(
+  operation: Promise<T>,
+  timeoutMessage: string,
+): Promise<T> {
+  let timeoutId: ReturnType<typeof setTimeout> | undefined;
+
+  try {
+    return await Promise.race([
+      operation,
+      new Promise<T>((_, reject) => {
+        timeoutId = setTimeout(() => {
+          reject(new Error(timeoutMessage));
+        }, FAMILY_ACTION_TIMEOUT_MS);
+      }),
+    ]);
+  } finally {
+    if (timeoutId) {
+      clearTimeout(timeoutId);
+    }
+  }
+}
 
 const CreateFamilyScreen = () => {
-  const navigation = useNavigation<any>();
-  const [name, setName] = useState("");
+  // Typed navigation eliminates the need for `useNavigation<any>()`;
+  // any incorrect route name would now be a compile-time error.
+  const navigation = useNavigation<RootStackNavigationProp>();
   const [loading, setLoading] = useState(false);
+  const { user, setUser } = useAuthStore();
 
-  const handleCreate = async () => {
-    // To be implemented...
+  const { control, handleSubmit } = useForm<CreateFamilyFormValues>({
+    resolver: yupResolver(createFamilySchema),
+    mode: "onTouched",
+    defaultValues: { name: "" },
+  });
+
+  /**
+   * Handles family creation after Yup validation has passed.
+   * Values are guaranteed valid here — no extra guard needed.
+   *
+   * @param values - Validated form values
+   */
+  const handleCreate = async (values: CreateFamilyFormValues) => {
     setLoading(true);
-    setTimeout(() => {
-      setLoading(false);
+    try {
+      if (!user?.uid) {
+        throw new Error("You must be signed in to create a family.");
+      }
+
+      const family = await withFamilyActionTimeout(
+        createFamily(user.uid, values.name),
+        "Create family timed out after 15s. Check network/Firestore rules.",
+      );
+
+      setUser({ ...user, familyId: family.id, role: "owner" });
       navigation.goBack();
-    }, 1000);
+    } catch (error) {
+      Alert.alert("Create Family Failed", getFamilyErrorMessage(error));
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -36,22 +114,21 @@ const CreateFamilyScreen = () => {
           </Text>
         </View>
 
-        <Text className="text-[13px] font-semibold text-text-secondary mb-2 ml-1">FAMILY NAME</Text>
-        <TextInput
-          value={name}
-          onChangeText={setName}
+        <RhfTextfield
+          control={control}
+          name="name"
+          label="FAMILY NAME"
           placeholder="e.g. The Smiths, Our Home"
-          placeholderTextColor="#95a39a"
-          className="border border-border-muted bg-surface rounded-2xl p-4 text-[18px] font-bold text-text-primary mb-6"
+          inputClassName="text-[18px] font-bold"
         />
+
+        <View className="mb-6" />
 
         <TouchableOpacity
           activeOpacity={0.8}
-          disabled={!name || loading}
-          onPress={handleCreate}
-          className={`py-4 rounded-2xl items-center ${
-            !name || loading ? "bg-primary-300" : "bg-primary-600"
-          }`}
+          disabled={loading}
+          onPress={handleSubmit(handleCreate)}
+          className={`py-4 rounded-2xl items-center ${loading ? "bg-primary-300" : "bg-primary-600"}`}
         >
           {loading ? (
             <ActivityIndicator color="white" />

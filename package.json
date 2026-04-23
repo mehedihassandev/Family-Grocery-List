@@ -22,6 +22,7 @@
     "commitlint": "commitlint --from HEAD~1 --to HEAD --verbose"
   },
   "dependencies": {
+    "@hookform/resolvers": "^5.2.2",
     "@react-native-async-storage/async-storage": "2.2.0",
     "@react-native-google-signin/google-signin": "^16.1.2",
     "@react-navigation/bottom-tabs": "^7.15.9",
@@ -39,6 +40,7 @@
     "lucide-react-native": "^1.8.0",
     "nativewind": "^4.2.3",
     "react": "19.1.0",
+    "react-hook-form": "^7.73.1",
     "react-native": "0.81.5",
     "react-native-gesture-handler": "~2.28.0",
     "react-native-reanimated": "~4.1.1",
@@ -48,6 +50,7 @@
     "react-native-worklets": "0.5.1",
     "tailwind-merge": "^3.5.0",
     "tailwindcss": "^3.3.2",
+    "yup": "^1.7.1",
     "zustand": "^5.0.12"
   },
   "devDependencies": {

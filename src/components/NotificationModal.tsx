@@ -1,11 +1,5 @@
 import React, { useState } from "react";
-import {
-  Modal,
-  ScrollView,
-  Text,
-  TouchableOpacity,
-  View,
-} from "react-native";
+import { Modal, ScrollView, Text, TouchableOpacity, View } from "react-native";
 import { Bell, Check, ShoppingBag, X, AlertCircle } from "lucide-react-native";
 import { useAuthStore } from "../store/useAuthStore";
 import { useNotificationStore } from "../store/useNotificationStore";
@@ -27,13 +21,9 @@ const NotificationModal = ({ visible, onClose }: NotificationModalProps) => {
   // Filter out actions done by the current user so they don't see their own notifications
   const feed = notifications.filter((n) => n.actorId !== myUid);
 
-  const displayList = filter === "unread" 
-    ? feed.filter(n => !n.readBy.includes(myUid))
-    : feed;
+  const displayList = filter === "unread" ? feed.filter((n) => !n.readBy.includes(myUid)) : feed;
 
-  const unreadIds = feed
-    .filter((n) => !n.readBy.includes(myUid))
-    .map((n) => n.id);
+  const unreadIds = feed.filter((n) => !n.readBy.includes(myUid)).map((n) => n.id);
 
   const handleMarkAllRead = async () => {
     if (unreadIds.length > 0) {
@@ -81,12 +71,7 @@ const NotificationModal = ({ visible, onClose }: NotificationModalProps) => {
   };
 
   return (
-    <Modal
-      visible={visible}
-      animationType="slide"
-      transparent
-      onRequestClose={onClose}
-    >
+    <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
       <View className="flex-1 justify-end bg-black/40">
         <TouchableOpacity
           activeOpacity={1}
@@ -114,11 +99,12 @@ const NotificationModal = ({ visible, onClose }: NotificationModalProps) => {
               <Text className="text-[28px] font-black tracking-tight text-text-primary">
                 Notifications
               </Text>
-              <Text className={`mt-1 text-[15px] font-medium ${unreadIds.length > 0 ? "text-primary-700" : "text-text-secondary"}`}>
-                {unreadIds.length === 0 
-                  ? "You're all caught up!" 
-                  : `You have ${unreadIds.length} unread ${unreadIds.length === 1 ? 'message' : 'messages'}`
-                }
+              <Text
+                className={`mt-1 text-[15px] font-medium ${unreadIds.length > 0 ? "text-primary-700" : "text-text-secondary"}`}
+              >
+                {unreadIds.length === 0
+                  ? "You're all caught up!"
+                  : `You have ${unreadIds.length} unread ${unreadIds.length === 1 ? "message" : "messages"}`}
               </Text>
             </View>
             <TouchableOpacity
@@ -132,31 +118,37 @@ const NotificationModal = ({ visible, onClose }: NotificationModalProps) => {
 
           <View className="mb-4 flex-row items-center justify-between border-b border-border-muted pb-4">
             <View className="flex-row items-center gap-2">
-              <TouchableOpacity 
-                activeOpacity={0.7} 
+              <TouchableOpacity
+                activeOpacity={0.7}
                 onPress={() => setFilter("all")}
                 className={`rounded-full px-4 py-1.5 ${filter === "all" ? "bg-primary-700" : "bg-surface border border-border-muted"}`}
               >
-                <Text className={`text-[13px] font-semibold ${filter === "all" ? "text-text-inverse" : "text-text-secondary"}`}>All</Text>
+                <Text
+                  className={`text-[13px] font-semibold ${filter === "all" ? "text-text-inverse" : "text-text-secondary"}`}
+                >
+                  All
+                </Text>
               </TouchableOpacity>
-              <TouchableOpacity 
-                activeOpacity={0.7} 
+              <TouchableOpacity
+                activeOpacity={0.7}
                 onPress={() => setFilter("unread")}
                 className={`rounded-full px-4 py-1.5 ${filter === "unread" ? "bg-primary-700" : "bg-surface border border-border-muted"}`}
               >
-                <Text className={`text-[13px] font-semibold ${filter === "unread" ? "text-text-inverse" : "text-text-secondary"}`}>Unread</Text>
+                <Text
+                  className={`text-[13px] font-semibold ${filter === "unread" ? "text-text-inverse" : "text-text-secondary"}`}
+                >
+                  Unread
+                </Text>
               </TouchableOpacity>
             </View>
-            <TouchableOpacity 
-              activeOpacity={0.8} 
+            <TouchableOpacity
+              activeOpacity={0.8}
               onPress={handleMarkAllRead}
               disabled={unreadIds.length === 0}
-              className={`flex-row items-center ${unreadIds.length === 0 ? 'opacity-40' : ''}`}
+              className={`flex-row items-center ${unreadIds.length === 0 ? "opacity-40" : ""}`}
             >
               <Check stroke="#59AC77" size={16} strokeWidth={2.5} />
-              <Text className="ml-1 text-[13px] font-semibold text-primary-700">
-                Mark all read
-              </Text>
+              <Text className="ml-1 text-[13px] font-semibold text-primary-700">Mark all read</Text>
             </TouchableOpacity>
           </View>
 
@@ -164,16 +156,18 @@ const NotificationModal = ({ visible, onClose }: NotificationModalProps) => {
             {displayList.length === 0 ? (
               <View className="py-12 items-center justify-center">
                 <Bell stroke="#b8c6bd" size={40} strokeWidth={1.5} />
-                <Text className="mt-4 text-[16px] font-bold text-text-secondary">No notifications yet</Text>
+                <Text className="mt-4 text-[16px] font-bold text-text-secondary">
+                  No notifications yet
+                </Text>
                 <Text className="mt-1 text-[13px] text-text-muted text-center px-8">
-                  When family members add or complete items, they'll show up here.
+                  When family members add or complete items, they&apos;ll show up here.
                 </Text>
               </View>
             ) : (
               displayList.map((notif) => {
                 const isUnread = !notif.readBy.includes(myUid);
                 const { icon: Icon, color, bg } = getIconData(notif.type, isUnread);
-                
+
                 return (
                   <TouchableOpacity
                     key={notif.id}
@@ -190,14 +184,18 @@ const NotificationModal = ({ visible, onClose }: NotificationModalProps) => {
                     </View>
                     <View className="flex-1">
                       <View className="flex-row items-center justify-between">
-                        <Text className={`text-[16px] tracking-tight ${isUnread ? 'font-black text-text-primary' : 'font-bold text-text-secondary'}`}>
+                        <Text
+                          className={`text-[16px] tracking-tight ${isUnread ? "font-black text-text-primary" : "font-bold text-text-secondary"}`}
+                        >
                           {notif.title}
                         </Text>
                         <Text className="text-[12px] font-medium text-text-muted">
                           {formatTime(notif.createdAt)}
                         </Text>
                       </View>
-                      <Text className={`mt-1 text-[14px] leading-5 ${isUnread ? 'text-text-primary font-medium' : 'text-text-secondary'}`}>
+                      <Text
+                        className={`mt-1 text-[14px] leading-5 ${isUnread ? "text-text-primary font-medium" : "text-text-secondary"}`}
+                      >
                         {notif.message}
                       </Text>
                     </View>

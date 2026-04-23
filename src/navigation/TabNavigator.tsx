@@ -9,8 +9,11 @@ import AnalyzeScreen from "../screens/AnalyzeScreen";
 import ProfileScreen from "../screens/ProfileScreen";
 import { useAuthStore } from "../store/useAuthStore";
 import { useNotificationStore } from "../store/useNotificationStore";
+import type { TabParamList } from "../types";
 
-const Tab = createBottomTabNavigator();
+// Passing TabParamList ensures tab names match the declared param list;
+// mistyped screen names become TypeScript errors at compile time.
+const Tab = createBottomTabNavigator<TabParamList>();
 
 const TabNavigator = () => {
   const insets = useSafeAreaInsets();
@@ -20,15 +23,20 @@ const TabNavigator = () => {
   const clearNotifications = useNotificationStore((state) => state.clear);
 
   useEffect(() => {
+    // Re-initialise or clear the notification listener whenever the family
+    // changes (e.g. user joins/leaves a family while the app is open).
     if (user?.familyId) {
       initNotifications(user.familyId);
     } else {
       clearNotifications();
     }
-  }, [user?.familyId]);
+  }, [clearNotifications, initNotifications, user?.familyId]);
 
   return (
     <Tab.Navigator
+      // When the user leaves a family while focused on a family-only tab,
+      // remount the navigator so it cleanly resets to the available routes.
+      key={user?.familyId ? "family-tabs" : "no-family-tabs"}
       screenOptions={{
         headerShown: false,
         tabBarActiveTintColor: "#59AC77",
@@ -67,27 +75,35 @@ const TabNavigator = () => {
           tabBarIcon: ({ color }) => <Home stroke={color} size={20} strokeWidth={2.5} />,
         }}
       />
-      <Tab.Screen
-        name="List"
-        component={HomeScreen}
-        options={{
-          tabBarIcon: ({ color }) => <ShoppingBasket stroke={color} size={20} strokeWidth={2.5} />,
-        }}
-      />
-      <Tab.Screen
-        name="Members"
-        component={MembersScreen}
-        options={{
-          tabBarIcon: ({ color }) => <Users stroke={color} size={20} strokeWidth={2.5} />,
-        }}
-      />
-      <Tab.Screen
-        name="Analyze"
-        component={AnalyzeScreen}
-        options={{
-          tabBarIcon: ({ color }) => <BarChart3 stroke={color} size={20} strokeWidth={2.5} />,
-        }}
-      />
+
+      {user?.familyId ? (
+        <>
+          <Tab.Screen
+            name="List"
+            component={HomeScreen}
+            options={{
+              tabBarIcon: ({ color }) => (
+                <ShoppingBasket stroke={color} size={20} strokeWidth={2.5} />
+              ),
+            }}
+          />
+          <Tab.Screen
+            name="Members"
+            component={MembersScreen}
+            options={{
+              tabBarIcon: ({ color }) => <Users stroke={color} size={20} strokeWidth={2.5} />,
+            }}
+          />
+          <Tab.Screen
+            name="Analyze"
+            component={AnalyzeScreen}
+            options={{
+              tabBarIcon: ({ color }) => <BarChart3 stroke={color} size={20} strokeWidth={2.5} />,
+            }}
+          />
+        </>
+      ) : null}
+
       <Tab.Screen
         name="Profile"
         component={ProfileScreen}

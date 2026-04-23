@@ -70,10 +70,19 @@ const FamilySetupScreen = () => {
   const [inviteCode, setInviteCode] = useState("");
   const [loading, setLoading] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
+  // Inline field-level errors guide the user without using an Alert dialog
+  const [familyNameError, setFamilyNameError] = useState<string | null>(null);
+  const [inviteCodeError, setInviteCodeError] = useState<string | null>(null);
 
   const handleCreateFamily = async () => {
     const normalizedFamilyName = familyName.trim();
-    if (!normalizedFamilyName || !user) return;
+
+    // Show inline error instead of silently ignoring the tap
+    if (!normalizedFamilyName) {
+      setFamilyNameError("Family name cannot be empty.");
+      return;
+    }
+    if (!user) return;
 
     try {
       setLoading(true);
@@ -102,7 +111,17 @@ const FamilySetupScreen = () => {
 
   const handleJoinFamily = async () => {
     const normalizedInviteCode = inviteCode.trim().toUpperCase();
-    if (!normalizedInviteCode || !user) return;
+
+    // Show inline error instead of silently ignoring the tap
+    if (!normalizedInviteCode) {
+      setInviteCodeError("Invite code cannot be empty.");
+      return;
+    }
+    if (normalizedInviteCode.length < 6) {
+      setInviteCodeError("Invite code must be exactly 6 characters.");
+      return;
+    }
+    if (!user) return;
 
     try {
       setLoading(true);
@@ -218,11 +237,18 @@ const FamilySetupScreen = () => {
                 value={familyName}
                 onChangeText={(text) => {
                   setFamilyName(text);
+                  // Clear errors as soon as the user starts typing
                   if (actionError) setActionError(null);
+                  if (familyNameError) setFamilyNameError(null);
                 }}
-                className="w-full bg-surface-muted border border-border-muted p-4 rounded-2xl mb-6 text-lg text-text-primary"
+                className="w-full bg-surface-muted border border-border-muted p-4 rounded-2xl mb-2 text-lg text-text-primary"
                 autoFocus
               />
+              {familyNameError ? (
+                <Text className="mb-4 ml-1 text-sm text-urgent">{familyNameError}</Text>
+              ) : (
+                <View className="mb-4" />
+              )}
               <TouchableOpacity
                 onPress={handleCreateFamily}
                 disabled={loading || !familyName.trim()}
@@ -253,13 +279,20 @@ const FamilySetupScreen = () => {
                 value={inviteCode}
                 onChangeText={(text) => {
                   setInviteCode(text.replace(/\s+/g, "").toUpperCase());
+                  // Clear errors as soon as the user starts typing
                   if (actionError) setActionError(null);
+                  if (inviteCodeError) setInviteCodeError(null);
                 }}
-                className="w-full bg-surface-muted border border-border-muted p-4 rounded-2xl mb-6 text-lg tracking-widest text-center text-text-primary"
+                className="w-full bg-surface-muted border border-border-muted p-4 rounded-2xl mb-2 text-lg tracking-widest text-center text-text-primary"
                 autoCapitalize="characters"
                 maxLength={6}
                 autoFocus
               />
+              {inviteCodeError ? (
+                <Text className="mb-4 ml-1 text-sm text-urgent">{inviteCodeError}</Text>
+              ) : (
+                <View className="mb-4" />
+              )}
               <TouchableOpacity
                 onPress={handleJoinFamily}
                 disabled={loading || inviteCode.trim().length < 6}

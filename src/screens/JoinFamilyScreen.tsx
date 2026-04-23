@@ -1,22 +1,108 @@
 import React, { useState } from "react";
-import { View, Text, TextInput, TouchableOpacity, ActivityIndicator } from "react-native";
+import { View, Text, TouchableOpacity, ActivityIndicator, Alert } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useNavigation } from "@react-navigation/native";
 import { Users } from "lucide-react-native";
-import { SubHeader } from "../components/ui";
+import { useForm } from "react-hook-form";
+import { yupResolver } from "@hookform/resolvers/yup";
+import { FirebaseError } from "firebase/app";
+import { SubHeader, RhfTextfield } from "../components/ui";
+import type { RootStackNavigationProp } from "../types";
+import { joinFamily } from "../services/family";
+import { useAuthStore } from "../store/useAuthStore";
+import { joinFamilySchema, type JoinFamilyFormValues } from "../utils/validationSchemas";
+
+const FAMILY_ACTION_TIMEOUT_MS = 15000;
+
+const getFamilyErrorMessage = (error: unknown) => {
+  if (error instanceof FirebaseError) {
+    switch (error.code) {
+      case "permission-denied":
+        return "Permission denied by Firestore rules.";
+      case "unavailable":
+        return "Network unavailable. Try again.";
+      case "failed-precondition":
+        return "Firestore index/rules are not ready.";
+      default:
+        return error.message || "Unexpected Firestore error.";
+    }
+  }
+
+  if (error instanceof Error && error.message.trim()) {
+    return error.message.trim();
+  }
+
+  return "Unexpected error. Try again.";
+};
+
+async function withFamilyActionTimeout<T>(
+  operation: Promise<T>,
+  timeoutMessage: string,
+): Promise<T> {
+  let timeoutId: ReturnType<typeof setTimeout> | undefined;
+
+  try {
+    return await Promise.race([
+      operation,
+      new Promise<T>((_, reject) => {
+        timeoutId = setTimeout(() => {
+          reject(new Error(timeoutMessage));
+        }, FAMILY_ACTION_TIMEOUT_MS);
+      }),
+    ]);
+  } finally {
+    if (timeoutId) {
+      clearTimeout(timeoutId);
+    }
+  }
+}
 
 const JoinFamilyScreen = () => {
-  const navigation = useNavigation<any>();
-  const [code, setCode] = useState("");
+  // Typed navigation — mistyped route names are caught at compile time.
+  const navigation = useNavigation<RootStackNavigationProp>();
   const [loading, setLoading] = useState(false);
+  const { user, setUser } = useAuthStore();
 
-  const handleJoin = async () => {
-    // To be implemented...
+  const { control, handleSubmit, setError, clearErrors } = useForm<JoinFamilyFormValues>({
+    resolver: yupResolver(joinFamilySchema),
+    mode: "onTouched",
+    defaultValues: { code: "" },
+  });
+
+  /**
+   * Handles joining a family by invite code after Yup validation passes.
+   * Values are guaranteed to be exactly 6 uppercase alphanumeric characters.
+   *
+   * @param values - Validated form values
+   */
+  const handleJoin = async (values: JoinFamilyFormValues) => {
     setLoading(true);
-    setTimeout(() => {
-      setLoading(false);
+    try {
+      clearErrors("code");
+
+      if (!user?.uid) {
+        throw new Error("You must be signed in to join a family.");
+      }
+
+      const family = await withFamilyActionTimeout(
+        joinFamily(user.uid, values.code),
+        "Join family timed out after 15s. Check network/Firestore rules.",
+      );
+
+      setUser({ ...user, familyId: family.id, role: "member" });
       navigation.goBack();
-    }, 1000);
+    } catch (error) {
+      const message = getFamilyErrorMessage(error);
+
+      if (message.toLowerCase().includes("invalid invite code")) {
+        setError("code", { type: "manual", message });
+        return;
+      }
+
+      Alert.alert("Join Family Failed", message);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -36,23 +122,24 @@ const JoinFamilyScreen = () => {
           </Text>
         </View>
 
-        <Text className="text-[13px] font-semibold text-text-secondary mb-2 ml-1">INVITE CODE</Text>
-        <TextInput
-          value={code}
-          onChangeText={setCode}
-          placeholder="e.g. ABC123XYZ"
-          placeholderTextColor="#95a39a"
+        <RhfTextfield
+          control={control}
+          name="code"
+          label="INVITE CODE"
+          placeholder="e.g. ABC123"
           autoCapitalize="characters"
-          className="border border-border-muted bg-surface rounded-2xl p-4 text-[18px] font-bold text-text-primary mb-6"
+          maxLength={6}
+          transform={(text) => text.replace(/\s+/g, "").toUpperCase()}
+          inputClassName="text-[18px] font-bold tracking-widest text-center"
         />
+
+        <View className="mb-6" />
 
         <TouchableOpacity
           activeOpacity={0.8}
-          disabled={!code || loading}
-          onPress={handleJoin}
-          className={`py-4 rounded-2xl items-center ${
-            !code || loading ? "bg-primary-300" : "bg-primary-600"
-          }`}
+          disabled={loading}
+          onPress={handleSubmit(handleJoin)}
+          className={`py-4 rounded-2xl items-center ${loading ? "bg-primary-300" : "bg-primary-600"}`}
         >
           {loading ? (
             <ActivityIndicator color="white" />
