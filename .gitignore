@@ -60,6 +60,9 @@ yarn-error.log
 # Bundle artifact
 *.jsbundle
 
+# Release artifacts
+/release/
+
 # Ruby / CocoaPods
 /ios/Pods/
 /ios/build-rctfolly/*
@@ -76,4 +79,3 @@ yarn-error.log
 .env.*
 !.env.example
 env.log
-

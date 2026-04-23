@@ -1,4 +1,5 @@
 import Expo
+import RNBootSplash
 import React
 import ReactAppDependencyProvider
 
@@ -54,6 +55,11 @@ public class AppDelegate: ExpoAppDelegate {
 
 class ReactNativeDelegate: ExpoReactNativeFactoryDelegate {
   // Extension point for config-plugins
+
+  public override func customize(_ rootView: UIView) {
+    super.customize(rootView)
+    RNBootSplash.initWithStoryboard("BootSplash", rootView: rootView)
+  }
 
   override func sourceURL(for bridge: RCTBridge) -> URL? {
     // needed to return the correct URL for expo-dev-client.

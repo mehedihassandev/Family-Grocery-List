@@ -1,7 +1,8 @@
-import React, { useEffect } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { View, ActivityIndicator } from "react-native";
 import { NavigationContainer } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
+import BootSplash from "react-native-bootsplash";
 import { useAuthStore } from "../store/useAuthStore";
 import { listenToAuthChanges } from "../services/auth";
 import type { RootStackParamList } from "../types";
@@ -35,6 +36,9 @@ const LoadingScreen = () => (
 
 const RootNavigator = () => {
   const { user, loading, hasHydrated } = useAuthStore();
+  const [isNavigationReady, setIsNavigationReady] = useState(false);
+  const hasHiddenBootSplash = useRef(false);
+  const isAppReady = hasHydrated && !loading;
 
   useEffect(() => {
     // Subscribe to Firebase auth state; unsubscribe on unmount to prevent
@@ -43,10 +47,23 @@ const RootNavigator = () => {
     return () => unsubscribe();
   }, []);
 
+  const hideBootSplash = useCallback(() => {
+    if (!isAppReady || !isNavigationReady || hasHiddenBootSplash.current) {
+      return;
+    }
+
+    hasHiddenBootSplash.current = true;
+    void BootSplash.hide({ fade: true });
+  }, [isAppReady, isNavigationReady]);
+
+  useEffect(() => {
+    hideBootSplash();
+  }, [hideBootSplash]);
+
   return (
-    <NavigationContainer>
+    <NavigationContainer onReady={() => setIsNavigationReady(true)}>
       <Stack.Navigator screenOptions={{ headerShown: false }}>
-        {!hasHydrated || loading ? (
+        {!isAppReady ? (
           <Stack.Screen name="Loading" component={LoadingScreen} />
         ) : !user ? (
           <Stack.Screen name="Login" component={LoginScreen} />
