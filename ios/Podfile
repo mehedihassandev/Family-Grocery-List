@@ -1,0 +1,166 @@
+require File.join(File.dirname(`node --print "require.resolve('expo/package.json')"`), "scripts/autolinking")
+require File.join(File.dirname(`node --print "require.resolve('react-native/package.json')"`), "scripts/react_native_pods")
+
+require 'json'
+podfile_properties = JSON.parse(File.read(File.join(__dir__, 'Podfile.properties.json'))) rescue {}
+
+def ccache_enabled?(podfile_properties)
+  # Environment variable takes precedence
+  return ENV['USE_CCACHE'] == '1' if ENV['USE_CCACHE']
+  
+  # Fall back to Podfile properties
+  podfile_properties['apple.ccacheEnabled'] == 'true'
+end
+
+ENV['RCT_NEW_ARCH_ENABLED'] ||= '0' if podfile_properties['newArchEnabled'] == 'false'
+ENV['EX_DEV_CLIENT_NETWORK_INSPECTOR'] ||= podfile_properties['EX_DEV_CLIENT_NETWORK_INSPECTOR']
+ENV['RCT_USE_RN_DEP'] ||= '1' if podfile_properties['ios.buildReactNativeFromSource'] != 'true' && podfile_properties['newArchEnabled'] != 'false'
+ENV['RCT_USE_PREBUILT_RNCORE'] ||= '1' if podfile_properties['ios.buildReactNativeFromSource'] != 'true' && podfile_properties['newArchEnabled'] != 'false'
+platform :ios, podfile_properties['ios.deploymentTarget'] || '15.1'
+
+prepare_react_native_project!
+
+target 'FamilyGroceryList' do
+  use_expo_modules!
+
+  if ENV['EXPO_USE_COMMUNITY_AUTOLINKING'] == '1'
+    config_command = ['node', '-e', "process.argv=['', '', 'config'];require('@react-native-community/cli').run()"];
+  else
+    config_command = [
+      'node',
+      '--no-warnings',
+      '--eval',
+      'require(\'expo/bin/autolinking\')',
+      'expo-modules-autolinking',
+      'react-native-config',
+      '--json',
+      '--platform',
+      'ios'
+    ]
+  end
+
+  config = use_native_modules!(config_command)
+
+  use_frameworks! :linkage => podfile_properties['ios.useFrameworks'].to_sym if podfile_properties['ios.useFrameworks']
+  use_frameworks! :linkage => ENV['USE_FRAMEWORKS'].to_sym if ENV['USE_FRAMEWORKS']
+
+  use_react_native!(
+    :path => config[:reactNativePath],
+    :hermes_enabled => podfile_properties['expo.jsEngine'] == nil || podfile_properties['expo.jsEngine'] == 'hermes',
+    # An absolute path to your application root.
+    :app_path => "#{Pod::Config.instance.installation_root}/..",
+    :privacy_file_aggregation_enabled => podfile_properties['apple.privacyManifestAggregationEnabled'] != 'false',
+  )
+
+  post_install do |installer|
+    react_native_post_install(
+      installer,
+      config[:reactNativePath],
+      :mac_catalyst_enabled => false,
+      :ccache_enabled => ccache_enabled?(podfile_properties),
+    )
+
+    # Fix: `folly/coro/Coroutine.h` file not found
+    # Some Pod targets may end up with `FOLLY_HAS_COROUTINES=1` while the
+    # iOS Folly sources shipped via `RCT-Folly` don't include `folly/coro/*`.
+    # Ensuring `FOLLY_CFG_NO_COROUTINES=1` is set on Pods targets keeps
+    # `FOLLY_HAS_COROUTINES` disabled consistently.
+    def add_unique_build_setting(config, key, value)
+      current = config.build_settings[key]
+      values = case current
+               when nil
+                 ['$(inherited)']
+               when Array
+                 current
+               else
+                 [current]
+               end
+
+      unless values.include?(value)
+        values << value
+      end
+
+      config.build_settings[key] = values
+    end
+
+    def force_cxx_standard(config, standard)
+      config.build_settings['CLANG_CXX_LANGUAGE_STANDARD'] = standard
+      config.build_settings['CLANG_CXX_LIBRARY'] = 'libc++'
+    end
+
+    # Ensure all Pods compile with a modern C++ standard.
+    # If any target falls back to gnu++14, `if constexpr` in RCT-Folly can
+    # compile both branches and fail in folly/lang/New.h.
+    installer.pods_project.build_configurations.each do |config|
+      force_cxx_standard(config, 'c++20')
+    end
+
+    installer.pods_project.targets.each do |target|
+      target.build_configurations.each do |config|
+        force_cxx_standard(config, 'c++20')
+        add_unique_build_setting(config, 'GCC_PREPROCESSOR_DEFINITIONS', 'FOLLY_CFG_NO_COROUTINES=1')
+        add_unique_build_setting(config, 'OTHER_CPLUSPLUSFLAGS', '-DFOLLY_CFG_NO_COROUTINES=1')
+      end
+    end
+
+    # Xcode/AppleClang can fail to resolve aligned operator new/delete overloads
+    # in RCT-Folly's New.h when __cpp_aligned_new is not defined.
+    #
+    # Root cause: the affected operator() overloads are NON-TEMPLATE member
+    # functions of operator_new_fn / operator_delete_fn.  `if constexpr` only
+    # discards the false branch for *dependent* expressions inside templates,
+    # so both branches are always type-checked here.  We therefore use
+    # preprocessor `#if` guards which truly exclude the dead code.
+    folly_new_h = File.join(installer.sandbox.root.to_s, 'RCT-Folly', 'folly', 'lang', 'New.h')
+    if File.exist?(folly_new_h)
+      new_h_contents = File.read(folly_new_h)
+      folly_patch_marker = 'FGL_FOLLY_ALIGNED_FALLBACK'
+
+      unless new_h_contents.include?(folly_patch_marker)
+        replacements = {
+          '    return detail::op_new_<detail::cpp_aligned_new_>(s, a);' => <<~'CPP'.rstrip,
+    // FGL_FOLLY_ALIGNED_FALLBACK — preprocessor guard required (non-template fn)
+    #if defined(__cpp_aligned_new) && __cpp_aligned_new >= 201606
+        return detail::op_new_<detail::cpp_aligned_new_>(s, a);
+    #else
+        return detail::op_new_<true>(s);
+    #endif
+          CPP
+          '    return detail::op_new_<detail::cpp_aligned_new_>(s, a, nt);' => <<~'CPP'.rstrip,
+    // FGL_FOLLY_ALIGNED_FALLBACK
+    #if defined(__cpp_aligned_new) && __cpp_aligned_new >= 201606
+        return detail::op_new_<detail::cpp_aligned_new_>(s, a, nt);
+    #else
+        return detail::op_new_<true>(s, nt);
+    #endif
+          CPP
+          '    return detail::op_del_<detail::cpp_aligned_new_>(p, a);' => <<~'CPP'.rstrip,
+    // FGL_FOLLY_ALIGNED_FALLBACK
+    #if defined(__cpp_aligned_new) && __cpp_aligned_new >= 201606
+        return detail::op_del_<detail::cpp_aligned_new_>(p, a);
+    #else
+        return detail::op_del_<true>(p);
+    #endif
+          CPP
+          '    return detail::do_op_del_sized_<detail::cpp_aligned_new_>(p, s, a);' => <<~'CPP'.rstrip,
+    // FGL_FOLLY_ALIGNED_FALLBACK
+    #if defined(__cpp_aligned_new) && __cpp_aligned_new >= 201606
+        return detail::do_op_del_sized_<detail::cpp_aligned_new_>(p, s, a);
+    #else
+        return detail::do_op_del_sized_<true>(p, s);
+    #endif
+          CPP
+        }
+
+        patched_new_h = replacements.reduce(new_h_contents) do |contents, (source, replacement)|
+          contents.gsub(source, replacement)
+        end
+
+        if patched_new_h != new_h_contents
+          File.chmod(0o644, folly_new_h) rescue nil
+          File.write(folly_new_h, patched_new_h)
+        end
+      end
+    end
+  end
+end

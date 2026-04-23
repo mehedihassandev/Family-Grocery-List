@@ -1,0 +1,129 @@
+name: "🐛 Bug Report"
+description: "Report a problem so we can fix it."
+title: "[Bug]: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to report a bug!
+
+        **Tip:** If this is about joining/creating a family or sign-in issues, include the exact error message and confirm your Firebase + Firestore setup.
+
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Pre-flight checks
+      options:
+        - label: I searched existing issues and didn’t find a duplicate.
+          required: true
+        - label: I can reproduce this consistently.
+          required: false
+
+  - type: dropdown
+    id: platform
+    attributes:
+      label: Platform
+      options:
+        - Android
+        - iOS
+        - Web
+      default: 0
+    validations:
+      required: true
+
+  - type: input
+    id: device
+    attributes:
+      label: Device / Simulator
+      description: "Example: Pixel 7, iPhone 14 Pro, Android Emulator"
+      placeholder: ""
+    validations:
+      required: false
+
+  - type: input
+    id: os
+    attributes:
+      label: OS version
+      placeholder: "Example: Android 14 / iOS 17.5"
+    validations:
+      required: false
+
+  - type: input
+    id: app_version
+    attributes:
+      label: App version
+      description: "You can use the version from app.json (expo.version)"
+      placeholder: "Example: 1.0.0"
+    validations:
+      required: false
+
+  - type: textarea
+    id: summary
+    attributes:
+      label: What happened?
+      description: "A clear and concise description of the bug."
+      placeholder: "When I …, I expected … but …"
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: "List the exact steps so we can reproduce it."
+      placeholder: |
+        1. Go to …
+        2. Tap …
+        3. Enter …
+        4. See error …
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+      placeholder: "What should have happened?"
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+      placeholder: "What actually happened?"
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs / Error message
+      description: "Paste the full error text. If you have Metro/Expo logs, include them too."
+      render: shell
+      placeholder: |
+        Paste logs here…
+    validations:
+      required: false
+
+  - type: textarea
+    id: screenshots
+    attributes:
+      label: Screenshots / Screen recording
+      description: "Drag and drop images/videos here."
+    validations:
+      required: false
+
+  - type: textarea
+    id: firebase
+    attributes:
+      label: Firebase / Firestore checklist (if relevant)
+      description: "Fill this section if the bug is related to sign-in, joining/creating family, or permission errors."
+      placeholder: |
+        - [ ] Firestore database created in Firebase Console
+        - [ ] Firestore rules deployed (see FIRESTORE_RULES_SETUP.md)
+        - [ ] Auth provider enabled (Email/Password and/or Google)
+        - [ ] .env configured and app rebuilt after changing auth settings
+    validations:
+      required: false

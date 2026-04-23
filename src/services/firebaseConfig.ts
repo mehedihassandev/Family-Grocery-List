@@ -1,7 +1,7 @@
+import { Platform } from "react-native";
 import { initializeApp } from "firebase/app";
-import { getAuth } from "firebase/auth";
-import { getFirestore, enableIndexedDbPersistence } from "firebase/firestore";
-import { getAnalytics } from "firebase/analytics";
+import { getAuth, initializeAuth, inMemoryPersistence } from "firebase/auth";
+import { enableIndexedDbPersistence, getFirestore, initializeFirestore } from "firebase/firestore";
 
 const firebaseConfig = {
   apiKey: process.env.EXPO_PUBLIC_FIREBASE_API_KEY,
@@ -13,29 +13,76 @@ const firebaseConfig = {
   measurementId: process.env.EXPO_PUBLIC_FIREBASE_MEASUREMENT_ID,
 };
 
-// Initialize Firebase
 const app = initializeApp(firebaseConfig);
 
-// Initialize Analytics (Web only)
-export const analytics = typeof window !== 'undefined' ? getAnalytics(app) : null;
+export let analytics: unknown = null;
 
-// Initialize Auth
-export const auth = getAuth(app);
-
-// Initialize Firestore
-export const db = getFirestore(app);
-
-// Enable Offline Persistence
-enableIndexedDbPersistence(db).catch((err) => {
-    if (err.code == 'failed-precondition') {
-        // Multiple tabs open, persistence can only be enabled
-        // in one tab at a a time.
-        console.warn('Persistence failed: Multiple tabs open');
-    } else if (err.code == 'unimplemented-state') {
-        // The current browser does not support all of the
-        // features required to enable persistence
-        console.warn('Persistence failed: Browser not supported');
+if (Platform.OS === "web") {
+  void (async () => {
+    const { getAnalytics, isSupported } = await import("firebase/analytics");
+    if (await isSupported()) {
+      analytics = getAnalytics(app);
     }
-});
+  })();
+}
+
+const createNativeAuth = () => {
+  try {
+    // Load from firebase/auth so React Native can resolve its RN auth
+    // entrypoint and expose getReactNativePersistence at runtime.
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const { getReactNativePersistence } = require("@firebase/auth") as {
+      getReactNativePersistence?: (storage: unknown) => unknown;
+    };
+
+    // AsyncStorage is optional at runtime so Expo Go can still boot even
+    // before the dependency is installed.
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const AsyncStorage = require("@react-native-async-storage/async-storage").default;
+
+    if (getReactNativePersistence) {
+      return initializeAuth(app, {
+        persistence: getReactNativePersistence(AsyncStorage) as never,
+      });
+    }
+
+    return initializeAuth(app, {
+      persistence: inMemoryPersistence,
+    });
+  } catch {
+    return initializeAuth(app, {
+      persistence: inMemoryPersistence,
+    });
+  }
+};
+
+export const auth = Platform.OS === "web" ? getAuth(app) : createNativeAuth();
+
+const createFirestore = () => {
+  if (Platform.OS === "web") {
+    return getFirestore(app);
+  }
+
+  try {
+    return initializeFirestore(app, {
+      experimentalForceLongPolling: true,
+    });
+  } catch {
+    // Hot reload can initialize Firestore already; fallback to existing instance.
+    return getFirestore(app);
+  }
+};
+
+export const db = createFirestore();
+
+if (Platform.OS === "web") {
+  enableIndexedDbPersistence(db).catch((err) => {
+    if (err.code === "failed-precondition") {
+      console.warn("Persistence failed: Multiple tabs open");
+    } else if (err.code === "unimplemented") {
+      console.warn("Persistence failed: Browser not supported");
+    }
+  });
+}
 
 export default app;

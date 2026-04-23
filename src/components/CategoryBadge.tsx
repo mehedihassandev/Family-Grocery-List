@@ -1,26 +1,70 @@
-import React from 'react';
-import { View, Text } from 'react-native';
+import React from "react";
+import { View, Text } from "react-native";
 
-const categoryColors: Record<string, string> = {
-  Beauty: 'bg-pink-100 text-pink-700',
-  Meat: 'bg-red-100 text-red-700',
-  Fish: 'bg-blue-100 text-blue-700',
-  Vegetables: 'bg-green-100 text-green-700',
-  Fruits: 'bg-orange-100 text-orange-700',
-  Dairy: 'bg-yellow-100 text-yellow-700',
-  Snacks: 'bg-purple-100 text-purple-700',
-  Drinks: 'bg-cyan-100 text-cyan-700',
-  Household: 'bg-slate-100 text-slate-700',
-  Medicine: 'bg-emerald-100 text-emerald-700',
-  Other: 'bg-gray-100 text-gray-700',
+const categoryColors: Record<string, { badge: string; text: string; border: string }> = {
+  Beauty: {
+    badge: "bg-secondary-50",
+    text: "text-secondary-600",
+    border: "border-secondary-100",
+  },
+  Meat: {
+    badge: "bg-urgent/10",
+    text: "text-urgent",
+    border: "border-urgent/20",
+  },
+  Fish: {
+    badge: "bg-secondary-50",
+    text: "text-secondary-700",
+    border: "border-secondary-100",
+  },
+  Vegetables: {
+    badge: "bg-primary-50",
+    text: "text-primary-700",
+    border: "border-primary-100",
+  },
+  Fruits: {
+    badge: "bg-primary-50",
+    text: "text-primary-600",
+    border: "border-primary-100",
+  },
+  Dairy: {
+    badge: "bg-medium/15",
+    text: "text-medium",
+    border: "border-medium/30",
+  },
+  Snacks: {
+    badge: "bg-secondary-50",
+    text: "text-secondary-600",
+    border: "border-secondary-100",
+  },
+  Drinks: {
+    badge: "bg-secondary-50",
+    text: "text-secondary-700",
+    border: "border-secondary-100",
+  },
+  Household: {
+    badge: "bg-surface-subtle",
+    text: "text-text-secondary",
+    border: "border-border-muted",
+  },
+  Medicine: {
+    badge: "bg-secondary-50",
+    text: "text-secondary-700",
+    border: "border-secondary-100",
+  },
+  Other: {
+    badge: "bg-surface-subtle",
+    text: "text-text-muted",
+    border: "border-border-muted",
+  },
 };
 
 const CategoryBadge = ({ category }: { category: string }) => {
-  const colorClass = categoryColors[category] || categoryColors['Other'];
-  
+  const colorClass = categoryColors[category] || categoryColors["Other"];
+
   return (
-    <View className={`px-2 py-0.5 rounded-full ${colorClass.split(' ')[0]}`}>
-      <Text className={`text-xs font-medium ${colorClass.split(' ')[1]}`}>
+    <View className={`px-2.5 py-0.5 rounded-full border ${colorClass.badge} ${colorClass.border}`}>
+      <Text className={`text-[9px] font-black uppercase tracking-wider ${colorClass.text}`}>
         {category}
       </Text>
     </View>
