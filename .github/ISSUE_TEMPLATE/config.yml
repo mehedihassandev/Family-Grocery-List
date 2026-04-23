@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: "📚 Setup docs (Firestore rules)"
+    url: "https://github.com/mehedihassandev/Family-Grocery-List/blob/main/FIRESTORE_RULES_SETUP.md"
+    about: "If you're seeing permission-denied or join/create family issues."
+  - name: "📚 Setup docs (Google sign-in)"
+    url: "https://github.com/mehedihassandev/Family-Grocery-List/blob/main/GOOGLE_SIGNIN_SETUP.md"
+    about: "If Google sign-in isn't working or tokens fail."

@@ -15,6 +15,10 @@ import type { TabParamList } from "../types";
 // mistyped screen names become TypeScript errors at compile time.
 const Tab = createBottomTabNavigator<TabParamList>();
 
+const TAB_ICON_SIZE = 20;
+const TAB_ICON_STROKE_WIDTH = 2.5;
+const TAB_LABEL_FONT_SIZE = 11;
+
 const TabNavigator = () => {
   const insets = useSafeAreaInsets();
   const tabBarPaddingBottom = Math.max(insets.bottom, 10);
@@ -50,9 +54,9 @@ const TabNavigator = () => {
           borderRadius: 0,
           borderTopLeftRadius: 0,
           borderTopRightRadius: 0,
-          height: 60 + tabBarPaddingBottom,
+          height: 42 + tabBarPaddingBottom,
           paddingBottom: tabBarPaddingBottom,
-          paddingTop: 7,
+          paddingTop: 6,
           borderTopWidth: 1,
           shadowColor: "#4f5f56",
           shadowOffset: { width: 0, height: 8 },
@@ -62,9 +66,12 @@ const TabNavigator = () => {
           borderColor: "rgba(184, 198, 189, 0.35)",
         },
         tabBarLabelStyle: {
-          fontSize: 9,
-          fontWeight: "600",
-          marginTop: -3,
+          fontSize: TAB_LABEL_FONT_SIZE,
+          fontWeight: "700",
+          marginTop: 2,
+        },
+        tabBarIconStyle: {
+          marginTop: 2,
         },
       }}
     >
@@ -72,7 +79,9 @@ const TabNavigator = () => {
         name="Home"
         component={DashboardScreen}
         options={{
-          tabBarIcon: ({ color }) => <Home stroke={color} size={20} strokeWidth={2.5} />,
+          tabBarIcon: ({ color }) => (
+            <Home stroke={color} size={TAB_ICON_SIZE} strokeWidth={TAB_ICON_STROKE_WIDTH} />
+          ),
         }}
       />
 
@@ -83,7 +92,11 @@ const TabNavigator = () => {
             component={HomeScreen}
             options={{
               tabBarIcon: ({ color }) => (
-                <ShoppingBasket stroke={color} size={20} strokeWidth={2.5} />
+                <ShoppingBasket
+                  stroke={color}
+                  size={TAB_ICON_SIZE}
+                  strokeWidth={TAB_ICON_STROKE_WIDTH}
+                />
               ),
             }}
           />
@@ -91,14 +104,22 @@ const TabNavigator = () => {
             name="Members"
             component={MembersScreen}
             options={{
-              tabBarIcon: ({ color }) => <Users stroke={color} size={20} strokeWidth={2.5} />,
+              tabBarIcon: ({ color }) => (
+                <Users stroke={color} size={TAB_ICON_SIZE} strokeWidth={TAB_ICON_STROKE_WIDTH} />
+              ),
             }}
           />
           <Tab.Screen
             name="Analyze"
             component={AnalyzeScreen}
             options={{
-              tabBarIcon: ({ color }) => <BarChart3 stroke={color} size={20} strokeWidth={2.5} />,
+              tabBarIcon: ({ color }) => (
+                <BarChart3
+                  stroke={color}
+                  size={TAB_ICON_SIZE}
+                  strokeWidth={TAB_ICON_STROKE_WIDTH}
+                />
+              ),
             }}
           />
         </>
@@ -108,7 +129,9 @@ const TabNavigator = () => {
         name="Profile"
         component={ProfileScreen}
         options={{
-          tabBarIcon: ({ color }) => <UserIcon stroke={color} size={20} strokeWidth={2.5} />,
+          tabBarIcon: ({ color }) => (
+            <UserIcon stroke={color} size={TAB_ICON_SIZE} strokeWidth={TAB_ICON_STROKE_WIDTH} />
+          ),
         }}
       />
     </Tab.Navigator>

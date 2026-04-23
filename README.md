@@ -40,6 +40,7 @@ Family Grocery List is a React Native app (Expo + native projects) where family 
 - [Commit Message Rules](#commit-message-rules)
 - [Troubleshooting](#troubleshooting)
 - [Security Notes](#security-notes)
+- [Privacy and Support](#privacy-and-support)
 - [License](#license)
 
 ## Tech Stack
@@ -381,6 +382,28 @@ npm run clean
 - `.env` is git-ignored; keep it local only.
 - `EXPO_PUBLIC_*` values are bundled into client app. Do not place server secrets there.
 - Use Firebase Security Rules to protect data access by `familyId` and authenticated user role.
+- Vulnerability reporting: see `SECURITY.md`.
+
+## Privacy and Support
+
+### Privacy
+
+- Data is stored in Firebase (Authentication + Cloud Firestore) and scoped by family membership.
+- The app uses Firestore Security Rules to restrict reads/writes to authenticated users within the same family.
+- The app persists your signed-in session locally using AsyncStorage.
+
+Note: We use strong safeguards (Firebase Auth, encrypted transport, and Firestore rules), but no internet-connected service can guarantee 100% security.
+
+### Support
+
+- Troubleshooting steps are in the [Troubleshooting](#troubleshooting) section.
+- Setup guides: [FIRESTORE_RULES_SETUP.md](./FIRESTORE_RULES_SETUP.md) and [GOOGLE_SIGNIN_SETUP.md](./GOOGLE_SIGNIN_SETUP.md)
+- Bug reports: open an issue at https://github.com/mehedihassandev/Family-Grocery-List/issues/new?template=bug_report.yml
+
+### GitHub templates and CI
+
+- This repo includes GitHub Issue/PR templates under `.github/` to keep reports and PRs consistent.
+- CI runs lint/format/typecheck on PRs to `main` via GitHub Actions.
 
 ## License
 
