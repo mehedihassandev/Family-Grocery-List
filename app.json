@@ -7,15 +7,28 @@
       "com.googleusercontent.apps.1062088306859-g25274d26kfdh2joau9vnk0eharr8l9e"
     ],
     "version": "1.0.0",
+    "platforms": [
+      "android",
+      "ios"
+    ],
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
-    "splash": {
-      "image": "./assets/splash-icon.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
-    },
+    "plugins": [
+      [
+        "react-native-bootsplash",
+        {
+          "logo": "./assets/branding/bootsplash-logo.svg",
+          "logoWidth": 134,
+          "background": "#59AC77",
+          "assetsOutput": "assets/bootsplash",
+          "android": {
+            "darkContentBarsStyle": true
+          }
+        }
+      ]
+    ],
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.mehedi.FamilyGroceryList"
@@ -23,7 +36,7 @@
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#ffffff"
+        "backgroundColor": "#59AC77"
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
