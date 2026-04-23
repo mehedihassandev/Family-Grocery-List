@@ -1,10 +1,7 @@
 import React from "react";
 import { View, Text } from "react-native";
 
-const categoryColors: Record<
-  string,
-  { badge: string; text: string; border: string }
-> = {
+const categoryColors: Record<string, { badge: string; text: string; border: string }> = {
   Beauty: {
     badge: "bg-secondary-50",
     text: "text-secondary-600",
@@ -66,12 +63,8 @@ const CategoryBadge = ({ category }: { category: string }) => {
   const colorClass = categoryColors[category] || categoryColors["Other"];
 
   return (
-    <View
-      className={`px-2.5 py-0.5 rounded-full border ${colorClass.badge} ${colorClass.border}`}
-    >
-      <Text
-        className={`text-[9px] font-black uppercase tracking-wider ${colorClass.text}`}
-      >
+    <View className={`px-2.5 py-0.5 rounded-full border ${colorClass.badge} ${colorClass.border}`}>
+      <Text className={`text-[9px] font-black uppercase tracking-wider ${colorClass.text}`}>
         {category}
       </Text>
     </View>

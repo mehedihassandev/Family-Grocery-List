@@ -11,12 +11,7 @@ interface ItemCardProps {
   currentUserId?: string;
 }
 
-const ItemCard = ({
-  item,
-  onToggle,
-  onPress,
-  currentUserId,
-}: ItemCardProps) => {
+const ItemCard = ({ item, onToggle, onPress, currentUserId }: ItemCardProps) => {
   const isCompleted = item.status === "completed";
 
   const timeAgo = item.createdAt
@@ -30,11 +25,7 @@ const ItemCard = ({
       className="mb-1 flex-row items-start border-b border-border-muted px-1 py-3.5"
       style={isCompleted ? { opacity: 0.6 } : undefined}
     >
-      <TouchableOpacity
-        onPress={() => onToggle(item)}
-        className="mr-4 mt-0.5"
-        activeOpacity={0.6}
-      >
+      <TouchableOpacity onPress={() => onToggle(item)} className="mr-4 mt-0.5" activeOpacity={0.6}>
         <View
           className={`h-8 w-8 items-center justify-center rounded-full ${isCompleted ? "bg-primary-50" : "border border-border-muted bg-surface"}`}
         >
@@ -50,16 +41,11 @@ const ItemCard = ({
         <View className="mb-1 flex-row items-start justify-between">
           <Text
             className={`flex-1 text-[18px] font-semibold tracking-tight ${isCompleted ? "text-text-muted" : "text-text-primary"}`}
-            style={
-              isCompleted ? { textDecorationLine: "line-through" } : undefined
-            }
+            style={isCompleted ? { textDecorationLine: "line-through" } : undefined}
           >
             {item.name}
             {item.quantity ? (
-              <Text className="text-[15px] font-medium text-text-muted">
-                {" "}
-                ({item.quantity})
-              </Text>
+              <Text className="text-[15px] font-medium text-text-muted"> ({item.quantity})</Text>
             ) : (
               ""
             )}
@@ -77,16 +63,12 @@ const ItemCard = ({
           </Text>
           <View className="ml-auto flex-row items-center">
             <Clock stroke="#95a39a" size={10} />
-            <Text className="ml-1 text-[11px] font-medium text-text-muted">
-              {timeAgo}
-            </Text>
+            <Text className="ml-1 text-[11px] font-medium text-text-muted">{timeAgo}</Text>
           </View>
         </View>
 
         {item.notes?.trim() ? (
-          <Text className="mt-1 text-[13px] leading-5 text-text-secondary">
-            {item.notes}
-          </Text>
+          <Text className="mt-1 text-[13px] leading-5 text-text-secondary">{item.notes}</Text>
         ) : null}
 
         <View className="mt-2 flex-row items-center">
@@ -98,9 +80,7 @@ const ItemCard = ({
           <Text className="text-[11px] text-text-muted">
             Added by{" "}
             <Text className="font-bold text-text-secondary">
-              {currentUserId && item.addedBy.uid === currentUserId
-                ? "You"
-                : item.addedBy.name}
+              {currentUserId && item.addedBy.uid === currentUserId ? "You" : item.addedBy.name}
             </Text>
           </Text>
         </View>

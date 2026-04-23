@@ -17,11 +17,11 @@ export const createNotification = async (
   type: NotificationType,
   message: string,
   actor: { uid: string; name: string },
-  itemDetails: { id: string; name: string }
+  itemDetails: { id: string; name: string },
 ) => {
   try {
     const notifRef = doc(collection(db, "notifications"));
-    
+
     let title = "Update";
     if (type === "item_added") title = "New Item Added";
     if (type === "item_completed") title = "Item Completed";
@@ -51,7 +51,7 @@ export const createNotification = async (
 export const subscribeToNotifications = (
   familyId: string,
   callback: (notifications: AppNotification[]) => void,
-  onError?: (error: Error) => void
+  onError?: (error: Error) => void,
 ) => {
   const notifRef = collection(db, "notifications");
   const q = query(notifRef, where("familyId", "==", familyId));
@@ -71,19 +71,16 @@ export const subscribeToNotifications = (
     (error) => {
       console.error("Subscribe Notifications Error:", error);
       onError?.(error);
-    }
+    },
   );
 };
 
-export const markNotificationsAsRead = async (
-  notificationIds: string[],
-  userId: string
-) => {
+export const markNotificationsAsRead = async (notificationIds: string[], userId: string) => {
   if (!notificationIds.length || !userId) return;
 
   try {
     const batch = writeBatch(db);
-    
+
     notificationIds.forEach((id) => {
       const notifRef = doc(db, "notifications", id);
       batch.update(notifRef, {

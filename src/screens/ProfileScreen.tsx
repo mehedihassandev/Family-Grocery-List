@@ -18,7 +18,7 @@ import {
   ChevronRight,
   User as UserIcon,
   Edit3,
-  Users
+  Users,
 } from "lucide-react-native";
 import { useAuthStore } from "../store/useAuthStore";
 import { signOut } from "../services/auth";
@@ -118,10 +118,8 @@ const ProfileScreen = () => {
   return (
     <SafeAreaView edges={["top", "left", "right"]} className="flex-1 bg-background">
       <StatusBar barStyle="dark-content" />
-      
-      <AppHeader
-        title="Profile"
-      />
+
+      <AppHeader title="Profile" />
 
       <ScrollView
         showsVerticalScrollIndicator={false}
@@ -178,14 +176,18 @@ const ProfileScreen = () => {
                     !isLast ? "border-b border-border-muted/60" : ""
                   }`}
                 >
-                  <View className={`mr-4 items-center justify-center h-9 w-9 rounded-xl ${bgColor}`}>
+                  <View
+                    className={`mr-4 items-center justify-center h-9 w-9 rounded-xl ${bgColor}`}
+                  >
                     {isLeaveFamily && leavingFamily ? (
                       <ActivityIndicator color={tintColor} size="small" />
                     ) : (
                       <item.icon stroke={tintColor} size={18} strokeWidth={2.2} />
                     )}
                   </View>
-                  <Text className={`flex-1 text-[15px] font-medium ${isDestructive ? 'text-urgent' : 'text-text-primary'}`}>
+                  <Text
+                    className={`flex-1 text-[15px] font-medium ${isDestructive ? "text-urgent" : "text-text-primary"}`}
+                  >
                     {item.title}
                   </Text>
                   <ChevronRight stroke="#95a39a" size={18} strokeWidth={2} />

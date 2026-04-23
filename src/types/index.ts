@@ -1,20 +1,23 @@
-import type { NativeStackNavigationProp, NativeStackScreenProps } from '@react-navigation/native-stack';
-import type { BottomTabNavigationProp, BottomTabScreenProps } from '@react-navigation/bottom-tabs';
+import type {
+  NativeStackNavigationProp,
+  NativeStackScreenProps,
+} from "@react-navigation/native-stack";
+import type { BottomTabNavigationProp, BottomTabScreenProps } from "@react-navigation/bottom-tabs";
 
-export type Priority = 'Urgent' | 'Medium' | 'Low';
+export type Priority = "Urgent" | "Medium" | "Low";
 
-export type Category = 
-  | 'Beauty' 
-  | 'Meat' 
-  | 'Fish' 
-  | 'Vegetables' 
-  | 'Fruits' 
-  | 'Dairy' 
-  | 'Snacks' 
-  | 'Drinks' 
-  | 'Household' 
-  | 'Medicine' 
-  | 'Other';
+export type Category =
+  | "Beauty"
+  | "Meat"
+  | "Fish"
+  | "Vegetables"
+  | "Fruits"
+  | "Dairy"
+  | "Snacks"
+  | "Drinks"
+  | "Household"
+  | "Medicine"
+  | "Other";
 
 export interface User {
   uid: string;
@@ -22,7 +25,7 @@ export interface User {
   displayName: string;
   photoURL: string;
   familyId: string | null;
-  role: 'owner' | 'member';
+  role: "owner" | "member";
 }
 
 export interface Family {
@@ -41,7 +44,7 @@ export interface GroceryItem {
   priority: Priority;
   notes?: string;
   quantity?: string;
-  status: 'pending' | 'completed';
+  status: "pending" | "completed";
   addedBy: {
     uid: string;
     name: string;
@@ -55,7 +58,7 @@ export interface GroceryItem {
   completedAt?: any | null;
 }
 
-export type NotificationType = 'item_added' | 'item_completed' | 'urgent_item';
+export type NotificationType = "item_added" | "item_completed" | "urgent_item";
 
 // ---------------------------------------------------------------------------
 // Navigation param lists — every stack screen and its expected route params.
@@ -100,12 +103,13 @@ export type RootStackNavigationProp = NativeStackNavigationProp<RootStackParamLi
 export type TabNavigationProp = BottomTabNavigationProp<TabParamList>;
 
 /** Screen-level props for a given root-stack route name */
-export type RootStackScreenProps<T extends keyof RootStackParamList> =
-  NativeStackScreenProps<RootStackParamList, T>;
+export type RootStackScreenProps<T extends keyof RootStackParamList> = NativeStackScreenProps<
+  RootStackParamList,
+  T
+>;
 
 /** Screen-level props for a given tab route name */
-export type TabScreenProps<T extends keyof TabParamList> =
-  BottomTabScreenProps<TabParamList, T>;
+export type TabScreenProps<T extends keyof TabParamList> = BottomTabScreenProps<TabParamList, T>;
 
 export interface AppNotification {
   id: string;

@@ -1,19 +1,6 @@
 import React from "react";
-import {
-  Modal,
-  ScrollView,
-  Text,
-  TouchableOpacity,
-  View,
-} from "react-native";
-import {
-  X,
-  Edit2,
-  Calendar,
-  User,
-  ShoppingBasket,
-  AlignLeft,
-} from "lucide-react-native";
+import { Modal, ScrollView, Text, TouchableOpacity, View } from "react-native";
+import { X, Edit2, Calendar, User, ShoppingBasket, AlignLeft } from "lucide-react-native";
 import { GroceryItem } from "../types";
 
 type ItemDetailModalProps = {
@@ -26,26 +13,15 @@ type ItemDetailModalProps = {
 const formatDate = (dateValue: any) => {
   if (!dateValue) return "Unknown";
   const dateStr =
-    dateValue?.toDate?.()?.toLocaleDateString() ||
-    new Date(dateValue).toLocaleDateString();
+    dateValue?.toDate?.()?.toLocaleDateString() || new Date(dateValue).toLocaleDateString();
   return dateStr !== "Invalid Date" ? dateStr : "Unknown";
 };
 
-const ItemDetailModal = ({
-  visible,
-  item,
-  onClose,
-  onEdit,
-}: ItemDetailModalProps) => {
+const ItemDetailModal = ({ visible, item, onClose, onEdit }: ItemDetailModalProps) => {
   if (!item) return null;
 
   return (
-    <Modal
-      visible={visible}
-      animationType="slide"
-      transparent
-      onRequestClose={onClose}
-    >
+    <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
       <View className="flex-1 justify-end bg-black/40">
         <TouchableOpacity
           activeOpacity={1}
@@ -86,9 +62,7 @@ const ItemDetailModal = ({
                 >
                   <Text
                     className={`text-[12px] font-semibold ${
-                      item.status === "completed"
-                        ? "text-primary-700"
-                        : "text-text-secondary"
+                      item.status === "completed" ? "text-primary-700" : "text-text-secondary"
                     }`}
                   >
                     {item.status.charAt(0).toUpperCase() + item.status.slice(1)}
@@ -96,9 +70,7 @@ const ItemDetailModal = ({
                 </View>
                 {item.priority === "Urgent" && (
                   <View className="rounded-full bg-urgent/10 px-3 py-1">
-                    <Text className="text-[12px] font-semibold text-urgent">
-                      Urgent
-                    </Text>
+                    <Text className="text-[12px] font-semibold text-urgent">Urgent</Text>
                   </View>
                 )}
               </View>
@@ -128,17 +100,13 @@ const ItemDetailModal = ({
                   <ShoppingBasket stroke="#59AC77" size={20} />
                 </View>
                 <View className="flex-1">
-                  <Text className="text-[12px] font-semibold text-text-muted">
-                    Category
-                  </Text>
+                  <Text className="text-[12px] font-semibold text-text-muted">Category</Text>
                   <Text className="text-[16px] font-semibold text-text-primary">
                     {item.category || "Uncategorized"}
                   </Text>
                 </View>
                 <View className="flex-1">
-                  <Text className="text-[12px] font-semibold text-text-muted">
-                    Quantity
-                  </Text>
+                  <Text className="text-[12px] font-semibold text-text-muted">Quantity</Text>
                   <Text className="text-[16px] font-semibold text-text-primary">
                     {item.quantity ? `${item.quantity} ${item.unit || ""}` : "—"}
                   </Text>
@@ -150,9 +118,7 @@ const ItemDetailModal = ({
                   <User stroke="#59AC77" size={20} />
                 </View>
                 <View className="flex-1">
-                  <Text className="text-[12px] font-semibold text-text-muted">
-                    Added By
-                  </Text>
+                  <Text className="text-[12px] font-semibold text-text-muted">Added By</Text>
                   <Text className="text-[16px] font-semibold text-text-primary">
                     {item.addedBy?.name || "Unknown"}
                   </Text>
@@ -164,9 +130,7 @@ const ItemDetailModal = ({
                   <Calendar stroke="#59AC77" size={20} />
                 </View>
                 <View className="flex-1">
-                  <Text className="text-[12px] font-semibold text-text-muted">
-                    Created At
-                  </Text>
+                  <Text className="text-[12px] font-semibold text-text-muted">Created At</Text>
                   <Text className="text-[16px] font-semibold text-text-primary">
                     {formatDate(item.createdAt)}
                   </Text>
@@ -178,13 +142,9 @@ const ItemDetailModal = ({
               <View className="mb-4 rounded-2xl border border-border-muted bg-surface p-5">
                 <View className="mb-2 flex-row items-center">
                   <AlignLeft stroke="#637889" size={18} className="mr-2" />
-                  <Text className="text-[14px] font-bold text-text-secondary">
-                    Notes
-                  </Text>
+                  <Text className="text-[14px] font-bold text-text-secondary">Notes</Text>
                 </View>
-                <Text className="text-[15px] leading-6 text-text-primary">
-                  {item.notes}
-                </Text>
+                <Text className="text-[15px] leading-6 text-text-primary">{item.notes}</Text>
               </View>
             ) : null}
           </ScrollView>

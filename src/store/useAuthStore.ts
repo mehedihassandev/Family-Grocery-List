@@ -1,7 +1,7 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { create } from 'zustand';
-import { createJSONStorage, persist } from 'zustand/middleware';
-import { User } from '../types';
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { create } from "zustand";
+import { createJSONStorage, persist } from "zustand/middleware";
+import { User } from "../types";
 
 interface AuthState {
   user: User | null;
@@ -23,16 +23,16 @@ export const useAuthStore = create<AuthState>()(
       setHasHydrated: (hasHydrated) => set({ hasHydrated }),
     }),
     {
-      name: 'auth-session-store',
+      name: "auth-session-store",
       storage: createJSONStorage(() => AsyncStorage),
       partialize: (state) => ({ user: state.user }),
       onRehydrateStorage: () => (state, error) => {
         if (__DEV__ && error) {
-          console.warn('Auth store rehydrate failed:', error);
+          console.warn("Auth store rehydrate failed:", error);
         }
 
         state?.setHasHydrated(true);
       },
-    }
-  )
+    },
+  ),
 );

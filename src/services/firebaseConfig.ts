@@ -1,11 +1,7 @@
 import { Platform } from "react-native";
 import { initializeApp } from "firebase/app";
 import { getAuth, initializeAuth, inMemoryPersistence } from "firebase/auth";
-import {
-  enableIndexedDbPersistence,
-  getFirestore,
-  initializeFirestore,
-} from "firebase/firestore";
+import { enableIndexedDbPersistence, getFirestore, initializeFirestore } from "firebase/firestore";
 
 const firebaseConfig = {
   apiKey: process.env.EXPO_PUBLIC_FIREBASE_API_KEY,
@@ -42,8 +38,7 @@ const createNativeAuth = () => {
     // AsyncStorage is optional at runtime so Expo Go can still boot even
     // before the dependency is installed.
     // eslint-disable-next-line @typescript-eslint/no-var-requires
-    const AsyncStorage =
-      require("@react-native-async-storage/async-storage").default;
+    const AsyncStorage = require("@react-native-async-storage/async-storage").default;
 
     if (getReactNativePersistence) {
       return initializeAuth(app, {

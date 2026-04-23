@@ -35,14 +35,14 @@ export const addGroceryItem = async (
     };
 
     await setDoc(itemRef, newItem);
-    
+
     // Create an "item_added" notification (or "urgent_item" if priority is Urgent)
     await createNotification(
       familyId,
       newItem.priority === "Urgent" ? "urgent_item" : "item_added",
       `${user.name} added ${newItem.name}`,
       user,
-      { id: newItem.id, name: newItem.name }
+      { id: newItem.id, name: newItem.name },
     );
 
     return newItem;
@@ -52,10 +52,7 @@ export const addGroceryItem = async (
   }
 };
 
-export const updateGroceryItem = async (
-  itemId: string,
-  updates: Partial<GroceryItem>,
-) => {
+export const updateGroceryItem = async (itemId: string, updates: Partial<GroceryItem>) => {
   try {
     const itemRef = doc(db, "grocery_items", itemId);
     await updateDoc(itemRef, {
@@ -89,7 +86,7 @@ export const toggleItemCompletion = async (
         "item_completed",
         `${user.name} checked off ${item.name}`,
         user,
-        { id: item.id, name: item.name }
+        { id: item.id, name: item.name },
       );
     }
   } catch (error) {

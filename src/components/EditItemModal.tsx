@@ -14,11 +14,7 @@ import {
 import { X } from "lucide-react-native";
 import { Category, GroceryItem, Priority } from "../types";
 import { deleteGroceryItem, updateGroceryItem } from "../services/grocery";
-import {
-  addCustomCategory,
-  CustomCategory,
-  subscribeToCategories,
-} from "../services/categories";
+import { addCustomCategory, CustomCategory, subscribeToCategories } from "../services/categories";
 import { GROCERY_CATEGORIES } from "../features/grocery";
 
 const CATEGORIES: Category[] = [...GROCERY_CATEGORIES];
@@ -31,20 +27,13 @@ interface EditItemModalProps {
   familyId: string;
 }
 
-const EditItemModal = ({
-  visible,
-  onClose,
-  item,
-  familyId,
-}: EditItemModalProps) => {
+const EditItemModal = ({ visible, onClose, item, familyId }: EditItemModalProps) => {
   const [name, setName] = useState("");
   const [category, setCategory] = useState<string>("Other");
   const [priority, setPriority] = useState<Priority>("Medium");
   const [quantity, setQuantity] = useState("");
   const [notes, setNotes] = useState("");
-  const [customCategories, setCustomCategories] = useState<CustomCategory[]>(
-    [],
-  );
+  const [customCategories, setCustomCategories] = useState<CustomCategory[]>([]);
   const [newCatInput, setNewCatInput] = useState("");
   const [showAddCat, setShowAddCat] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -72,9 +61,7 @@ const EditItemModal = ({
 
     return [...CATEGORIES, ...normalizedCustomCategories].filter(
       (categoryName, index, source) =>
-        source.findIndex(
-          (value) => value.toLowerCase() === categoryName.toLowerCase(),
-        ) === index,
+        source.findIndex((value) => value.toLowerCase() === categoryName.toLowerCase()) === index,
     );
   }, [customCategories]);
 
@@ -139,16 +126,8 @@ const EditItemModal = ({
   if (!item) return null;
 
   return (
-    <Modal
-      visible={visible}
-      animationType="slide"
-      transparent
-      onRequestClose={onClose}
-    >
-      <View
-        className="flex-1 justify-end"
-        style={{ backgroundColor: "rgba(0,0,0,0.28)" }}
-      >
+    <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
+      <View className="flex-1 justify-end" style={{ backgroundColor: "rgba(0,0,0,0.28)" }}>
         <KeyboardAvoidingView
           behavior={Platform.OS === "ios" ? "padding" : "height"}
           className="rounded-t-[30px] bg-surface px-5 pb-8 pt-3 shadow-2xl"

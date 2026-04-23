@@ -1,11 +1,4 @@
-import {
-  collection,
-  doc,
-  setDoc,
-  query,
-  where,
-  onSnapshot,
-} from "firebase/firestore";
+import { collection, doc, setDoc, query, where, onSnapshot } from "firebase/firestore";
 import { db } from "./firebaseConfig";
 
 export interface CustomCategory {
@@ -40,9 +33,7 @@ export const subscribeToCategories = (
   return onSnapshot(
     q,
     (snapshot) => {
-      const categories = snapshot.docs.map(
-        (doc) => doc.data() as CustomCategory,
-      );
+      const categories = snapshot.docs.map((doc) => doc.data() as CustomCategory);
       callback(categories);
     },
     (error) => {

@@ -36,7 +36,7 @@ export const useNotificationStore = create<NotificationState>((set, get) => ({
       },
       (error) => {
         set({ error: error.message, loading: false });
-      }
+      },
     );
 
     set({ unsubscribe: newUnsubscribe });
