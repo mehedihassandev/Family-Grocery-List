@@ -5,7 +5,6 @@ import {
   KeyboardAvoidingView,
   Platform,
   Text,
-  TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
@@ -20,21 +19,16 @@ import {
   ShoppingBasket,
   UserRound,
 } from "lucide-react-native";
-import { AuthSessionResult } from "expo-auth-session";
 import { useForm } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
 import {
-  exchangeGoogleCodeForTokens,
   getEmailAuthErrorMessage,
-  getGoogleCodeFromResponse,
   getGoogleSignInErrorMessage,
   getGoogleSignInSetupMessage,
-  getGoogleTokensFromResponse,
   hasGoogleSignInConfiguration,
   signInWithEmailCredentials,
-  signInWithGoogleTokens,
+  signInWithGoogle,
   signUpWithEmailCredentials,
-  useGoogleAuthRequest,
 } from "../services/auth";
 import {
   signInSchema,
@@ -60,7 +54,6 @@ const LoginScreen = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [emailBusy, setEmailBusy] = useState(false);
-  const [request, , promptAsync] = useGoogleAuthRequest();
   const [googleBusy, setGoogleBusy] = useState(false);
   const googleConfigured = hasGoogleSignInConfiguration();
 
@@ -92,9 +85,6 @@ const LoginScreen = () => {
     },
   });
 
-  // Whichever form is active — simplifies the submit handler reference
-  const activeForm = authMode === "signIn" ? signInForm : signUpForm;
-
   // ---------------------------------------------------------------------------
   // Switch tabs — reset both forms to avoid stale errors flashing
   // ---------------------------------------------------------------------------
@@ -107,66 +97,15 @@ const LoginScreen = () => {
     setShowConfirmPassword(false);
   };
 
-  // ---------------------------------------------------------------------------
-  // Google Sign-In helpers (unchanged from original flow)
-  // ---------------------------------------------------------------------------
-
-  const finishGoogleSignIn = async (response: AuthSessionResult | null) => {
-    if (!response) return;
-    if (response.type === "dismiss" || response.type === "cancel") return;
-
-    if (response.type === "error") {
-      const errorMessage =
-        "error" in response && response.error?.message
-          ? response.error.message
-          : "Google account selection could not be completed.";
-      throw new Error(errorMessage);
-    }
-
-    if (response.type !== "success") return;
-
-    let { accessToken, idToken } = getGoogleTokensFromResponse(response);
-
-    if (!accessToken && !idToken) {
-      const code = getGoogleCodeFromResponse(response);
-
-      if (code) {
-        const exchangedTokens = await exchangeGoogleCodeForTokens({
-          code,
-          redirectUri: request?.redirectUri,
-          codeVerifier: request?.codeVerifier,
-        });
-
-        accessToken = exchangedTokens.accessToken ?? null;
-        idToken = exchangedTokens.idToken ?? null;
-      }
-    }
-
-    if (!accessToken && !idToken) {
-      throw new Error("Google did not return a usable authentication token.");
-    }
-
-    await signInWithGoogleTokens({ accessToken, idToken });
-  };
-
   const handleGoogleSignIn = async () => {
     if (!googleConfigured) {
       Alert.alert("Google Sign-In Needs Setup", getGoogleSignInSetupMessage());
       return;
     }
 
-    if (!request) {
-      Alert.alert(
-        "Google Sign-In Not Ready",
-        "The Google login request is still loading. Try again in a moment.",
-      );
-      return;
-    }
-
     try {
       setGoogleBusy(true);
-      const response = await promptAsync();
-      await finishGoogleSignIn(response);
+      await signInWithGoogle();
     } catch (error) {
       Alert.alert("Google Sign-In Failed", getGoogleSignInErrorMessage(error));
     } finally {
@@ -423,7 +362,7 @@ const LoginScreen = () => {
           <TouchableOpacity
             onPress={handleGoogleSignIn}
             activeOpacity={0.88}
-            disabled={isBusy || !request || !googleConfigured}
+            disabled={isBusy || !googleConfigured}
             className="flex-row items-center justify-center rounded-full border border-border bg-surface py-3 disabled:opacity-60"
           >
             <Image

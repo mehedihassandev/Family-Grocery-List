@@ -99,7 +99,8 @@ android {
     }
     signingConfigs {
         debug {
-            storeFile file('debug.keystore')
+            def googleOauthDebugKeystore = file('google-oauth-debug.keystore')
+            storeFile googleOauthDebugKeystore.exists() ? googleOauthDebugKeystore : file('debug.keystore')
             storePassword 'android'
             keyAlias 'androiddebugkey'
             keyPassword 'android'

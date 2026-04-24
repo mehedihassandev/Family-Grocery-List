@@ -1,5 +1,6 @@
 import * as Google from "expo-auth-session/providers/google";
 import * as WebBrowser from "expo-web-browser";
+import { GoogleSignin, statusCodes } from "@react-native-google-signin/google-signin";
 import { AuthSessionResult } from "expo-auth-session";
 import { Platform } from "react-native";
 import { FirebaseError } from "firebase/app";
@@ -109,6 +110,21 @@ const isFirestoreProfileTimeoutError = (error: unknown) =>
 
 const normalizeEmail = (email: string) => email.trim().toLowerCase();
 let activeSignOut: Promise<void> | null = null;
+let nativeGoogleSignInConfigured = false;
+
+const configureNativeGoogleSignIn = () => {
+  if (Platform.OS === "web" || nativeGoogleSignInConfigured) {
+    return;
+  }
+
+  GoogleSignin.configure({
+    webClientId: googleClientIds.webClientId,
+    iosClientId: googleClientIds.iosClientId,
+    scopes: googleScopes,
+    offlineAccess: false,
+  });
+  nativeGoogleSignInConfigured = true;
+};
 
 const clearPersistedAuthSession = async () => {
   try {
@@ -159,6 +175,7 @@ type GoogleConfigStatus = {
   missingEnvVars: string[];
   invalidFormatEnvVars: string[];
   mismatchedProjectEnvVars: string[];
+  duplicateClientEnvVars: string[];
 };
 
 const getRequiredGoogleClientIdKeysForPlatform = (): GoogleClientIdKey[] => {
@@ -182,6 +199,7 @@ export const getGoogleSignInConfigurationStatus = (): GoogleConfigStatus => {
   const missingEnvVars: string[] = [];
   const invalidFormatEnvVars: string[] = [];
   const mismatchedProjectEnvVars: string[] = [];
+  const duplicateClientEnvVars: string[] = [];
 
   if (!firebaseProjectNumber) {
     missingEnvVars.push("EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID");
@@ -210,27 +228,55 @@ export const getGoogleSignInConfigurationStatus = (): GoogleConfigStatus => {
     }
   }
 
+  if (
+    Platform.OS === "android" &&
+    googleClientIds.androidClientId &&
+    googleClientIds.androidClientId === googleClientIds.webClientId
+  ) {
+    duplicateClientEnvVars.push(
+      "EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID must be the Android OAuth client ID, not the Web client ID.",
+    );
+  }
+
+  if (
+    Platform.OS === "ios" &&
+    googleClientIds.iosClientId &&
+    googleClientIds.iosClientId === googleClientIds.webClientId
+  ) {
+    duplicateClientEnvVars.push(
+      "EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID must be the iOS OAuth client ID, not the Web client ID.",
+    );
+  }
+
   return {
     isConfigured:
       missingEnvVars.length === 0 &&
       invalidFormatEnvVars.length === 0 &&
-      mismatchedProjectEnvVars.length === 0,
+      mismatchedProjectEnvVars.length === 0 &&
+      duplicateClientEnvVars.length === 0,
     missingEnvVars,
     invalidFormatEnvVars,
     mismatchedProjectEnvVars,
+    duplicateClientEnvVars,
   };
 };
 
 export const hasGoogleSignInConfiguration = () => getGoogleSignInConfigurationStatus().isConfigured;
 
 export const getGoogleSignInSetupMessage = () => {
-  const { missingEnvVars, invalidFormatEnvVars, mismatchedProjectEnvVars } =
+  const {
+    missingEnvVars,
+    invalidFormatEnvVars,
+    mismatchedProjectEnvVars,
+    duplicateClientEnvVars,
+  } =
     getGoogleSignInConfigurationStatus();
 
   if (
     missingEnvVars.length === 0 &&
     invalidFormatEnvVars.length === 0 &&
-    mismatchedProjectEnvVars.length === 0
+    mismatchedProjectEnvVars.length === 0 &&
+    duplicateClientEnvVars.length === 0
   ) {
     return "Google Sign-In is configured.";
   }
@@ -249,6 +295,10 @@ export const getGoogleSignInSetupMessage = () => {
     issues.push(
       `Project mismatch (Google client ID project number must match EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID):\n${mismatchedProjectEnvVars.join("\n")}`,
     );
+  }
+
+  if (duplicateClientEnvVars.length > 0) {
+    issues.push(`Wrong Google client type:\n${duplicateClientEnvVars.join("\n")}`);
   }
 
   return `Fix Google Sign-In configuration:\n\n${issues.join("\n\n")}`;
@@ -326,6 +376,51 @@ export const signInWithGoogleTokens = async ({ accessToken, idToken }: GoogleTok
   );
 
   return mapFirebaseUserToAppUser(userCredential.user);
+};
+
+export const signInWithGoogle = async () => {
+  if (Platform.OS === "web") {
+    throw new Error("Google Sign-In is configured for native Android/iOS builds.");
+  }
+
+  if (!googleClientIds.webClientId) {
+    throw new Error("EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID is required for native Google Sign-In.");
+  }
+
+  configureNativeGoogleSignIn();
+
+  if (Platform.OS === "android") {
+    await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
+  }
+
+  const response = await withTimeout(
+    GoogleSignin.signIn(),
+    AUTH_OPERATION_TIMEOUT_MS,
+    "Timed out while opening Google Sign-In.",
+  );
+
+  if (response.type === "cancelled") {
+    return null;
+  }
+
+  let accessToken: string | null = null;
+  let idToken = response.data.idToken;
+
+  if (!idToken) {
+    const tokens = await withTimeout(
+      GoogleSignin.getTokens(),
+      AUTH_OPERATION_TIMEOUT_MS,
+      "Timed out while reading Google tokens.",
+    );
+    accessToken = tokens.accessToken;
+    idToken = tokens.idToken;
+  }
+
+  if (!accessToken && !idToken) {
+    throw new Error("Google did not return a usable authentication token.");
+  }
+
+  return signInWithGoogleTokens({ accessToken, idToken });
 };
 
 export const signInWithEmailCredentials = async ({ email, password }: EmailSignInInput) => {
@@ -458,6 +553,18 @@ export const exchangeGoogleCodeForTokens = async ({
 };
 
 export const getGoogleSignInErrorMessage = (error: unknown) => {
+  if (typeof error === "object" && error !== null && "code" in error) {
+    const code = String(error.code);
+
+    if (code === statusCodes.IN_PROGRESS) {
+      return "Google Sign-In is already in progress.";
+    }
+
+    if (code === statusCodes.PLAY_SERVICES_NOT_AVAILABLE) {
+      return "Google Play Services is not available or needs an update.";
+    }
+  }
+
   if (error instanceof Error && error.message.trim()) {
     const message = error.message.trim();
 
