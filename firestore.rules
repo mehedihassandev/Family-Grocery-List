@@ -13,12 +13,8 @@ service cloud.firestore {
       return signedIn() && exists(userDocPath(request.auth.uid));
     }
 
-    function requesterData() {
-      return get(userDocPath(request.auth.uid)).data;
-    }
-
     function requesterFamilyId() {
-      return requesterData().familyId;
+      return get(userDocPath(request.auth.uid)).data.get('familyId', null);
     }
 
     function isRequester(uid) {
@@ -26,14 +22,11 @@ service cloud.firestore {
     }
 
     function isFamilyMember(familyId) {
-      return requesterDocExists()
-        && requesterFamilyId() != null
-        && requesterFamilyId() == familyId;
+      return signedIn() && requesterFamilyId() == familyId;
     }
 
     function isOwnerOf(familyId) {
       return isFamilyMember(familyId)
-        && exists(/databases/$(database)/documents/families/$(familyId))
         && get(/databases/$(database)/documents/families/$(familyId)).data.ownerId == request.auth.uid;
     }
 
@@ -87,28 +80,21 @@ service cloud.firestore {
     }
 
     match /grocery_items/{itemId} {
-      allow read: if signedIn() && isFamilyMember(resource.data.familyId);
-      allow create: if signedIn()
-        && request.resource.data.familyId != null
-        && isFamilyMember(request.resource.data.familyId);
-      allow update, delete: if signedIn() && isFamilyMember(resource.data.familyId);
+      allow read: if isFamilyMember(resource.data.get('familyId', null));
+      allow create: if isFamilyMember(request.resource.data.get('familyId', null));
+      allow update, delete: if isFamilyMember(resource.data.get('familyId', null));
     }
 
     match /categories/{categoryId} {
-      allow read: if signedIn() && isFamilyMember(resource.data.familyId);
-      allow create: if signedIn()
-        && request.resource.data.familyId != null
-        && isFamilyMember(request.resource.data.familyId);
-      allow update, delete: if signedIn() && isFamilyMember(resource.data.familyId);
+      allow read: if isFamilyMember(resource.data.get('familyId', null));
+      allow create: if isFamilyMember(request.resource.data.get('familyId', null));
+      allow update, delete: if isFamilyMember(resource.data.get('familyId', null));
     }
 
     match /notifications/{notifId} {
-      allow read: if signedIn() && isFamilyMember(resource.data.familyId);
-      allow create: if signedIn()
-        && request.resource.data.familyId != null
-        && isFamilyMember(request.resource.data.familyId);
-      allow update: if signedIn() && isFamilyMember(resource.data.familyId);
-      allow delete: if signedIn() && isFamilyMember(resource.data.familyId);
+      allow read: if isFamilyMember(resource.data.get('familyId', null));
+      allow create: if isFamilyMember(request.resource.data.get('familyId', null));
+      allow update, delete: if isFamilyMember(resource.data.get('familyId', null));
     }
   }
 }

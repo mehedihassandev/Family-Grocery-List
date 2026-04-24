@@ -1,28 +1,34 @@
 import React, { useState } from "react";
 import { Modal, ScrollView, Text, TouchableOpacity, View } from "react-native";
-import { Bell, Check, ShoppingBag, X, AlertCircle } from "lucide-react-native";
+import { useColorScheme } from "nativewind";
+import { Bell, Check, ShoppingBag, X, AlertCircle, Inbox } from "lucide-react-native";
 import { useAuthStore } from "../store/useAuthStore";
 import { useNotificationStore } from "../store/useNotificationStore";
 import { markNotificationsAsRead } from "../services/notification";
 import { formatDistanceToNow } from "date-fns";
+import { Card } from "./ui";
 
 type NotificationModalProps = {
   visible: boolean;
   onClose: () => void;
 };
 
+/**
+ * Modal to display recent family activities and notifications
+ * Why: To keep users updated on grocery list changes (items added, completed) in a centralized place.
+ */
 const NotificationModal = ({ visible, onClose }: NotificationModalProps) => {
   const { user } = useAuthStore();
+  const { colorScheme } = useColorScheme();
   const notifications = useNotificationStore((state) => state.notifications);
   const [filter, setFilter] = useState<"all" | "unread">("all");
 
+  const isDark = colorScheme === "dark";
   const myUid = user?.uid || "";
 
-  // Filter out actions done by the current user so they don't see their own notifications
+  // Filter out actions done by the current user
   const feed = notifications.filter((n) => n.actorId !== myUid);
-
   const displayList = filter === "unread" ? feed.filter((n) => !n.readBy.includes(myUid)) : feed;
-
   const unreadIds = feed.filter((n) => !n.readBy.includes(myUid)).map((n) => n.id);
 
   const handleMarkAllRead = async () => {
@@ -41,38 +47,38 @@ const NotificationModal = ({ visible, onClose }: NotificationModalProps) => {
     }
   };
 
-  const getIconData = (type: string, isUnread: boolean) => {
+  const getIconData = (type: string) => {
     switch (type) {
       case "item_added":
         return {
           icon: ShoppingBag,
           color: "#3b82f6",
-          bg: "bg-blue-50",
+          bg: isDark ? "bg-blue-900/20" : "bg-blue-50",
         };
       case "item_completed":
         return {
           icon: Check,
           color: "#59AC77",
-          bg: "bg-primary-50",
+          bg: isDark ? "bg-primary-900/20" : "bg-primary-50",
         };
       case "urgent_item":
         return {
           icon: AlertCircle,
-          color: "#c36262",
-          bg: "bg-urgent/10",
+          color: "#ef4444",
+          bg: isDark ? "bg-red-900/20" : "bg-red-50",
         };
       default:
         return {
           icon: Bell,
-          color: "#95a39a",
-          bg: "bg-border-muted/30",
+          color: isDark ? "#cbd5cf" : "#748379",
+          bg: isDark ? "bg-surface-dark-muted" : "bg-surface-muted",
         };
     }
   };
 
   return (
     <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
-      <View className="flex-1 justify-end bg-black/40">
+      <View className="flex-1 justify-end" style={{ backgroundColor: "rgba(0,0,0,0.5)" }}>
         <TouchableOpacity
           activeOpacity={1}
           onPress={onClose}
@@ -80,51 +86,47 @@ const NotificationModal = ({ visible, onClose }: NotificationModalProps) => {
         />
 
         <View
-          className="max-h-[90%] min-h-[60%] rounded-t-3xl bg-surface px-6 pb-12 pt-4"
+          className="max-h-[90%] min-h-[50%] rounded-t-4xl bg-background dark:bg-background-dark px-6 pb-12 pt-3"
           style={{
             shadowColor: "#000",
-            shadowOffset: { width: 0, height: -5 },
-            shadowOpacity: 0.1,
-            shadowRadius: 10,
-            elevation: 15,
+            shadowOffset: { width: 0, height: -10 },
+            shadowOpacity: 0.15,
+            shadowRadius: 20,
+            elevation: 20,
           }}
         >
           {/* Handle bar */}
           <View className="mb-4 items-center">
-            <View className="h-1.5 w-12 rounded-full bg-border-muted" />
+            <View className="h-1.5 w-14 rounded-full bg-border-muted dark:bg-border-dark" />
           </View>
 
           <View className="mb-6 flex-row items-center justify-between">
             <View>
-              <Text className="text-[28px] font-black tracking-tight text-text-primary">
-                Notifications
+              <Text className="text-[10px] font-bold uppercase tracking-[2px] text-primary-600 dark:text-primary-400">
+                Activity Feed
               </Text>
-              <Text
-                className={`mt-1 text-[15px] font-medium ${unreadIds.length > 0 ? "text-primary-700" : "text-text-secondary"}`}
-              >
-                {unreadIds.length === 0
-                  ? "You're all caught up!"
-                  : `You have ${unreadIds.length} unread ${unreadIds.length === 1 ? "message" : "messages"}`}
+              <Text className="text-[32px] font-black tracking-tight text-text-primary dark:text-text-dark-primary">
+                Notifications
               </Text>
             </View>
             <TouchableOpacity
               onPress={onClose}
-              activeOpacity={0.8}
-              className="rounded-full bg-border-subtle p-2.5"
+              activeOpacity={0.7}
+              className="h-11 w-11 items-center justify-center rounded-full bg-surface-muted dark:bg-surface-dark-muted border border-border-muted dark:border-border-dark"
             >
-              <X stroke="#637889" size={20} strokeWidth={2.2} />
+              <X stroke={isDark ? "#cbd5cf" : "#748379"} size={20} strokeWidth={3} />
             </TouchableOpacity>
           </View>
 
-          <View className="mb-4 flex-row items-center justify-between border-b border-border-muted pb-4">
-            <View className="flex-row items-center gap-2">
+          <View className="mb-6 flex-row items-center justify-between border-b border-border-muted/40 dark:border-border-dark/40 pb-4">
+            <View className="flex-row items-center bg-surface-muted dark:bg-surface-dark-muted rounded-xl p-1 border border-border-muted dark:border-border-dark">
               <TouchableOpacity
                 activeOpacity={0.7}
                 onPress={() => setFilter("all")}
-                className={`rounded-full px-4 py-1.5 ${filter === "all" ? "bg-primary-700" : "bg-surface border border-border-muted"}`}
+                className={`rounded-lg px-4 py-1.5 ${filter === "all" ? "bg-surface dark:bg-surface-dark shadow-sm" : ""}`}
               >
                 <Text
-                  className={`text-[13px] font-semibold ${filter === "all" ? "text-text-inverse" : "text-text-secondary"}`}
+                  className={`text-[12px] font-black uppercase tracking-wider ${filter === "all" ? "text-primary-600 dark:text-primary-400" : "text-text-muted dark:text-text-dark-muted"}`}
                 >
                   All
                 </Text>
@@ -132,41 +134,51 @@ const NotificationModal = ({ visible, onClose }: NotificationModalProps) => {
               <TouchableOpacity
                 activeOpacity={0.7}
                 onPress={() => setFilter("unread")}
-                className={`rounded-full px-4 py-1.5 ${filter === "unread" ? "bg-primary-700" : "bg-surface border border-border-muted"}`}
+                className={`rounded-lg px-4 py-1.5 ${filter === "unread" ? "bg-surface dark:bg-surface-dark shadow-sm" : ""}`}
               >
-                <Text
-                  className={`text-[13px] font-semibold ${filter === "unread" ? "text-text-inverse" : "text-text-secondary"}`}
-                >
-                  Unread
-                </Text>
+                <View className="flex-row items-center">
+                  <Text
+                    className={`text-[12px] font-black uppercase tracking-wider ${filter === "unread" ? "text-primary-600 dark:text-primary-400" : "text-text-muted dark:text-text-dark-muted"}`}
+                  >
+                    Unread
+                  </Text>
+                  {unreadIds.length > 0 && (
+                    <View className="ml-1.5 h-1.5 w-1.5 rounded-full bg-red-500" />
+                  )}
+                </View>
               </TouchableOpacity>
             </View>
+            
             <TouchableOpacity
-              activeOpacity={0.8}
+              activeOpacity={0.7}
               onPress={handleMarkAllRead}
               disabled={unreadIds.length === 0}
-              className={`flex-row items-center ${unreadIds.length === 0 ? "opacity-40" : ""}`}
+              className={`flex-row items-center ${unreadIds.length === 0 ? "opacity-30" : ""}`}
             >
-              <Check stroke="#59AC77" size={16} strokeWidth={2.5} />
-              <Text className="ml-1 text-[13px] font-semibold text-primary-700">Mark all read</Text>
+              <Check stroke="#59AC77" size={14} strokeWidth={3} />
+              <Text className="ml-1.5 text-[11px] font-black uppercase tracking-wider text-primary-600 dark:text-primary-400">Mark all read</Text>
             </TouchableOpacity>
           </View>
 
-          <ScrollView showsVerticalScrollIndicator={false}>
+          <ScrollView showsVerticalScrollIndicator={false} className="flex-1">
             {displayList.length === 0 ? (
-              <View className="py-12 items-center justify-center">
-                <Bell stroke="#b8c6bd" size={40} strokeWidth={1.5} />
-                <Text className="mt-4 text-[16px] font-bold text-text-secondary">
-                  No notifications yet
+              <View className="py-20 items-center justify-center">
+                <View className="h-20 w-20 items-center justify-center rounded-full bg-surface-muted dark:bg-surface-dark-muted mb-6">
+                  <Inbox stroke={isDark ? "#4f5f56" : "#95a39a"} size={32} strokeWidth={2} />
+                </View>
+                <Text className="text-[20px] font-black tracking-tight text-text-primary dark:text-text-dark-primary text-center">
+                  {filter === "unread" ? "No Unread Notifications" : "All Caught Up!"}
                 </Text>
-                <Text className="mt-1 text-[13px] text-text-muted text-center px-8">
-                  When family members add or complete items, they&apos;ll show up here.
+                <Text className="mt-2 text-[14px] leading-relaxed text-text-muted dark:text-text-dark-muted text-center px-10">
+                  {filter === "unread" 
+                    ? "You have read all your recent family updates." 
+                    : "Activity from your family members will appear here."}
                 </Text>
               </View>
             ) : (
               displayList.map((notif) => {
                 const isUnread = !notif.readBy.includes(myUid);
-                const { icon: Icon, color, bg } = getIconData(notif.type, isUnread);
+                const { icon: Icon, color, bg } = getIconData(notif.type);
 
                 return (
                   <TouchableOpacity
@@ -175,33 +187,35 @@ const NotificationModal = ({ visible, onClose }: NotificationModalProps) => {
                     onPress={() => {
                       if (isUnread) markNotificationsAsRead([notif.id], myUid);
                     }}
-                    className={`mb-3 flex-row items-start rounded-2xl border bg-surface p-4 ${
-                      isUnread ? "border-primary-200" : "border-border-muted"
-                    }`}
+                    className="mb-3"
                   >
-                    <View className={`mr-4 rounded-full p-2.5 ${bg}`}>
-                      <Icon stroke={color} size={20} strokeWidth={2.2} />
-                    </View>
-                    <View className="flex-1">
-                      <View className="flex-row items-center justify-between">
-                        <Text
-                          className={`text-[16px] tracking-tight ${isUnread ? "font-black text-text-primary" : "font-bold text-text-secondary"}`}
-                        >
-                          {notif.title}
-                        </Text>
-                        <Text className="text-[12px] font-medium text-text-muted">
-                          {formatTime(notif.createdAt)}
-                        </Text>
+                    <Card className={`py-4 ${isUnread ? "border-primary-100 dark:border-primary-900/30 bg-primary-50/10 dark:bg-primary-900/10" : ""}`}>
+                      <View className="flex-row items-start">
+                        <View className={`mr-4 h-11 w-11 items-center justify-center rounded-2xl ${bg}`}>
+                          <Icon stroke={color} size={20} strokeWidth={2.5} />
+                        </View>
+                        <View className="flex-1">
+                          <View className="flex-row items-center justify-between">
+                            <Text
+                              className={`text-[15px] tracking-tight ${isUnread ? "font-black text-text-primary dark:text-text-dark-primary" : "font-bold text-text-muted dark:text-text-dark-muted"}`}
+                            >
+                              {notif.title}
+                            </Text>
+                            <Text className="text-[10px] font-bold text-text-muted dark:text-text-dark-muted uppercase tracking-wider">
+                              {formatTime(notif.createdAt)}
+                            </Text>
+                          </View>
+                          <Text
+                            className={`mt-1 text-[13px] leading-relaxed ${isUnread ? "text-text-primary dark:text-text-dark-primary font-medium" : "text-text-muted dark:text-text-dark-muted"}`}
+                          >
+                            {notif.message}
+                          </Text>
+                        </View>
+                        {isUnread && (
+                          <View className="ml-3 mt-2 h-2 w-2 rounded-full bg-primary-600" />
+                        )}
                       </View>
-                      <Text
-                        className={`mt-1 text-[14px] leading-5 ${isUnread ? "text-text-primary font-medium" : "text-text-secondary"}`}
-                      >
-                        {notif.message}
-                      </Text>
-                    </View>
-                    {isUnread && (
-                      <View className="ml-3 mt-2 h-2.5 w-2.5 rounded-full bg-primary-600" />
-                    )}
+                    </Card>
                   </TouchableOpacity>
                 );
               })

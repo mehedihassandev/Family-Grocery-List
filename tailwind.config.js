@@ -2,6 +2,7 @@
 module.exports = {
   content: ["./App.{js,jsx,ts,tsx}", "./src/**/*.{js,jsx,ts,tsx}"],
   presets: [require("nativewind/preset")],
+  darkMode: "class",
   theme: {
     extend: {
       colors: {
@@ -33,11 +34,16 @@ module.exports = {
           DEFAULT: "#ffffff",
           soft: "#fafafa",
           elevated: "#ffffff",
+          dark: "#0f1712",
+          "dark-soft": "#1a241e",
         },
         surface: {
           DEFAULT: "#ffffff",
           muted: "#f8f8f8",
           subtle: "#f1f1f1",
+          dark: "#1a241e",
+          "dark-muted": "#242f28",
+          "dark-subtle": "#2d3a31",
         },
         text: {
           primary: "#1f2a25",
@@ -45,11 +51,16 @@ module.exports = {
           muted: "#748379",
           subtle: "#95a39a",
           inverse: "#f6fbf7",
+          "dark-primary": "#f1f7f3",
+          "dark-secondary": "#cbd5cf",
+          "dark-muted": "#94a399",
         },
         border: {
           DEFAULT: "#d5dfd8",
           muted: "#e2e9e4",
           strong: "#b8c6bd",
+          dark: "#2d3a31",
+          "dark-muted": "#36453b",
         },
         brand: {
           emerald: "#59AC77",
@@ -64,6 +75,10 @@ module.exports = {
       borderRadius: {
         "4xl": "32px",
         "5xl": "40px",
+      },
+      boxShadow: {
+        soft: "0 2px 8px rgba(0, 0, 0, 0.02)",
+        medium: "0 4px 12px rgba(0, 0, 0, 0.05)",
       },
     },
   },

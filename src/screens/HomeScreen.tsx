@@ -13,6 +13,7 @@ import {
   ScrollView,
 } from "react-native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
+import { useColorScheme } from "nativewind";
 import {
   Plus,
   RefreshCw,
@@ -32,7 +33,7 @@ import EditItemModal from "../components/EditItemModal";
 import EmptyState from "../components/EmptyState";
 import { GROCERY_CATEGORIES, sortLegacyGroceryItemsForHome } from "../features/grocery";
 import { getFamilyDetails, subscribeToFamilyMembers } from "../services/family";
-import { AppHeader } from "../components/ui";
+import { AppHeader, Card, Chip } from "../components/ui";
 import ItemDetailModal from "../components/ItemDetailModal";
 import NotificationModal from "../components/NotificationModal";
 
@@ -64,8 +65,13 @@ const getFirebaseErrorMessage = (error: Error) => {
   return "Could not load grocery items. Check internet and retry.";
 };
 
+/**
+ * Main grocery list screen
+ * Why: To allow users to view, search, filter, and manage grocery items in their family list.
+ */
 const HomeScreen = () => {
   const { user } = useAuthStore();
+  const { colorScheme } = useColorScheme();
   const insets = useSafeAreaInsets();
   const [items, setItems] = useState<GroceryItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -86,6 +92,8 @@ const HomeScreen = () => {
   const [showCompleted, setShowCompleted] = useState(false);
   const [isCategoryFilterOpen, setCategoryFilterOpen] = useState(false);
   const categoryAnimation = useRef(new Animated.Value(0)).current;
+
+  const isDark = colorScheme === "dark";
 
   useEffect(() => {
     if (!user?.familyId) {
@@ -129,8 +137,7 @@ const HomeScreen = () => {
         setFamilyName(name || "Our Family");
       })
       .catch(() => {
-        if (!isMounted) return;
-        setFamilyName("Our Family");
+        if (isMounted) setFamilyName("Our Family");
       });
 
     return () => {
@@ -150,9 +157,8 @@ const HomeScreen = () => {
         setMemberCount(members.length);
       },
       (error) => {
-        const message = error.message || "";
         if (__DEV__) {
-          console.warn("[HomeScreen] member subscription error:", message);
+          console.warn("[HomeScreen] member subscription error:", error.message);
         }
         setMemberCount(0);
       },
@@ -172,18 +178,6 @@ const HomeScreen = () => {
     () => (editingItemId ? (items.find((item) => item.id === editingItemId) ?? null) : null),
     [items, editingItemId],
   );
-
-  useEffect(() => {
-    if (editingItemId && !editingItem) {
-      setEditingItemId(null);
-    }
-  }, [editingItemId, editingItem]);
-
-  useEffect(() => {
-    if (viewingItemId && !viewingItem) {
-      setViewingItemId(null);
-    }
-  }, [viewingItemId, viewingItem]);
 
   const filteredItems = useMemo(() => {
     const query = searchQuery.trim().toLowerCase();
@@ -267,11 +261,9 @@ const HomeScreen = () => {
 
   const categoryOptions = useMemo(() => {
     const fromItems = Array.from(new Set(sortedItems.map((item) => item.category).filter(Boolean)));
-
     const merged = [...GROCERY_CATEGORIES, ...fromItems].filter(
       (category, index, self) => self.indexOf(category) === index,
     );
-
     return [ALL_CATEGORY, ...merged];
   }, [sortedItems]);
 
@@ -312,12 +304,12 @@ const HomeScreen = () => {
   };
 
   return (
-    <SafeAreaView edges={["top", "left", "right"]} className="flex-1 bg-background">
-      <StatusBar barStyle="dark-content" />
+    <SafeAreaView edges={["top", "left", "right"]} className="flex-1 bg-background dark:bg-background-dark">
+      <StatusBar barStyle={isDark ? "light-content" : "dark-content"} />
 
       <AppHeader
         title="Grocery List"
-        eyebrow="My Family"
+        eyebrow="Family Items"
         onNotificationPress={() => setNotifOpen(true)}
       />
 
@@ -333,8 +325,8 @@ const HomeScreen = () => {
             activeOpacity={0.85}
             className="mt-4 flex-row items-center rounded-full bg-primary-600 px-5 py-3"
           >
-            <RefreshCw color="#f6fbf7" size={16} strokeWidth={2.4} />
-            <Text className="ml-2 text-sm font-semibold text-text-inverse">Retry</Text>
+            <RefreshCw color="white" size={16} strokeWidth={2.4} />
+            <Text className="ml-2 text-sm font-semibold text-white">Retry</Text>
           </TouchableOpacity>
         </View>
       ) : (
@@ -350,53 +342,33 @@ const HomeScreen = () => {
               onRefresh={handleRefresh}
               tintColor="#59AC77"
               colors={["#59AC77"]}
-              progressBackgroundColor="#f8faf8"
+              progressBackgroundColor={isDark ? "#1a241e" : "#f8faf8"}
             />
           }
           contentContainerStyle={{ paddingBottom: 140 }}
           ListHeaderComponent={
-            <View className="px-6 pt-4">
-              <View
-                className="mb-4 flex-row items-center rounded-2xl border border-border-muted bg-surface px-4"
-                style={{
-                  shadowColor: "#1f2a25",
-                  shadowOffset: { width: 0, height: 2 },
-                  shadowOpacity: 0.02,
-                  shadowRadius: 8,
-                  elevation: 1,
-                }}
-              >
-                <Search stroke="#748379" size={18} />
+            <View className="px-6 pt-6">
+              <View className="mb-6 flex-row items-center rounded-2xl border border-border-muted dark:border-border-dark bg-surface dark:bg-surface-dark px-4 shadow-sm">
+                <Search stroke={isDark ? "#94a399" : "#748379"} size={18} />
                 <TextInput
                   value={searchQuery}
                   onChangeText={setSearchQuery}
                   placeholder={SEARCH_PLACEHOLDER}
-                  placeholderTextColor="#95a39a"
-                  className="ml-3 h-12 flex-1 text-[17px] font-medium text-text-primary"
+                  placeholderTextColor={isDark ? "#4f5f56" : "#95a39a"}
+                  className="ml-3 h-12 flex-1 text-[16px] font-medium text-text-primary dark:text-text-dark-primary"
                 />
               </View>
 
-              <View className="mb-1 flex-row items-center justify-between">
+              <View className="mb-2 flex-row items-center justify-between">
                 <View className="flex-row items-center">
                   {STATUS_FILTERS.map((option) => (
-                    <TouchableOpacity
+                    <Chip
                       key={option.key}
-                      activeOpacity={0.8}
+                      label={option.label}
+                      selected={statusFilter === option.key}
                       onPress={() => setStatusFilter(option.key)}
-                      className={`mr-2 rounded-full border px-4 py-2.5 ${
-                        statusFilter === option.key
-                          ? "border-primary-300 bg-primary-50"
-                          : "border-border-muted bg-surface"
-                      }`}
-                    >
-                      <Text
-                        className={`text-[15px] font-semibold ${
-                          statusFilter === option.key ? "text-primary-700" : "text-text-muted"
-                        }`}
-                      >
-                        {option.label}
-                      </Text>
-                    </TouchableOpacity>
+                      className="mr-2"
+                    />
                   ))}
                 </View>
 
@@ -405,15 +377,15 @@ const HomeScreen = () => {
                   onPress={() => setCategoryFilterOpen((prev) => !prev)}
                   className={`rounded-full border p-2.5 ${
                     isCategoryFilterOpen || activeCategory !== ALL_CATEGORY
-                      ? "border-primary-300 bg-primary-50"
-                      : "border-border-muted bg-surface"
+                      ? "border-primary-300 bg-primary-50 dark:border-primary-700 dark:bg-primary-900/20"
+                      : "border-border-muted bg-surface dark:border-border-dark dark:bg-surface-dark"
                   }`}
                 >
                   <SlidersHorizontal
                     stroke={
                       isCategoryFilterOpen || activeCategory !== ALL_CATEGORY
-                        ? "#4a9a68"
-                        : "#748379"
+                        ? "#59AC77"
+                        : isDark ? "#94a399" : "#748379"
                     }
                     size={18}
                   />
@@ -428,37 +400,27 @@ const HomeScreen = () => {
                   contentContainerStyle={{ paddingRight: 12 }}
                 >
                   {categoryOptions.map((category) => (
-                    <TouchableOpacity
+                    <Chip
                       key={category}
-                      activeOpacity={0.8}
+                      label={category}
+                      selected={activeCategory === category}
                       onPress={() => setActiveCategory(category)}
-                      className={`mr-2 rounded-full border px-4 py-2.5 ${
-                        activeCategory === category
-                          ? "border-primary-300 bg-primary-50"
-                          : "border-border-muted bg-surface"
-                      }`}
-                    >
-                      <Text
-                        className={`text-[15px] font-semibold ${
-                          activeCategory === category ? "text-primary-700" : "text-text-muted"
-                        }`}
-                      >
-                        {category}
-                      </Text>
-                    </TouchableOpacity>
+                      className="mr-2"
+                    />
                   ))}
                 </ScrollView>
               </Animated.View>
 
-              <Text className="my-4 pt-1 text-[12px] font-semibold uppercase tracking-[1.3px] text-text-muted">
-                Showing {visibleCount} item
-                {visibleCount === 1 ? "" : "s"}
-              </Text>
+              <View className="flex-row items-center justify-between mt-4 mb-2">
+                <Text className="text-[11px] font-bold uppercase tracking-[1.5px] text-text-muted dark:text-text-dark-muted">
+                  Showing {visibleCount} item{visibleCount === 1 ? "" : "s"}
+                </Text>
+              </View>
             </View>
           }
           renderSectionHeader={({ section }) => (
-            <View className="px-6 pb-1 pt-2">
-              <Text className="text-[17px] font-semibold tracking-tight text-text-primary/90">
+            <View className="px-6 pb-2 pt-4 bg-background dark:bg-background-dark">
+              <Text className="text-[13px] font-bold tracking-widest uppercase text-primary-600 dark:text-primary-400">
                 {section.title}
               </Text>
             </View>
@@ -474,14 +436,14 @@ const HomeScreen = () => {
             </View>
           )}
           ListEmptyComponent={
-            <View className="items-center px-6 pb-8 pt-14">
-              <View className="mb-4 h-16 w-16 items-center justify-center rounded-full bg-primary-50">
-                <ShoppingBasket stroke="#59AC77" size={28} strokeWidth={2.2} />
+            <View className="items-center px-10 pb-8 pt-16">
+              <View className="mb-6 h-20 w-20 items-center justify-center rounded-full bg-primary-50 dark:bg-primary-900/10">
+                <ShoppingBasket stroke="#59AC77" size={32} strokeWidth={2.2} />
               </View>
-              <Text className="text-center text-[32px] font-bold tracking-tight text-text-primary">
+              <Text className="text-center text-[28px] font-black tracking-tight text-text-primary dark:text-text-dark-primary">
                 No items found
               </Text>
-              <Text className="mt-2 text-center text-[16px] leading-6 text-text-muted">
+              <Text className="mt-3 text-center text-[16px] leading-6 text-text-muted dark:text-text-dark-muted">
                 {searchQuery || activeCategory !== ALL_CATEGORY
                   ? "Try a different search or category filter."
                   : "Tap '+' to add your first grocery item."}
@@ -494,17 +456,17 @@ const HomeScreen = () => {
                 <TouchableOpacity
                   onPress={() => setShowCompleted((prev) => !prev)}
                   activeOpacity={0.8}
-                  className="flex-row items-center justify-center py-3"
+                  className="flex-row items-center justify-center py-4 bg-surface dark:bg-surface-dark rounded-2xl border border-border-muted dark:border-border-dark mt-4"
                 >
-                  <Text className="mr-2 text-[14px] font-semibold text-text-secondary">
+                  <Text className="mr-2 text-[14px] font-bold text-text-secondary dark:text-text-dark-secondary">
                     {showCompleted
                       ? "Hide completed items"
                       : `Show completed (${filteredCompletedCount})`}
                   </Text>
                   {showCompleted ? (
-                    <ChevronUp stroke="#637889" size={16} strokeWidth={2.5} />
+                    <ChevronUp stroke={isDark ? "#cbd5cf" : "#637889"} size={16} strokeWidth={3} />
                   ) : (
-                    <ChevronDown stroke="#637889" size={16} strokeWidth={2.5} />
+                    <ChevronDown stroke={isDark ? "#cbd5cf" : "#637889"} size={16} strokeWidth={3} />
                   )}
                 </TouchableOpacity>
               </View>
@@ -516,17 +478,17 @@ const HomeScreen = () => {
       <TouchableOpacity
         onPress={() => setModalVisible(true)}
         activeOpacity={0.85}
-        className="absolute right-6 h-14 w-14 items-center justify-center rounded-2xl bg-primary-600 shadow-xl shadow-primary-200"
+        className="absolute right-6 h-14 w-14 items-center justify-center rounded-2xl bg-primary-600 shadow-xl"
         style={{
           bottom: insets.bottom + 78,
           elevation: 8,
           shadowColor: "#59AC77",
           shadowOffset: { width: 0, height: 10 },
-          shadowOpacity: 0.28,
+          shadowOpacity: 0.3,
           shadowRadius: 15,
         }}
       >
-        <Plus color="white" size={28} strokeWidth={2.4} />
+        <Plus color="white" size={28} strokeWidth={3} />
       </TouchableOpacity>
 
       <AddItemModal

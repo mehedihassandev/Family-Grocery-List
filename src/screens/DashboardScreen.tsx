@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { ScrollView, StatusBar, Text, View, TouchableOpacity } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useNavigation } from "@react-navigation/native";
+import { useColorScheme } from "nativewind";
 import {
   BarChart3,
   ShoppingBasket,
@@ -18,7 +18,7 @@ import { useAuthStore } from "../store/useAuthStore";
 import { getFamilyDetails, subscribeToFamilyMembers } from "../services/family";
 import { subscribeToGroceryList } from "../services/grocery";
 import { Family, GroceryItem } from "../types";
-import { AppHeader, ShortcutCard } from "../components/ui";
+import { AppHeader, ShortcutCard, Card } from "../components/ui";
 import NotificationModal from "../components/NotificationModal";
 
 const toDate = (value: any): Date | null => {
@@ -27,13 +27,19 @@ const toDate = (value: any): Date | null => {
   return null;
 };
 
-const DashboardScreen = () => {
-  const navigation = useNavigation<any>();
+/**
+ * Main dashboard screen (Home)
+ * Why: To provide a high-level overview of family status, grocery list stats, and quick actions.
+ */
+const DashboardScreen = ({ navigation }: any) => {
   const { user } = useAuthStore();
+  const { colorScheme } = useColorScheme();
   const [familyName, setFamilyName] = useState("Our Family");
   const [memberCount, setMemberCount] = useState(0);
   const [items, setItems] = useState<GroceryItem[]>([]);
   const [isNotifOpen, setNotifOpen] = useState(false);
+
+  const isDark = colorScheme === "dark";
 
   useEffect(() => {
     if (!user?.familyId) return;
@@ -113,154 +119,152 @@ const DashboardScreen = () => {
       .slice(0, 3);
   }, [items]);
 
-  return (
-    <SafeAreaView edges={["top", "left", "right"]} className="flex-1 bg-background">
-      <StatusBar barStyle="dark-content" />
+  const firstName = user?.displayName?.split(" ")[0] || "there";
 
-      <AppHeader title="Home" eyebrow="Dashboard" onNotificationPress={() => setNotifOpen(true)} />
+  return (
+    <SafeAreaView edges={["top", "left", "right"]} className="flex-1 bg-background dark:bg-background-dark">
+      <StatusBar barStyle={isDark ? "light-content" : "dark-content"} />
+
+      <AppHeader 
+        title={`Hello, ${firstName} 👋`} 
+        eyebrow="Dashboard" 
+        onNotificationPress={() => setNotifOpen(true)} 
+      />
 
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: 140 }}
+        className="flex-1"
       >
-        <View className="px-6 pt-4">
+        <View className="px-6 pt-6">
           {user?.familyId ? (
-            <View
-              className="relative rounded-3xl border border-border-muted bg-surface px-5 py-5 flex-row justify-between"
-              style={{
-                shadowColor: "#1f2a25",
-                shadowOffset: { width: 0, height: 4 },
-                shadowOpacity: 0.03,
-                shadowRadius: 10,
-                elevation: 2,
-              }}
-            >
-              {/* Left Side: Family Overview */}
-              <View className="flex-1 pr-3 justify-between">
-                <View>
-                  <Text className="text-[13px] font-bold text-text-primary tracking-wide">
-                    Family Group
-                  </Text>
-                  <Text
-                    className="text-[30px] font-black tracking-tight text-text-primary mt-1 leading-[36px]"
-                    numberOfLines={2}
+            <Card padding={false} className="overflow-hidden">
+              <View className="flex-row p-5">
+                {/* Left Side: Family Overview */}
+                <View className="flex-1 pr-3 justify-between">
+                  <View>
+                    <Text className="text-[11px] font-bold text-primary-600 dark:text-primary-400 uppercase tracking-widest">
+                      Family Group
+                    </Text>
+                    <Text
+                      className="text-[26px] font-black tracking-tight text-text-primary dark:text-text-dark-primary mt-1 leading-tight"
+                      numberOfLines={2}
+                    >
+                      {familyName}
+                    </Text>
+                    <View className="flex-row items-center mt-2">
+                      <Users size={12} stroke={isDark ? "#94a399" : "#748379"} />
+                      <Text className="text-[12px] text-text-muted dark:text-text-dark-muted ml-1 font-medium">
+                        {memberCount} Member{memberCount === 1 ? "" : "s"}
+                      </Text>
+                    </View>
+                  </View>
+
+                  <TouchableOpacity
+                    activeOpacity={0.8}
+                    onPress={() => navigation.navigate("Members")}
+                    className="mt-6 self-start rounded-full bg-primary-600 dark:bg-primary-500 py-2 px-5 flex-row items-center justify-center"
                   >
-                    {familyName}
-                  </Text>
-                  <Text className="text-[12px] text-text-muted mt-2">
-                    {memberCount} Member{memberCount === 1 ? "" : "s"} · {thisMonthCount} Item
-                    {thisMonthCount === 1 ? "" : "s"} Created
-                  </Text>
+                    <Text className="text-[13px] font-bold text-white mr-1">Manage</Text>
+                    <ChevronRight stroke="white" size={14} strokeWidth={3} />
+                  </TouchableOpacity>
                 </View>
 
-                <TouchableOpacity
-                  activeOpacity={0.8}
-                  onPress={() => navigation.navigate("Members")}
-                  className="mt-6 self-start rounded-full border border-primary-400 py-1.5 px-4 flex-row items-center justify-center bg-surface"
-                >
-                  <Text className="text-[12px] font-medium text-primary-600 mr-1">Manage</Text>
-                  <ChevronRight stroke="#59AC77" size={14} strokeWidth={2.5} />
-                </TouchableOpacity>
-              </View>
-
-              {/* Right Side: Stats Panel */}
-              <View className="justify-center border-l flex-row border-dashed border-border-muted/80 pl-4 py-1">
-                <View>
+                {/* Right Side: Stats Grid */}
+                <View className="w-[120px] border-l border-border-muted dark:border-border-dark pl-4 justify-center">
                   <TouchableOpacity
                     activeOpacity={0.7}
                     onPress={() => navigation.navigate("List")}
-                    className="flex-row items-center mb-3"
+                    className="flex-row items-center mb-4"
                   >
-                    <View className="h-8 w-8 rounded-lg bg-slate-100 items-center justify-center mr-3">
-                      <Clock stroke="#64748b" size={16} strokeWidth={2.5} />
+                    <View className="h-8 w-8 rounded-full bg-secondary-100 dark:bg-secondary-900/30 items-center justify-center mr-2.5">
+                      <Clock stroke={isDark ? "#adbfcb" : "#637889"} size={14} strokeWidth={2.5} />
                     </View>
-                    <View className="w-16">
-                      <Text className="text-[16px] font-bold text-text-primary leading-tight">
+                    <View>
+                      <Text className="text-[15px] font-bold text-text-primary dark:text-text-dark-primary leading-none">
                         {pendingCount}
                       </Text>
-                      <Text className="text-[10px] text-text-muted mt-0.5 uppercase tracking-wide">
+                      <Text className="text-[9px] text-text-muted dark:text-text-dark-muted font-bold uppercase tracking-wide mt-0.5">
                         Pending
                       </Text>
                     </View>
                   </TouchableOpacity>
 
-                  <View className="h-[1px] w-[110px] border-b border-dashed border-border-muted/80 mb-3" />
-
                   <TouchableOpacity
                     activeOpacity={0.7}
                     onPress={() => navigation.navigate("List")}
-                    className="flex-row items-center mb-3"
+                    className="flex-row items-center mb-4"
                   >
-                    <View className="h-8 w-8 rounded-lg bg-primary-50 items-center justify-center mr-3">
-                      <CheckCircle2 stroke="#59AC77" size={16} strokeWidth={2.5} />
+                    <View className="h-8 w-8 rounded-full bg-primary-100 dark:bg-primary-900/30 items-center justify-center mr-2.5">
+                      <CheckCircle2 stroke="#59AC77" size={14} strokeWidth={2.5} />
                     </View>
-                    <View className="w-16">
-                      <Text className="text-[16px] font-bold text-text-primary leading-tight">
+                    <View>
+                      <Text className="text-[15px] font-bold text-text-primary dark:text-text-dark-primary leading-none">
                         {completedCount}
                       </Text>
-                      <Text className="text-[10px] text-text-muted mt-0.5 uppercase tracking-wide">
+                      <Text className="text-[9px] text-text-muted dark:text-text-dark-muted font-bold uppercase tracking-wide mt-0.5">
                         Done
                       </Text>
                     </View>
                   </TouchableOpacity>
-
-                  <View className="h-[1px] w-[110px] border-b border-dashed border-border-muted/80 mb-3" />
 
                   <TouchableOpacity
                     activeOpacity={0.7}
                     onPress={() => navigation.navigate("List")}
                     className="flex-row items-center"
                   >
-                    <View className="h-8 w-8 rounded-lg bg-orange-50 items-center justify-center mr-3">
-                      <AlertCircle stroke="#f59e0b" size={16} strokeWidth={2.5} />
+                    <View className="h-8 w-8 rounded-full bg-red-50 dark:bg-red-900/20 items-center justify-center mr-2.5">
+                      <AlertCircle stroke="#c36262" size={14} strokeWidth={2.5} />
                     </View>
-                    <View className="w-16">
-                      <Text className="text-[16px] font-bold text-text-primary leading-tight">
+                    <View>
+                      <Text className="text-[15px] font-bold text-text-primary dark:text-text-dark-primary leading-none">
                         {urgentCount}
                       </Text>
-                      <Text className="text-[10px] text-text-muted mt-0.5 uppercase tracking-wide">
+                      <Text className="text-[9px] text-text-muted dark:text-text-dark-muted font-bold uppercase tracking-wide mt-0.5">
                         Urgent
                       </Text>
                     </View>
                   </TouchableOpacity>
                 </View>
               </View>
-            </View>
+            </Card>
           ) : (
-            <View className="relative rounded-3xl border border-primary-200 bg-primary-50 px-5 py-6 items-center">
-              <View className="mb-3 h-14 w-14 items-center justify-center rounded-full bg-white">
-                <UsersRound stroke="#59AC77" size={28} strokeWidth={2} />
+            <Card className="bg-primary-50 dark:bg-primary-900/10 border-primary-100 dark:border-primary-800 items-center py-8">
+              <View className="mb-4 h-16 w-16 items-center justify-center rounded-full bg-white dark:bg-primary-900/20 shadow-sm">
+                <UsersRound stroke="#59AC77" size={32} strokeWidth={2.2} />
               </View>
-              <Text className="text-[22px] font-black tracking-tight text-text-primary text-center">
+              <Text className="text-[24px] font-black tracking-tight text-text-primary dark:text-text-dark-primary text-center">
                 Welcome to Family Grocery
               </Text>
-              <Text className="mt-2 text-[15px] leading-6 text-text-secondary text-center px-4">
+              <Text className="mt-2 text-[15px] leading-6 text-text-secondary dark:text-text-dark-secondary text-center px-4">
                 You are not in a family yet. Join an existing family using a code or create your own
                 to start sharing lists!
               </Text>
-            </View>
+            </Card>
           )}
         </View>
 
-        <View className="px-6 pt-6">
-          <Text className="mb-3 text-[18px] font-bold tracking-tight text-text-primary">
-            Shortcuts
-          </Text>
-          <View className="flex-row items-start justify-between">
+        <View className="px-6 pt-8">
+          <View className="flex-row items-center justify-between mb-4">
+            <Text className="text-[18px] font-bold tracking-tight text-text-primary dark:text-text-dark-primary">
+              Shortcuts
+            </Text>
+          </View>
+          <View className="flex-row items-start justify-between bg-surface dark:bg-surface-dark rounded-3xl p-6 border border-border-muted dark:border-border-dark">
             {!user?.familyId && (
               <>
                 <ShortcutCard
                   icon={UsersRound}
                   label="Join Family"
                   iconColor="#3b82f6"
-                  iconBgColor="bg-blue-50"
+                  iconBgColor="bg-blue-50 dark:bg-blue-900/20"
                   onPress={() => navigation.navigate("JoinFamily")}
                 />
                 <ShortcutCard
                   icon={PlusCircle}
                   label="Create Family"
                   iconColor="#59AC77"
-                  iconBgColor="bg-primary-50"
+                  iconBgColor="bg-primary-50 dark:bg-primary-900/20"
                   onPress={() => navigation.navigate("CreateFamily")}
                 />
               </>
@@ -271,21 +275,21 @@ const DashboardScreen = () => {
                   icon={ShoppingBasket}
                   label="List"
                   iconColor="#59AC77"
-                  iconBgColor="bg-primary-50"
+                  iconBgColor="bg-primary-50 dark:bg-primary-900/20"
                   onPress={() => navigation.navigate("List")}
                 />
                 <ShortcutCard
                   icon={Users}
                   label="Members"
                   iconColor="#59AC77"
-                  iconBgColor="bg-primary-50"
+                  iconBgColor="bg-primary-50 dark:bg-primary-900/20"
                   onPress={() => navigation.navigate("Members")}
                 />
                 <ShortcutCard
                   icon={BarChart3}
                   label="Analyze"
                   iconColor="#59AC77"
-                  iconBgColor="bg-primary-50"
+                  iconBgColor="bg-primary-50 dark:bg-primary-900/20"
                   onPress={() => navigation.navigate("Analyze")}
                 />
               </>
@@ -294,34 +298,56 @@ const DashboardScreen = () => {
               icon={UserCircle2}
               label="Profile"
               iconColor="#59AC77"
-              iconBgColor="bg-primary-50"
+              iconBgColor="bg-primary-50 dark:bg-primary-900/20"
               onPress={() => navigation.navigate("Profile")}
             />
           </View>
         </View>
 
         {user?.familyId && (
-          <View className="px-6 pt-6">
-            <Text className="mb-3 text-[18px] font-bold tracking-tight text-text-primary">
-              Recent Pending
-            </Text>
+          <View className="px-6 pt-8">
+            <View className="flex-row items-center justify-between mb-4">
+              <Text className="text-[18px] font-bold tracking-tight text-text-primary dark:text-text-dark-primary">
+                Recent Pending
+              </Text>
+              <TouchableOpacity onPress={() => navigation.navigate("List")}>
+                <Text className="text-[13px] font-bold text-primary-600 dark:text-primary-400">View All</Text>
+              </TouchableOpacity>
+            </View>
+            
             {recentPending.length === 0 ? (
-              <View className="rounded-2xl border border-border-muted bg-surface px-4 py-4">
-                <Text className="text-[14px] text-text-secondary">No pending items right now.</Text>
-              </View>
+              <Card className="items-center py-6 border-dashed">
+                <Text className="text-[14px] font-medium text-text-muted dark:text-text-dark-muted">No pending items right now.</Text>
+              </Card>
             ) : (
               recentPending.map((item) => (
-                <View
+                <TouchableOpacity
                   key={item.id}
-                  className="mb-2 rounded-2xl border border-border-muted bg-surface px-4 py-3"
+                  activeOpacity={0.8}
+                  onPress={() => navigation.navigate("List")}
+                  className="mb-3"
                 >
-                  <Text className="text-[16px] font-semibold tracking-tight text-text-primary">
-                    {item.name}
-                  </Text>
-                  <Text className="mt-0.5 text-[13px] text-text-muted">
-                    {item.category} · {item.priority}
-                  </Text>
-                </View>
+                  <Card className="py-4">
+                    <View className="flex-row items-center justify-between">
+                      <View>
+                        <Text className="text-[16px] font-bold tracking-tight text-text-primary dark:text-text-dark-primary">
+                          {item.name}
+                        </Text>
+                        <View className="flex-row items-center mt-1">
+                          <View className="h-2 w-2 rounded-full bg-primary-400 mr-2" />
+                          <Text className="text-[12px] text-text-muted dark:text-text-dark-muted font-medium">
+                            {item.category}
+                          </Text>
+                        </View>
+                      </View>
+                      <View className="rounded-full bg-background dark:bg-background-dark px-3 py-1 border border-border-muted dark:border-border-dark">
+                        <Text className="text-[10px] font-bold text-text-muted dark:text-text-dark-muted uppercase">
+                          {item.priority}
+                        </Text>
+                      </View>
+                    </View>
+                  </Card>
+                </TouchableOpacity>
               ))
             )}
           </View>
