@@ -30,7 +30,7 @@ const LoadingScreen = () => (
       backgroundColor: "#f5f7f4",
     }}
   >
-    <ActivityIndicator size="large" color="#59AC77" />
+    <ActivityIndicator size="large" color="#3DB87A" />
   </View>
 );
 
@@ -43,7 +43,7 @@ const RootNavigator = () => {
 
   useEffect(() => {
     if (isNavigationReady) return;
-    
+
     // Check if navigation is ready on mount or state change
     const checkReady = () => {
       if (navigationRef.isReady()) {
@@ -52,7 +52,7 @@ const RootNavigator = () => {
     };
 
     checkReady();
-    const unsubscribe = navigationRef.addListener('state', checkReady);
+    const unsubscribe = navigationRef.addListener("state", checkReady);
     return unsubscribe;
   }, [navigationRef, isNavigationReady]);
 

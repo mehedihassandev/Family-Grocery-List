@@ -24,6 +24,8 @@
     "commitlint": "commitlint --from HEAD~1 --to HEAD --verbose"
   },
   "dependencies": {
+    "@expo-google-fonts/dm-mono": "^0.4.2",
+    "@expo-google-fonts/dm-sans": "^0.4.2",
     "@hookform/resolvers": "^5.2.2",
     "@react-native-async-storage/async-storage": "2.2.0",
     "@react-native-google-signin/google-signin": "^16.1.2",
@@ -36,6 +38,8 @@
     "expo-auth-session": "~55.0.15",
     "expo-crypto": "~55.0.14",
     "expo-dev-client": "~55.0.28",
+    "expo-font": "~55.0.6",
+    "expo-splash-screen": "~55.0.19",
     "expo-status-bar": "~55.0.5",
     "expo-web-browser": "~55.0.14",
     "firebase": "^12.12.0",

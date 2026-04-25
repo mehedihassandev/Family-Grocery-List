@@ -2,7 +2,13 @@ import React, { useEffect, useMemo, useState } from "react";
 import { ScrollView, StatusBar, Text, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useColorScheme } from "nativewind";
-import { ChevronLeft, ChevronRight, BarChart3, TrendingUp, Calendar as CalendarIcon } from "lucide-react-native";
+import {
+  ChevronLeft,
+  ChevronRight,
+  BarChart3,
+  TrendingUp,
+  Calendar as CalendarIcon,
+} from "lucide-react-native";
 import Svg, { G, Circle } from "react-native-svg";
 import { useAuthStore } from "../store/useAuthStore";
 import { subscribeToGroceryList } from "../services/grocery";
@@ -11,11 +17,23 @@ import { AppHeader, Card } from "../components/ui";
 import NotificationModal from "../components/NotificationModal";
 
 const MONTH_NAMES = [
-  "January", "February", "March", "April", "May", "June",
-  "July", "August", "September", "October", "November", "December",
+  "January",
+  "February",
+  "March",
+  "April",
+  "May",
+  "June",
+  "July",
+  "August",
+  "September",
+  "October",
+  "November",
+  "December",
 ];
 
-const COLORS = ["#59AC77", "#f59e0b", "#3b82f6", "#8b5cf6", "#ec4899", "#14b8a6", "#f43f5e"];
+const BRAND_GREEN = "#3DB87A";
+const BRAND_AMBER = "#F5A623";
+const BRAND_RED = "#E55C5C";
 
 const toDate = (value: any): Date | null => {
   if (value?.toDate) return value.toDate();
@@ -104,10 +122,23 @@ const AnalyzeScreen = () => {
   const radius = 65;
   const strokeWidth = 22;
   const circumference = 2 * Math.PI * radius;
-  let currentOffset = 0;
+  const donutSegments = useMemo(() => {
+    const urgent = summary.urgent;
+    const completed = summary.completed;
+    const pendingNonUrgent = Math.max(0, summary.pending - urgent);
+
+    return [
+      { key: "completed", label: "Completed", value: completed, color: BRAND_GREEN },
+      { key: "pending", label: "Pending", value: pendingNonUrgent, color: BRAND_AMBER },
+      { key: "urgent", label: "Urgent", value: urgent, color: BRAND_RED },
+    ].filter((seg) => seg.value > 0);
+  }, [summary.completed, summary.pending, summary.urgent]);
 
   return (
-    <SafeAreaView edges={["top", "left", "right"]} className="flex-1 bg-background dark:bg-background-dark">
+    <SafeAreaView
+      edges={["top", "left", "right"]}
+      className="flex-1 bg-background dark:bg-background-dark"
+    >
       <StatusBar barStyle={isDark ? "light-content" : "dark-content"} />
 
       <AppHeader
@@ -126,14 +157,16 @@ const AnalyzeScreen = () => {
           <View className="flex-row items-center justify-between bg-surface dark:bg-surface-dark rounded-2xl border border-border-muted dark:border-border-dark p-2 shadow-sm">
             <TouchableOpacity
               activeOpacity={0.7}
-              onPress={() => setSelectedMonth((prev) => new Date(prev.getFullYear(), prev.getMonth() - 1, 1))}
+              onPress={() =>
+                setSelectedMonth((prev) => new Date(prev.getFullYear(), prev.getMonth() - 1, 1))
+              }
               className="h-10 w-10 items-center justify-center rounded-xl bg-surface-muted dark:bg-surface-dark-muted border border-border-muted dark:border-border-dark"
             >
               <ChevronLeft stroke={isDark ? "#cbd5cf" : "#748379"} size={20} strokeWidth={3} />
             </TouchableOpacity>
 
             <View className="flex-row items-center">
-              <CalendarIcon stroke="#59AC77" size={16} strokeWidth={2.5} className="mr-2" />
+              <CalendarIcon stroke={BRAND_GREEN} size={16} strokeWidth={2.5} className="mr-2" />
               <Text className="text-[15px] font-black text-text-primary dark:text-text-dark-primary tracking-tight">
                 {formatMonthLabel(selectedMonth)}
               </Text>
@@ -142,7 +175,9 @@ const AnalyzeScreen = () => {
             <TouchableOpacity
               activeOpacity={0.7}
               disabled={nextMonthDisabled}
-              onPress={() => setSelectedMonth((prev) => new Date(prev.getFullYear(), prev.getMonth() + 1, 1))}
+              onPress={() =>
+                setSelectedMonth((prev) => new Date(prev.getFullYear(), prev.getMonth() + 1, 1))
+              }
               className={`h-10 w-10 items-center justify-center rounded-xl bg-surface-muted dark:bg-surface-dark-muted border border-border-muted dark:border-border-dark ${
                 nextMonthDisabled ? "opacity-20" : ""
               }`}
@@ -167,27 +202,30 @@ const AnalyzeScreen = () => {
                       strokeWidth={strokeWidth}
                       fill="transparent"
                     />
-                    {categoryBreakdown.entries.map(([_, count], index) => {
-                      const percentage = count / summary.total;
-                      const strokeDasharray = `${percentage * circumference} ${circumference}`;
-                      const strokeDashoffset = -currentOffset;
-                      currentOffset += percentage * circumference;
+                    {(() => {
+                      let currentOffset = 0;
+                      return donutSegments.map((segment) => {
+                        const percentage = segment.value / summary.total;
+                        const strokeDasharray = `${percentage * circumference} ${circumference}`;
+                        const strokeDashoffset = -currentOffset;
+                        currentOffset += percentage * circumference;
 
-                      return (
-                        <Circle
-                          key={index}
-                          cx="100"
-                          cy="100"
-                          r={radius}
-                          stroke={COLORS[index % COLORS.length]}
-                          strokeWidth={strokeWidth}
-                          strokeDasharray={strokeDasharray}
-                          strokeDashoffset={strokeDashoffset}
-                          fill="transparent"
-                          strokeLinecap="round"
-                        />
-                      );
-                    })}
+                        return (
+                          <Circle
+                            key={segment.key}
+                            cx="100"
+                            cy="100"
+                            r={radius}
+                            stroke={segment.color}
+                            strokeWidth={strokeWidth}
+                            strokeDasharray={strokeDasharray}
+                            strokeDashoffset={strokeDashoffset}
+                            fill="transparent"
+                            strokeLinecap="round"
+                          />
+                        );
+                      });
+                    })()}
                   </G>
                 </Svg>
                 <View className="absolute items-center justify-center">
@@ -196,6 +234,27 @@ const AnalyzeScreen = () => {
                   </Text>
                   <Text className="text-[36px] font-black text-text-primary dark:text-text-dark-primary mt-0.5 leading-none">
                     {summary.total}
+                  </Text>
+                </View>
+              </View>
+
+              <View className="mt-6 flex-row items-center justify-center gap-4">
+                <View className="flex-row items-center">
+                  <View className="h-2 w-2 rounded-full" style={{ backgroundColor: BRAND_GREEN }} />
+                  <Text className="ml-2 text-[12px] font-medium text-text-secondary dark:text-text-dark-secondary">
+                    Completed
+                  </Text>
+                </View>
+                <View className="flex-row items-center">
+                  <View className="h-2 w-2 rounded-full" style={{ backgroundColor: BRAND_AMBER }} />
+                  <Text className="ml-2 text-[12px] font-medium text-text-secondary dark:text-text-dark-secondary">
+                    Pending
+                  </Text>
+                </View>
+                <View className="flex-row items-center">
+                  <View className="h-2 w-2 rounded-full" style={{ backgroundColor: BRAND_RED }} />
+                  <Text className="ml-2 text-[12px] font-medium text-text-secondary dark:text-text-dark-secondary">
+                    Urgent
                   </Text>
                 </View>
               </View>
@@ -217,7 +276,7 @@ const AnalyzeScreen = () => {
                     <Text className="text-[10px] font-black uppercase tracking-widest text-text-muted dark:text-text-dark-muted">
                       Pending
                     </Text>
-                    <Text className="mt-1 text-[24px] font-black tracking-tight text-text-primary dark:text-text-dark-primary">
+                    <Text className="mt-1 text-[24px] font-black tracking-tight text-medium">
                       {summary.pending}
                     </Text>
                   </View>
@@ -227,7 +286,7 @@ const AnalyzeScreen = () => {
                     <Text className="text-[10px] font-black uppercase tracking-widest text-text-muted dark:text-text-dark-muted">
                       Urgent
                     </Text>
-                    <Text className="mt-1 text-[24px] font-black tracking-tight text-red-600">
+                    <Text className="mt-1 text-[24px] font-black tracking-tight text-urgent">
                       {summary.urgent}
                     </Text>
                   </View>
@@ -236,7 +295,7 @@ const AnalyzeScreen = () => {
                       <Text className="text-[10px] font-black uppercase tracking-widest text-text-muted dark:text-text-dark-muted">
                         Completion
                       </Text>
-                      <TrendingUp stroke="#59AC77" size={12} strokeWidth={3} />
+                      <TrendingUp stroke={BRAND_GREEN} size={12} strokeWidth={3} />
                     </View>
                     <Text className="mt-1 text-[24px] font-black tracking-tight text-primary-700 dark:text-primary-400">
                       {summary.completionRate}%
@@ -253,8 +312,13 @@ const AnalyzeScreen = () => {
               </Text>
               <Card padding={false} className="py-2">
                 {categoryBreakdown.entries.map(([category, count], index) => {
-                  const progress = Math.max(8, Math.round((count / categoryBreakdown.maxValue) * 100));
-                  const color = COLORS[index % COLORS.length];
+                  const progress = Math.max(
+                    8,
+                    Math.round((count / categoryBreakdown.maxValue) * 100),
+                  );
+                  const color = ["#4A90D9", "#7C5CBF", "#14b8a6", "#ec4899", "#3b82f6", "#8b5cf6"][
+                    index % 6
+                  ];
                   const isLast = index === categoryBreakdown.entries.length - 1;
 
                   return (
@@ -264,7 +328,10 @@ const AnalyzeScreen = () => {
                         !isLast ? "border-b border-border-muted/40 dark:border-border-dark/40" : ""
                       }`}
                     >
-                      <View className="mr-4 h-10 w-10 items-center justify-center rounded-xl" style={{ backgroundColor: `${color}15` }}>
+                      <View
+                        className="mr-4 h-10 w-10 items-center justify-center rounded-xl"
+                        style={{ backgroundColor: `${color}15` }}
+                      >
                         <View className="h-3 w-3 rounded-full" style={{ backgroundColor: color }} />
                       </View>
                       <View className="flex-1">
@@ -300,7 +367,8 @@ const AnalyzeScreen = () => {
                     Top Category: {topCategory}
                   </Text>
                   <Text className="text-[12px] font-medium text-primary-700/80 dark:text-primary-400/80 leading-relaxed">
-                    Based on your patterns, you purchase {topCategory.toLowerCase()} most frequently.
+                    Based on your patterns, you purchase {topCategory.toLowerCase()} most
+                    frequently.
                   </Text>
                 </View>
               </Card>
@@ -315,7 +383,9 @@ const AnalyzeScreen = () => {
               No Data Available
             </Text>
             <Text className="mt-2 text-[15px] leading-6 text-text-muted dark:text-text-dark-muted text-center px-8">
-              We couldn't find any items for {formatMonthLabel(selectedMonth)}. Start adding items to see your list insights!
+              {"We couldn't find any items for "}
+              {formatMonthLabel(selectedMonth)}
+              {". Start adding items to see your list insights!"}
             </Text>
           </View>
         )}

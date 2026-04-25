@@ -304,7 +304,10 @@ const HomeScreen = () => {
   };
 
   return (
-    <SafeAreaView edges={["top", "left", "right"]} className="flex-1 bg-background dark:bg-background-dark">
+    <SafeAreaView
+      edges={["top", "left", "right"]}
+      className="flex-1 bg-background dark:bg-background-dark"
+    >
       <StatusBar barStyle={isDark ? "light-content" : "dark-content"} />
 
       <AppHeader
@@ -315,7 +318,7 @@ const HomeScreen = () => {
 
       {loading ? (
         <View className="flex-1 items-center justify-center">
-          <ActivityIndicator color="#59AC77" size="large" />
+          <ActivityIndicator color="#3DB87A" size="large" />
         </View>
       ) : listError ? (
         <View className="flex-1 items-center justify-center px-8">
@@ -340,22 +343,22 @@ const HomeScreen = () => {
             <RefreshControl
               refreshing={isRefreshing}
               onRefresh={handleRefresh}
-              tintColor="#59AC77"
-              colors={["#59AC77"]}
+              tintColor="#3DB87A"
+              colors={["#3DB87A"]}
               progressBackgroundColor={isDark ? "#1a241e" : "#f8faf8"}
             />
           }
           contentContainerStyle={{ paddingBottom: 140 }}
           ListHeaderComponent={
             <View className="px-6 pt-6">
-              <View className="mb-6 flex-row items-center rounded-2xl border border-border-muted dark:border-border-dark bg-surface dark:bg-surface-dark px-4 shadow-sm">
-                <Search stroke={isDark ? "#94a399" : "#748379"} size={18} />
+              <View className="mb-6 flex-row items-center rounded-md border border-border bg-surface-alt px-4 shadow-xs">
+                <Search stroke="#9AA3AF" size={18} />
                 <TextInput
                   value={searchQuery}
                   onChangeText={setSearchQuery}
                   placeholder={SEARCH_PLACEHOLDER}
-                  placeholderTextColor={isDark ? "#4f5f56" : "#95a39a"}
-                  className="ml-3 h-12 flex-1 text-[16px] font-medium text-text-primary dark:text-text-dark-primary"
+                  placeholderTextColor="#C0C8D2"
+                  className="ml-3 h-[52px] flex-1 text-[15px] font-medium text-text-900"
                 />
               </View>
 
@@ -384,8 +387,10 @@ const HomeScreen = () => {
                   <SlidersHorizontal
                     stroke={
                       isCategoryFilterOpen || activeCategory !== ALL_CATEGORY
-                        ? "#59AC77"
-                        : isDark ? "#94a399" : "#748379"
+                        ? "#3DB87A"
+                        : isDark
+                          ? "#94a399"
+                          : "#748379"
                     }
                     size={18}
                   />
@@ -438,7 +443,7 @@ const HomeScreen = () => {
           ListEmptyComponent={
             <View className="items-center px-10 pb-8 pt-16">
               <View className="mb-6 h-20 w-20 items-center justify-center rounded-full bg-primary-50 dark:bg-primary-900/10">
-                <ShoppingBasket stroke="#59AC77" size={32} strokeWidth={2.2} />
+                <ShoppingBasket stroke="#3DB87A" size={32} strokeWidth={2.2} />
               </View>
               <Text className="text-center text-[28px] font-black tracking-tight text-text-primary dark:text-text-dark-primary">
                 No items found
@@ -466,7 +471,11 @@ const HomeScreen = () => {
                   {showCompleted ? (
                     <ChevronUp stroke={isDark ? "#cbd5cf" : "#637889"} size={16} strokeWidth={3} />
                   ) : (
-                    <ChevronDown stroke={isDark ? "#cbd5cf" : "#637889"} size={16} strokeWidth={3} />
+                    <ChevronDown
+                      stroke={isDark ? "#cbd5cf" : "#637889"}
+                      size={16}
+                      strokeWidth={3}
+                    />
                   )}
                 </TouchableOpacity>
               </View>
@@ -482,7 +491,7 @@ const HomeScreen = () => {
         style={{
           bottom: insets.bottom + 78,
           elevation: 8,
-          shadowColor: "#59AC77",
+          shadowColor: "#3DB87A",
           shadowOffset: { width: 0, height: 10 },
           shadowOpacity: 0.3,
           shadowRadius: 15,

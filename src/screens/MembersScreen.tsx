@@ -124,7 +124,10 @@ const MembersScreen = () => {
   };
 
   return (
-    <SafeAreaView edges={["top", "left", "right"]} className="flex-1 bg-background dark:bg-background-dark">
+    <SafeAreaView
+      edges={["top", "left", "right"]}
+      className="flex-1 bg-background dark:bg-background-dark"
+    >
       <StatusBar barStyle={isDark ? "light-content" : "dark-content"} />
 
       <AppHeader
@@ -134,52 +137,54 @@ const MembersScreen = () => {
       />
 
       <View className="px-6 flex-1 pt-6">
-        <Card className="mb-8 p-6 border-primary-100 dark:border-primary-900/30 bg-primary-50/30 dark:bg-primary-900/10">
-          <Text className="mb-4 text-[16px] font-bold tracking-tight text-text-primary dark:text-text-dark-primary">
+        <Card className="mb-8 p-6 border-primary-100 bg-primary-50/50">
+          <Text className="mb-4 text-[13px] font-bold uppercase tracking-[0.08em] text-primary-500">
             Invite Members
           </Text>
-          <View className="flex-row items-center justify-between rounded-2xl bg-surface dark:bg-surface-dark border border-border-muted dark:border-border-dark px-5 py-4 shadow-sm">
+          <View className="flex-row items-center justify-between rounded-md bg-white border border-border px-5 py-4 shadow-xs">
             <View>
-              <Text className="text-[10px] font-bold text-text-muted dark:text-text-dark-muted uppercase tracking-widest mb-1">
-                Invite Code
+              <Text className="text-[10px] font-bold text-text-muted uppercase tracking-widest mb-1">
+                Family Code
               </Text>
-              <Text className="text-[26px] font-black tracking-[4px] text-text-primary dark:text-text-dark-primary">
+              <Text className="text-[26px] font-black tracking-[4px] text-text-900">
                 {family?.inviteCode || "----"}
               </Text>
             </View>
             <TouchableOpacity
               onPress={handleShare}
               activeOpacity={0.7}
-              className="h-12 w-12 items-center justify-center rounded-2xl bg-primary-600 dark:bg-primary-500 shadow-md"
+              className="h-11 w-11 items-center justify-center rounded-full bg-primary-500 shadow-green"
             >
-              <Share2 stroke="white" size={20} strokeWidth={3} />
+              <Share2 stroke="white" size={18} strokeWidth={3} />
             </TouchableOpacity>
           </View>
-          <Text className="mt-4 text-[13px] font-medium leading-relaxed text-text-secondary dark:text-text-dark-secondary">
-            Share this code with your family members to start collaborating on your grocery list.
+          <Text className="mt-4 text-[13px] leading-relaxed text-text-secondary">
+            Share this code to collaborate with your family.
           </Text>
         </Card>
 
         <View className="flex-row items-center justify-between mb-4 px-1">
-          <Text className="text-[18px] font-bold tracking-tight text-text-primary dark:text-text-dark-primary">
+          <Text className="text-[18px] font-bold tracking-tight text-text-900">
             Members
           </Text>
-          <View className="rounded-full bg-surface-muted dark:bg-surface-dark-muted px-3 py-1 border border-border-muted dark:border-border-dark">
-            <Text className="text-[11px] font-bold text-text-muted dark:text-text-dark-muted">
+          <View className="rounded-full bg-surface-alt px-3 py-1 border border-border">
+            <Text className="text-[11px] font-bold text-text-muted">
               {members.length} Total
             </Text>
           </View>
         </View>
 
         {membersError ? (
-          <View className="mb-4 rounded-xl bg-red-50 dark:bg-red-900/10 p-3 border border-red-100 dark:border-red-900/20">
-            <Text className="text-xs font-medium text-red-600 dark:text-red-400">{membersError}</Text>
+          <View className="mb-4 rounded-md bg-danger-light p-3 border border-danger/20">
+            <Text className="text-[12px] font-medium text-danger-dark">
+              {membersError}
+            </Text>
           </View>
         ) : null}
 
         {loading ? (
           <View className="flex-1 items-center justify-center">
-            <ActivityIndicator color="#59AC77" size="large" />
+            <ActivityIndicator color="#3DB87A" size="large" />
           </View>
         ) : (
           <FlatList
@@ -188,28 +193,32 @@ const MembersScreen = () => {
             showsVerticalScrollIndicator={false}
             contentContainerStyle={{ paddingBottom: 100 }}
             renderItem={({ item }) => (
-              <Card className="mb-3 py-4">
+              <Card className="mb-4 py-4 px-5">
                 <View className="flex-row items-center">
-                  <View className="mr-4 h-11 w-11 items-center justify-center overflow-hidden rounded-2xl bg-primary-100 dark:bg-primary-900/30 border border-primary-200 dark:border-primary-800">
+                  <View className="mr-4 h-12 w-12 items-center justify-center overflow-hidden rounded-md bg-surface-alt border border-border">
                     {item.photoURL ? (
                       <Image source={{ uri: item.photoURL }} className="h-full w-full" />
                     ) : (
-                      <UserIcon stroke="#59AC77" size={20} strokeWidth={2.5} />
+                      <View className="h-full w-full bg-primary-100 items-center justify-center">
+                        <Text className="text-primary-600 text-lg font-bold">
+                          {item.displayName.charAt(0).toUpperCase()}
+                        </Text>
+                      </View>
                     )}
                   </View>
                   <View className="flex-1">
-                    <Text className="text-[16px] font-bold tracking-tight text-text-primary dark:text-text-dark-primary">
+                    <Text className="text-[15px] font-bold text-text-900">
                       {item.displayName}
                     </Text>
-                    <Text className="mt-0.5 text-[12px] font-medium text-text-muted dark:text-text-dark-muted">
+                    <Text className="mt-0.5 text-[12px] text-text-muted">
                       {item.email}
                     </Text>
                   </View>
-                  
+
                   {item.role === "owner" ? (
-                    <View className="flex-row items-center rounded-full bg-primary-50 dark:bg-primary-900/30 px-3 py-1.5 border border-primary-100 dark:border-primary-900/20">
-                      <Crown stroke="#4a9a68" size={12} strokeWidth={3} />
-                      <Text className="ml-1.5 text-[10px] font-black uppercase tracking-wider text-primary-700 dark:text-primary-400">
+                    <View className="flex-row items-center rounded-sm bg-primary-100 px-3 py-1.5 border border-primary-200">
+                      <Crown stroke="#2D6A4F" size={12} strokeWidth={2.5} />
+                      <Text className="ml-1.5 text-[10px] font-bold uppercase tracking-wider text-primary-600">
                         Owner
                       </Text>
                     </View>
@@ -218,17 +227,17 @@ const MembersScreen = () => {
                       onPress={() => handleRemoveMember(item)}
                       disabled={removingMemberId === item.uid}
                       activeOpacity={0.7}
-                      className="h-10 w-10 items-center justify-center rounded-xl bg-red-50 dark:bg-red-900/10 border border-red-100 dark:border-red-900/20"
+                      className="h-10 w-10 items-center justify-center rounded-full bg-danger-light border border-danger/20"
                     >
                       {removingMemberId === item.uid ? (
-                        <ActivityIndicator color="#c36262" size="small" />
+                        <ActivityIndicator color="#E55C5C" size="small" />
                       ) : (
-                        <Trash2 stroke="#c36262" size={18} strokeWidth={2.5} />
+                        <Trash2 stroke="#E55C5C" size={18} strokeWidth={2.5} />
                       )}
                     </TouchableOpacity>
                   ) : (
-                    <View className="rounded-full bg-surface-muted dark:bg-surface-dark-muted px-3 py-1.5 border border-border-muted dark:border-border-dark">
-                      <Text className="text-[10px] font-bold text-text-muted dark:text-text-dark-muted uppercase tracking-wider">
+                    <View className="rounded-sm bg-surface-muted px-3 py-1.5 border border-border">
+                      <Text className="text-[10px] font-bold text-text-muted uppercase tracking-wider">
                         Member
                       </Text>
                     </View>

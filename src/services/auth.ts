@@ -14,7 +14,7 @@ import {
   signOut as firebaseSignOut,
   updateProfile,
 } from "firebase/auth";
-import { doc, getDoc, setDoc } from "firebase/firestore";
+import { doc, getDoc, setDoc, updateDoc } from "firebase/firestore";
 import { auth, db } from "./firebaseConfig";
 import { useAuthStore } from "../store/useAuthStore";
 import { User } from "../types";
@@ -695,4 +695,41 @@ export const listenToAuthChanges = () => {
       }
     }
   });
+};
+
+/**
+ * Updates the user's account profile in both Firebase Auth and Firestore
+ * @param uid - The user's UID
+ * @param data - The profile data to update (displayName, photoURL)
+ */
+export const updateUserAccountProfile = async (
+  uid: string,
+  data: { displayName?: string; photoURL?: string },
+) => {
+  const { setUser, user } = useAuthStore.getState();
+
+  try {
+    const userDocRef = doc(db, "users", uid);
+    await withTimeout(
+      updateDoc(userDocRef, data),
+      AUTH_OPERATION_TIMEOUT_MS,
+      "Timed out while updating your profile in Firestore.",
+    );
+
+    if (auth.currentUser && auth.currentUser.uid === uid) {
+      await withTimeout(
+        updateProfile(auth.currentUser, data),
+        AUTH_OPERATION_TIMEOUT_MS,
+        "Timed out while updating your account profile.",
+      );
+    }
+
+    // Update local store state
+    if (user && user.uid === uid) {
+      setUser({ ...user, ...data });
+    }
+  } catch (error) {
+    console.error("Update Profile Error:", error);
+    throw error;
+  }
 };

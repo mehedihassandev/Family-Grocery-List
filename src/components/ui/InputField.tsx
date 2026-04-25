@@ -30,23 +30,23 @@ const InputField = ({
   return (
     <View className={`w-full ${containerClassName ?? ""}`}>
       {label ? (
-        <Text className="mb-2 ml-1 text-[10px] font-bold uppercase tracking-[2px] text-text-muted dark:text-text-dark-muted">
+        <Text className="mb-2 ml-1 text-[11px] font-bold uppercase tracking-[0.08em] text-text-muted dark:text-text-dark-muted">
           {label}
         </Text>
       ) : null}
 
       <View
-        className={`flex-row items-center rounded-2xl border bg-surface-muted dark:bg-surface-dark-muted px-4 ${
+        className={`flex-row items-center rounded-md border bg-surface-alt dark:bg-surface-dark-muted px-4 ${
           error 
-            ? "border-urgent" 
+            ? "border-danger" 
             : "border-border dark:border-border-dark"
         }`}
       >
         {icon ? icon : null}
         <TextInput
           {...props}
-          placeholderTextColor={props.placeholderTextColor ?? (isDark ? "#4f5f56" : "#95a39a")}
-          className={`ml-3 h-12 flex-1 text-[16px] font-medium text-text-primary dark:text-text-dark-primary ${inputClassName ?? ""}`}
+          placeholderTextColor={props.placeholderTextColor ?? "#C0C8D2"}
+          className={`h-[52px] flex-1 text-[15px] font-medium text-text-900 dark:text-text-dark-primary ${icon ? "ml-3" : ""} ${inputClassName ?? ""}`}
         />
         {rightIcon ? rightIcon : null}
       </View>

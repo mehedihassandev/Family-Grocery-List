@@ -3,7 +3,8 @@ import { Modal, ScrollView, Text, TouchableOpacity, View } from "react-native";
 import { X, Edit2, Calendar, User, ShoppingBasket, AlignLeft, Info } from "lucide-react-native";
 import { useColorScheme } from "nativewind";
 import { GroceryItem } from "../types";
-import { Card, Chip } from "./ui";
+import { GroceryPriority } from "../features/grocery";
+import { Card, Chip, PriorityBadge } from "./ui";
 
 type ItemDetailModalProps = {
   visible: boolean;
@@ -29,6 +30,9 @@ const ItemDetailModal = ({ visible, item, onClose, onEdit }: ItemDetailModalProp
 
   if (!item) return null;
 
+  const modelPriority: GroceryPriority =
+    item.priority === "Urgent" ? "urgent" : item.priority === "Medium" ? "medium" : "low";
+
   return (
     <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
       <View className="flex-1 justify-end" style={{ backgroundColor: "rgba(0,0,0,0.5)" }}>
@@ -50,7 +54,7 @@ const ItemDetailModal = ({ visible, item, onClose, onEdit }: ItemDetailModalProp
         >
           {/* Handle bar */}
           <View className="mb-4 items-center">
-            <View className="h-1.5 w-14 rounded-full bg-border-muted dark:bg-border-dark" />
+            <View className="h-1 w-9 rounded-full bg-handle" />
           </View>
 
           <View className="mb-8 flex-row items-start justify-between">
@@ -67,11 +71,7 @@ const ItemDetailModal = ({ visible, item, onClose, onEdit }: ItemDetailModalProp
                   selected={item.status === "completed"}
                   onPress={() => {}} // Read-only chip here
                 />
-                {item.priority === "Urgent" && (
-                  <View className="rounded-full bg-urgent/10 px-3 py-1.5 border border-urgent/20">
-                    <Text className="text-[11px] font-black text-urgent uppercase tracking-wider">Urgent</Text>
-                  </View>
-                )}
+                {item.status === "pending" ? <PriorityBadge priority={modelPriority} /> : null}
               </View>
             </View>
             <View className="flex-row items-center gap-3">
@@ -96,7 +96,7 @@ const ItemDetailModal = ({ visible, item, onClose, onEdit }: ItemDetailModalProp
             <Card padding={false} className="mb-6 overflow-hidden">
               <View className="flex-row items-center border-b border-border-muted dark:border-border-dark p-5">
                 <View className="mr-4 h-10 w-10 items-center justify-center rounded-2xl bg-primary-100 dark:bg-primary-900/30">
-                  <ShoppingBasket stroke="#59AC77" size={20} strokeWidth={2.5} />
+                  <ShoppingBasket stroke="#3DB87A" size={20} strokeWidth={2.5} />
                 </View>
                 <View className="flex-1">
                   <Text className="text-[11px] font-bold text-text-muted dark:text-text-dark-muted uppercase tracking-widest">
@@ -111,7 +111,7 @@ const ItemDetailModal = ({ visible, item, onClose, onEdit }: ItemDetailModalProp
                     Quantity
                   </Text>
                   <Text className="text-[16px] font-bold text-text-primary dark:text-text-dark-primary mt-0.5">
-                    {item.quantity ? `${item.quantity} ${item.unit || ""}` : "—"}
+                    {item.quantity ? item.quantity : "—"}
                   </Text>
                 </View>
               </View>
@@ -163,7 +163,7 @@ const ItemDetailModal = ({ visible, item, onClose, onEdit }: ItemDetailModalProp
 
             {item.status === "completed" && item.completedBy && (
               <View className="flex-row items-center rounded-2xl bg-primary-50 dark:bg-primary-900/10 p-4 border border-primary-100 dark:border-primary-900/30">
-                <Info stroke="#59AC77" size={18} strokeWidth={2.5} className="mr-3" />
+                <Info stroke="#3DB87A" size={18} strokeWidth={2.5} className="mr-3" />
                 <Text className="text-[14px] font-medium text-primary-800 dark:text-primary-300">
                   Completed by <Text className="font-black">{item.completedBy.name}</Text>
                 </Text>

@@ -58,7 +58,7 @@ const NotificationModal = ({ visible, onClose }: NotificationModalProps) => {
       case "item_completed":
         return {
           icon: Check,
-          color: "#59AC77",
+          color: "#3DB87A",
           bg: isDark ? "bg-primary-900/20" : "bg-primary-50",
         };
       case "urgent_item":
@@ -97,7 +97,7 @@ const NotificationModal = ({ visible, onClose }: NotificationModalProps) => {
         >
           {/* Handle bar */}
           <View className="mb-4 items-center">
-            <View className="h-1.5 w-14 rounded-full bg-border-muted dark:bg-border-dark" />
+            <View className="h-1 w-9 rounded-full bg-handle" />
           </View>
 
           <View className="mb-6 flex-row items-center justify-between">
@@ -148,15 +148,17 @@ const NotificationModal = ({ visible, onClose }: NotificationModalProps) => {
                 </View>
               </TouchableOpacity>
             </View>
-            
+
             <TouchableOpacity
               activeOpacity={0.7}
               onPress={handleMarkAllRead}
               disabled={unreadIds.length === 0}
               className={`flex-row items-center ${unreadIds.length === 0 ? "opacity-30" : ""}`}
             >
-              <Check stroke="#59AC77" size={14} strokeWidth={3} />
-              <Text className="ml-1.5 text-[11px] font-black uppercase tracking-wider text-primary-600 dark:text-primary-400">Mark all read</Text>
+              <Check stroke="#3DB87A" size={14} strokeWidth={3} />
+              <Text className="ml-1.5 text-[11px] font-black uppercase tracking-wider text-primary-600 dark:text-primary-400">
+                Mark all read
+              </Text>
             </TouchableOpacity>
           </View>
 
@@ -170,8 +172,8 @@ const NotificationModal = ({ visible, onClose }: NotificationModalProps) => {
                   {filter === "unread" ? "No Unread Notifications" : "All Caught Up!"}
                 </Text>
                 <Text className="mt-2 text-[14px] leading-relaxed text-text-muted dark:text-text-dark-muted text-center px-10">
-                  {filter === "unread" 
-                    ? "You have read all your recent family updates." 
+                  {filter === "unread"
+                    ? "You have read all your recent family updates."
                     : "Activity from your family members will appear here."}
                 </Text>
               </View>
@@ -189,9 +191,13 @@ const NotificationModal = ({ visible, onClose }: NotificationModalProps) => {
                     }}
                     className="mb-3"
                   >
-                    <Card className={`py-4 ${isUnread ? "border-primary-100 dark:border-primary-900/30 bg-primary-50/10 dark:bg-primary-900/10" : ""}`}>
+                    <Card
+                      className={`py-4 ${isUnread ? "border-primary-100 dark:border-primary-900/30 bg-primary-50/10 dark:bg-primary-900/10" : ""}`}
+                    >
                       <View className="flex-row items-start">
-                        <View className={`mr-4 h-11 w-11 items-center justify-center rounded-2xl ${bg}`}>
+                        <View
+                          className={`mr-4 h-11 w-11 items-center justify-center rounded-2xl ${bg}`}
+                        >
                           <Icon stroke={color} size={20} strokeWidth={2.5} />
                         </View>
                         <View className="flex-1">

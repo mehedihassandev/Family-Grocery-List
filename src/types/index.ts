@@ -48,10 +48,12 @@ export interface GroceryItem {
   addedBy: {
     uid: string;
     name: string;
+    photoURL?: string;
   };
   completedBy?: {
     uid: string;
     name: string;
+    photoURL?: string;
   } | null;
   createdAt: any;
   updatedAt: any;

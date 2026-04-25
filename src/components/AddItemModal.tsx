@@ -109,17 +109,18 @@ const AddItemModal = ({ visible, onClose, familyId, user }: AddItemModalProps) =
         <KeyboardAvoidingView
           behavior={Platform.OS === "ios" ? "padding" : "height"}
           className="rounded-t-4xl bg-background dark:bg-background-dark px-6 pb-10 pt-3 shadow-2xl"
+          style={{ maxHeight: "85%" }}
         >
           <View className="mb-4 items-center">
-            <View className="h-1.5 w-14 rounded-full bg-border-muted dark:bg-border-dark" />
+            <View className="h-1 w-9 rounded-full bg-handle" />
           </View>
 
           <View className="mb-6 flex-row items-center justify-between">
             <View>
-              <Text className="mb-1 text-[10px] font-bold uppercase tracking-[2px] text-primary-600 dark:text-primary-400">
+              <Text className="mb-1 text-[11px] font-bold uppercase tracking-[0.08em] text-primary-500">
                 New Entry
               </Text>
-              <Text className="text-[32px] font-black tracking-tight text-text-primary dark:text-text-dark-primary">
+              <Text className="text-[24px] font-bold tracking-tight text-text-900 dark:text-text-dark-primary">
                 Add Item
               </Text>
             </View>
@@ -146,54 +147,63 @@ const AddItemModal = ({ visible, onClose, familyId, user }: AddItemModalProps) =
               autoFocus
             />
 
-            <View className="mb-6 flex-row gap-4">
-              <InputField
-                label="Quantity"
-                placeholder="e.g. 2L, 5pcs"
-                value={quantity}
-                onChangeText={setQuantity}
-                containerClassName="flex-1"
-              />
-              <View className="flex-1">
-                <Text className="mb-2 ml-1 text-[10px] font-bold uppercase tracking-[2px] text-text-muted dark:text-text-dark-muted">
-                  Priority
-                </Text>
-                <View className="h-12 flex-row rounded-2xl border border-border dark:border-border-dark bg-surface-muted dark:bg-surface-dark-muted p-1 items-center">
-                  {PRIORITIES.map((p) => (
+            <InputField
+              label="Quantity"
+              placeholder="e.g. 2L, 5pcs"
+              value={quantity}
+              onChangeText={setQuantity}
+              containerClassName="mb-6"
+            />
+
+            <View className="mb-6">
+              <Text className="mb-2 ml-1 text-[11px] font-bold uppercase tracking-[0.08em] text-text-muted dark:text-text-dark-muted">
+                Priority
+              </Text>
+              <View className="h-11 flex-row rounded-md bg-surface-muted dark:bg-surface-dark-muted p-1 items-center">
+                {PRIORITIES.map((p) => {
+                  const isActive = priority === p;
+                  const activeStyle =
+                    p === "Low" ? "bg-primary-100" : p === "Medium" ? "bg-warning-light" : "bg-danger-light";
+                  const activeText =
+                    p === "Low"
+                      ? "text-primary-600"
+                      : p === "Medium"
+                        ? "text-warning-dark"
+                        : "text-danger-dark";
+
+                  return (
                     <TouchableOpacity
                       key={p}
                       onPress={() => setPriority(p)}
-                      activeOpacity={0.7}
-                      className={`flex-1 items-center justify-center rounded-xl h-full ${
-                        priority === p ? "bg-surface dark:bg-surface-dark shadow-sm" : ""
+                      activeOpacity={0.75}
+                      className={`flex-1 items-center justify-center rounded-sm h-full ${
+                        isActive ? activeStyle : ""
                       }`}
                     >
                       <Text
-                        className={`text-[10px] font-black uppercase tracking-wider ${
-                          priority === p 
-                            ? "text-primary-600 dark:text-primary-400" 
-                            : "text-text-muted dark:text-text-dark-muted"
+                        className={`text-[12px] font-bold uppercase tracking-wide ${
+                          isActive ? activeText : "text-text-muted dark:text-text-dark-muted"
                         }`}
                       >
                         {p}
                       </Text>
                     </TouchableOpacity>
-                  ))}
-                </View>
+                  );
+                })}
               </View>
             </View>
 
             <View className="mb-6">
               <View className="mb-3 flex-row items-center justify-between px-1">
-                <Text className="text-[10px] font-bold uppercase tracking-[2px] text-text-muted dark:text-text-dark-muted">
+                <Text className="text-[11px] font-bold uppercase tracking-[0.08em] text-text-muted dark:text-text-dark-muted">
                   Category
                 </Text>
                 <TouchableOpacity
                   onPress={() => setShowAddCat(!showAddCat)}
-                  activeOpacity={0.7}
-                  className="rounded-md"
+                  activeOpacity={0.75}
+                  className="rounded-full border border-primary-500 px-3 py-1"
                 >
-                  <Text className="text-[10px] font-black uppercase tracking-wider text-primary-600 dark:text-primary-400">
+                  <Text className="text-[10px] font-bold uppercase tracking-wider text-primary-500">
                     {showAddCat ? "Cancel" : "+ Custom"}
                   </Text>
                 </TouchableOpacity>

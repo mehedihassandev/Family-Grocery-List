@@ -36,39 +36,39 @@ const AppHeader = ({
   const notifications = useNotificationStore((state) => state.notifications);
 
   const unreadCount = notifications.filter(
-    (n) => n.actorId !== user?.uid && !n.readBy.includes(user?.uid || "")
+    (n) => n.actorId !== user?.uid && !n.readBy.includes(user?.uid || ""),
   ).length;
 
   const isDark = colorScheme === "dark";
 
   return (
-    <View className="flex-row items-center justify-between border-b border-border-muted/40 dark:border-border-dark bg-background px-6 pb-6 pt-3 dark:bg-background-dark">
+    <View className="flex-row items-center justify-between border-b border-border bg-background px-6 pb-6 pt-3 dark:bg-background-dark">
       <View className="flex-row items-center flex-1">
         {showBackButton && (
           <TouchableOpacity
             onPress={onBackPress}
             activeOpacity={0.7}
-            className="mr-4 h-10 w-10 items-center justify-center rounded-xl bg-surface-muted dark:bg-surface-dark-muted border border-border-muted dark:border-border-dark"
+            className="mr-4 h-10 w-10 items-center justify-center rounded-md bg-surface-alt dark:bg-surface-dark-muted border border-border dark:border-border-dark"
             hitSlop={{ top: 10, right: 10, bottom: 10, left: 10 }}
           >
-            <ArrowLeft stroke={isDark ? "#cbd5cf" : "#748379"} size={22} strokeWidth={3} />
+            <ArrowLeft stroke="#4A5568" size={22} strokeWidth={2.5} />
           </TouchableOpacity>
         )}
         <View className="flex-1">
           {eyebrow ? (
-            <Text className="mb-0.5 text-[10px] font-bold uppercase tracking-[2.5px] text-primary-600 dark:text-primary-400">
+            <Text className="mb-0.5 text-[11px] font-bold uppercase tracking-[0.08em] text-primary-500">
               {eyebrow}
             </Text>
           ) : null}
-          <Text 
-            className="text-[32px] font-black tracking-tight text-text-primary dark:text-text-dark-primary leading-tight"
+          <Text
+            className="text-[28px] font-bold tracking-tight text-text-900 dark:text-text-dark-primary leading-tight"
             numberOfLines={1}
             adjustsFontSizeToFit
           >
             {title}
           </Text>
           {subtitle ? (
-            <Text className="mt-1 text-[15px] font-medium text-text-muted dark:text-text-dark-muted leading-5">
+            <Text className="mt-1 text-[13px] font-medium text-text-muted dark:text-text-dark-muted leading-5">
               {subtitle}
             </Text>
           ) : null}
@@ -80,12 +80,12 @@ const AppHeader = ({
           <TouchableOpacity
             onPress={onNotificationPress}
             activeOpacity={0.7}
-            className="h-12 w-12 items-center justify-center rounded-2xl border border-border-muted bg-surface relative dark:border-border-dark dark:bg-surface-dark shadow-sm"
+            className="h-[52px] w-[52px] items-center justify-center rounded-xl border border-border bg-surface relative dark:border-border-dark dark:bg-surface-dark shadow-sm"
           >
-            <Bell stroke={isDark ? "#59AC77" : "#59AC77"} size={22} strokeWidth={2.5} />
+            <Bell stroke="#3DB87A" size={24} strokeWidth={2.2} />
             {unreadCount > 0 && (
-              <View className="absolute -right-1.5 -top-1.5 h-6 min-w-[24px] items-center justify-center rounded-full bg-red-500 px-1.5 border-4 border-background dark:border-background-dark">
-                <Text className="text-[10px] font-black text-white">
+              <View className="absolute -right-1 -top-1 h-5 min-w-[20px] items-center justify-center rounded-full bg-danger px-1 border-2 border-surface dark:border-background-dark">
+                <Text className="text-[9px] font-bold text-white">
                   {unreadCount > 99 ? "99+" : unreadCount}
                 </Text>
               </View>

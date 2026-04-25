@@ -1,9 +1,10 @@
 import React from "react";
-import { View, Text, TouchableOpacity } from "react-native";
-import { CheckCircle2, Circle, AlertCircle, Clock } from "lucide-react-native";
+import { View, Text, TouchableOpacity, Image } from "react-native";
+import { CheckCircle2, Circle, Clock } from "lucide-react-native";
 import { GroceryItem } from "../types";
 import { formatDistanceToNow } from "date-fns";
-import { Card } from "./ui";
+import { GroceryPriority } from "../features/grocery";
+import { Card, PriorityBadge } from "./ui";
 import { useColorScheme } from "nativewind";
 
 interface ItemCardProps {
@@ -26,98 +27,89 @@ const ItemCard = ({ item, onToggle, onPress, currentUserId }: ItemCardProps) => 
     ? formatDistanceToNow(item.createdAt.toDate(), { addSuffix: true })
     : "just now";
 
+  const modelPriority: GroceryPriority =
+    item.priority === "Urgent" ? "urgent" : item.priority === "Medium" ? "medium" : "low";
+
   return (
     <TouchableOpacity
       onPress={() => onPress(item)}
       activeOpacity={0.8}
-      className="mb-3"
+      className="mb-4"
       style={isCompleted ? { opacity: 0.6 } : undefined}
     >
-      <Card padding={false} className="flex-row items-center p-4">
-        <TouchableOpacity 
-          onPress={() => onToggle(item)} 
-          className="mr-4" 
-          activeOpacity={0.6}
-        >
-          <View
-            className={`h-7 w-7 items-center justify-center rounded-full ${
-              isCompleted 
-                ? "bg-primary-100 dark:bg-primary-900/30" 
-                : "border border-border-muted dark:border-border-dark bg-surface dark:bg-surface-dark"
-            }`}
-          >
-            {isCompleted ? (
-              <CheckCircle2 stroke="#59AC77" size={16} strokeWidth={3} />
-            ) : (
-              <Circle stroke={isDark ? "#36453b" : "#b8c6bd"} size={16} strokeWidth={2.5} />
-            )}
-          </View>
-        </TouchableOpacity>
+      <Card padding={false} className="flex-row overflow-hidden min-h-[80px]">
+        {/* Priority left border accent */}
+        <View 
+          style={{ 
+            width: 4, 
+            backgroundColor: isCompleted 
+              ? "#9AA3AF" 
+              : modelPriority === "urgent" 
+                ? "#E55C5C" 
+                : modelPriority === "medium" 
+                  ? "#F5A623" 
+                  : "#3DB87A" 
+          }} 
+        />
 
-        <View className="flex-1">
-          <View className="flex-row items-center justify-between">
-            <Text
-              className={`text-[17px] font-bold tracking-tight ${
-                isCompleted 
-                  ? "text-text-muted dark:text-text-dark-muted" 
-                  : "text-text-primary dark:text-text-dark-primary"
+        <View className="flex-1 flex-row items-center p-4">
+          <TouchableOpacity onPress={() => onToggle(item)} className="mr-4" activeOpacity={0.6}>
+            <View
+              className={`h-6 w-6 items-center justify-center rounded-full ${
+                isCompleted
+                  ? "bg-primary-100"
+                  : "border-2 border-border bg-surface"
               }`}
-              style={isCompleted ? { textDecorationLine: "line-through" } : undefined}
-              numberOfLines={1}
             >
-              {item.name}
-              {item.quantity ? (
-                <Text className="text-[14px] font-medium text-text-muted dark:text-text-dark-muted"> ({item.quantity})</Text>
+              {isCompleted ? (
+                <CheckCircle2 stroke="#3DB87A" size={14} strokeWidth={3} />
               ) : null}
-            </Text>
-            
-            {!isCompleted && item.priority === "Urgent" && (
-              <View className="rounded-full bg-urgent/10 px-2 py-0.5">
-                <Text className="text-[9px] font-black text-urgent uppercase tracking-wider">Urgent</Text>
-              </View>
-            )}
-          </View>
+            </View>
+          </TouchableOpacity>
 
-          <View className="flex-row items-center mt-1">
-            <Text className="text-[12px] font-medium text-text-secondary dark:text-text-dark-secondary">
-              {item.category}
-            </Text>
-            <View className="mx-2 h-1 w-1 rounded-full bg-border dark:bg-border-dark" />
-            <Clock stroke={isDark ? "#94a399" : "#95a39a"} size={10} />
-            <Text className="ml-1 text-[11px] font-medium text-text-muted dark:text-text-dark-muted">{timeAgo}</Text>
-          </View>
-
-          {item.notes?.trim() ? (
-            <Text 
-              className="mt-2 text-[13px] leading-relaxed text-text-secondary dark:text-text-dark-secondary"
-              numberOfLines={2}
-            >
-              {item.notes}
-            </Text>
-          ) : null}
-
-          <View className="mt-3 flex-row items-center justify-between">
+          <View className="flex-1">
             <View className="flex-row items-center">
-              <View className="mr-2 h-5 w-5 items-center justify-center rounded-full bg-surface-subtle dark:bg-surface-dark-subtle border border-border-muted dark:border-border-dark">
-                <Text className="text-[10px] font-black text-text-secondary dark:text-text-dark-primary uppercase">
-                  {item.addedBy.name.charAt(0)}
-                </Text>
-              </View>
-              <Text className="text-[11px] text-text-muted dark:text-text-dark-muted">
-                by{" "}
-                <Text className="font-bold text-text-secondary dark:text-text-dark-secondary">
-                  {currentUserId && item.addedBy.uid === currentUserId ? "You" : item.addedBy.name}
-                </Text>
+              <Text
+                className={`text-[15px] font-bold ${
+                  isCompleted
+                    ? "text-text-muted"
+                    : "text-text-900"
+                }`}
+                style={isCompleted ? { textDecorationLine: "line-through" } : undefined}
+                numberOfLines={1}
+              >
+                {item.name}
               </Text>
+              
+              {item.quantity ? (
+                <View className="ml-2 px-2 py-0.5 rounded-sm bg-primary-100">
+                  <Text className="text-[11px] font-bold uppercase text-primary-600">
+                    {item.quantity}
+                  </Text>
+                </View>
+              ) : null}
             </View>
 
-            {isCompleted && item.completedBy && (
-              <View className="flex-row items-center">
-                <CheckCircle2 stroke="#59AC77" size={10} strokeWidth={3} className="mr-1" />
-                <Text className="text-[10px] font-bold text-primary-600 dark:text-primary-400">
-                  {item.completedBy.name}
+            <View className="flex-row items-center mt-2">
+              <View className="px-2 py-0.5 rounded-sm bg-surface-muted border border-border">
+                <Text className="text-[11px] font-bold text-text-secondary">
+                  {item.category}
                 </Text>
               </View>
+              
+              <Text className="ml-3 text-[11px] font-medium text-text-muted">
+                {timeAgo}
+              </Text>
+            </View>
+          </View>
+
+          <View className="h-6 w-6 rounded-full bg-surface-alt border border-border items-center justify-center ml-2 overflow-hidden">
+            {item.addedBy.photoURL ? (
+              <Image source={{ uri: item.addedBy.photoURL }} className="h-full w-full" />
+            ) : (
+              <Text className="text-[10px] font-bold text-text-muted">
+                {item.addedBy.name.charAt(0)}
+              </Text>
             )}
           </View>
         </View>

@@ -104,7 +104,7 @@ const CreateFamilyScreen = () => {
       <View className="p-6">
         <View className="items-center mb-8">
           <View className="h-16 w-16 items-center justify-center rounded-full bg-primary-50 mb-4">
-            <PlusCircle stroke="#59AC77" size={32} />
+            <PlusCircle stroke="#3DB87A" size={32} />
           </View>
           <Text className="text-[24px] font-black text-text-primary mb-2 text-center">
             Start a New Grocery List

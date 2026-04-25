@@ -95,60 +95,62 @@ const ProfileScreen = ({ navigation }: any) => {
     ]);
   };
 
-
   const SectionHeader = ({ title }: { title: string }) => (
     <View className="mb-3 mt-6 px-1">
-      <Text className="text-[11px] font-bold uppercase tracking-[2px] text-text-muted dark:text-text-dark-muted">
+      <Text className="text-[11px] font-bold uppercase tracking-[0.08em] text-primary-500">
         {title}
       </Text>
     </View>
   );
 
-  const MenuItem = ({ 
-    icon: Icon, 
-    title, 
-    onPress, 
-    isDestructive = false, 
+  const MenuItem = ({
+    icon: Icon,
+    title,
+    onPress,
+    isDestructive = false,
     showChevron = true,
     rightElement,
-    loading = false
+    loading = false,
   }: any) => (
     <TouchableOpacity
       activeOpacity={0.7}
       onPress={onPress}
       disabled={loading}
-      className="flex-row items-center py-4 px-5 border-b border-border-muted/40 dark:border-border-dark/40 last:border-b-0"
+      className="flex-row items-center py-4 px-5 border-b border-border last:border-b-0"
     >
-      <View className={`mr-4 h-9 w-9 items-center justify-center rounded-xl ${
-        isDestructive 
-          ? "bg-red-50 dark:bg-red-900/10" 
-          : "bg-primary-50 dark:bg-primary-900/10"
-      }`}>
+      <View
+        className={`mr-4 h-9 w-9 items-center justify-center rounded-md ${
+          isDestructive ? "bg-danger-light" : "bg-surface-alt"
+        } border border-border`}
+      >
         {loading ? (
-          <ActivityIndicator size="small" color={isDestructive ? "#ef4444" : "#59AC77"} />
+          <ActivityIndicator size="small" color={isDestructive ? "#E55C5C" : "#3DB87A"} />
         ) : (
-          <Icon 
-            stroke={isDestructive ? "#ef4444" : "#59AC77"} 
-            size={18} 
-            strokeWidth={2.5} 
-          />
+          <Icon stroke={isDestructive ? "#E55C5C" : "#4A5568"} size={18} strokeWidth={2.5} />
         )}
       </View>
-      <Text className={`flex-1 text-[15px] font-bold ${
-        isDestructive ? "text-red-600 dark:text-red-400" : "text-text-primary dark:text-text-dark-primary"
-      }`}>
+      <Text
+        className={`flex-1 text-[15px] font-bold ${
+          isDestructive
+            ? "text-danger-dark"
+            : "text-text-900"
+        }`}
+      >
         {title}
       </Text>
       {rightElement}
       {showChevron && !rightElement && (
-        <ChevronRight stroke={isDark ? "#4f5f56" : "#95a39a"} size={18} strokeWidth={2.5} />
+        <ChevronRight stroke="#9AA3AF" size={18} strokeWidth={2.5} />
       )}
     </TouchableOpacity>
   );
 
   return (
-    <SafeAreaView edges={["top", "left", "right"]} className="flex-1 bg-background dark:bg-background-dark">
-      <StatusBar barStyle={isDark ? "light-content" : "dark-content"} />
+    <SafeAreaView
+      edges={["top", "left", "right"]}
+      className="flex-1 bg-background"
+    >
+      <StatusBar barStyle="dark-content" />
 
       <AppHeader title="Profile" eyebrow="Settings" />
 
@@ -159,31 +161,31 @@ const ProfileScreen = ({ navigation }: any) => {
       >
         <View className="px-6 pt-4">
           {/* User Profile Header */}
-          <Card className="mb-6 p-5 border-primary-100 dark:border-primary-900/30 bg-primary-50/20 dark:bg-primary-900/10">
+          <Card className="mb-6 p-5 border-primary-100 bg-primary-50/30">
             <View className="flex-row items-center">
-              <View className="mr-4 h-16 w-16 items-center justify-center overflow-hidden rounded-2xl bg-surface dark:bg-surface-dark border border-border-muted dark:border-border-dark shadow-sm">
+              <View className="mr-4 h-16 w-16 items-center justify-center overflow-hidden rounded-md bg-white border border-border shadow-xs">
                 {user?.photoURL ? (
                   <Image source={{ uri: user.photoURL }} className="h-full w-full" />
                 ) : (
-                  <Text className="text-[24px] font-black text-primary-600 dark:text-primary-400">
+                  <Text className="text-[24px] font-bold text-primary-600">
                     {getInitials(user?.displayName)}
                   </Text>
                 )}
               </View>
               <View className="flex-1">
-                <Text className="text-[20px] font-black tracking-tight text-text-primary dark:text-text-dark-primary">
+                <Text className="text-[20px] font-bold tracking-tight text-text-900">
                   {user?.displayName || "User"}
                 </Text>
-                <Text className="text-[13px] font-medium text-text-muted dark:text-text-dark-muted mt-0.5">
+                <Text className="text-[13px] font-medium text-text-muted mt-0.5">
                   {user?.email || "No email"}
                 </Text>
               </View>
               <TouchableOpacity
                 activeOpacity={0.7}
                 onPress={() => navigation.navigate("EditProfile")}
-                className="h-10 w-10 items-center justify-center rounded-xl bg-surface dark:bg-surface-dark border border-border-muted dark:border-border-dark"
+                className="h-10 w-10 items-center justify-center rounded-full bg-white border border-border"
               >
-                <Edit3 stroke={isDark ? "#cbd5cf" : "#748379"} size={18} strokeWidth={2.5} />
+                <Edit3 stroke="#4A5568" size={18} strokeWidth={2.5} />
               </TouchableOpacity>
             </View>
           </Card>
@@ -191,15 +193,15 @@ const ProfileScreen = ({ navigation }: any) => {
           {/* Preferences Section */}
           <SectionHeader title="Preferences" />
           <Card padding={false} className="mb-2">
-            <MenuItem 
-              icon={Shield} 
-              title="Privacy & Security" 
-              onPress={() => navigation.navigate("PrivacySecurity")} 
+            <MenuItem
+              icon={Shield}
+              title="Privacy & Security"
+              onPress={() => navigation.navigate("PrivacySecurity")}
             />
-            <MenuItem 
-              icon={HelpCircle} 
-              title="Help & Support" 
-              onPress={() => navigation.navigate("HelpSupport")} 
+            <MenuItem
+              icon={HelpCircle}
+              title="Help & Support"
+              onPress={() => navigation.navigate("HelpSupport")}
             />
           </Card>
 
@@ -208,9 +210,9 @@ const ProfileScreen = ({ navigation }: any) => {
             <>
               <SectionHeader title="Family" />
               <Card padding={false} className="mb-2">
-                <MenuItem 
-                  icon={Users} 
-                  title="Leave Family" 
+                <MenuItem
+                  icon={Users}
+                  title="Leave Family"
                   onPress={handleLeaveFamily}
                   isDestructive
                   loading={leavingFamily}
@@ -222,9 +224,9 @@ const ProfileScreen = ({ navigation }: any) => {
           {/* Account Section */}
           <SectionHeader title="Account" />
           <Card padding={false} className="mb-2">
-            <MenuItem 
-              icon={LogOut} 
-              title="Logout" 
+            <MenuItem
+              icon={LogOut}
+              title="Logout"
               onPress={() => signOut()}
               isDestructive
               showChevron={false}
@@ -233,8 +235,8 @@ const ProfileScreen = ({ navigation }: any) => {
 
           {/* Version Text */}
           <View className="mt-12 items-center">
-            <Text className="text-[11px] font-bold tracking-widest text-text-muted dark:text-text-dark-muted uppercase opacity-40">
-              Family Grocery · v1.2.0
+            <Text className="text-[11px] font-bold tracking-widest text-text-muted uppercase opacity-40">
+              Family Grocery · v2.0.0
             </Text>
           </View>
         </View>

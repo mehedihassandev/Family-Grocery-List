@@ -13,15 +13,9 @@ interface CardProps {
  * Why: To maintain consistent layout, radius, and shadows across the app.
  * Simplified and locked to Light Mode for maximum stability.
  */
-export const Card = ({ children, style, padding = true }: CardProps) => {
+export const Card = ({ children, className, style, padding = true }: CardProps) => {
   return (
-    <View
-      style={[
-        styles.card,
-        padding && styles.padding,
-        style,
-      ]}
-    >
+    <View className={className} style={[styles.card, padding && styles.padding, style]}>
       {children}
     </View>
   );
@@ -31,7 +25,7 @@ const styles = StyleSheet.create({
   card: {
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: "#e2e9e4", // border-muted
+    borderColor: "#E8EBF0", // border
     backgroundColor: "#ffffff", // surface
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
