@@ -9,7 +9,6 @@ import {
   TextInput,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useColorScheme } from "nativewind";
 import {
   BarChart3,
   ShoppingBasket,
@@ -42,19 +41,23 @@ import {
 } from "../components/ui";
 import NotificationModal from "../components/NotificationModal";
 
+// Helper to convert Firebase Timestamp or Date string to Date object
 const toDate = (value: any): Date | null => {
-  if (value?.toDate) return value.toDate();
+  if (!value) return null;
   if (value instanceof Date) return value;
-  return null;
+  if (typeof value === "object" && value.toDate) return value.toDate();
+  const d = new Date(value);
+  return isNaN(d.getTime()) ? null : d;
 };
 
 /**
  * Premium Dashboard Screen
  * Why: To provide a high-fidelity, visually stunning overview of the family's grocery status.
+ * Fix: Re-implemented DonutChart using react-native-gifted-charts for stability and animation.
+ * Note: Strictly Light Mode as per user request.
  */
 const DashboardScreen = ({ navigation }: any) => {
   const { user } = useAuthStore();
-  const { colorScheme } = useColorScheme();
   const [familyName, setFamilyName] = useState("Our Family");
   const [members, setMembers] = useState<any[]>([]);
   const [items, setItems] = useState<GroceryItem[]>([]);
@@ -75,7 +78,7 @@ const DashboardScreen = ({ navigation }: any) => {
     type: "success",
   });
 
-  const isDark = colorScheme === "dark";
+  const isDark = false; // Forced to false for Light Mode only
 
   useEffect(() => {
     if (!user?.familyId) return;
@@ -339,10 +342,10 @@ const DashboardScreen = ({ navigation }: any) => {
                 </View>
               </Card>
 
-              {/* Main Stats Card with Donut Chart */}
+              {/* Main Stats Card with Professional Donut Chart */}
               <Card className="mb-8">
                 <View className="flex-row items-center">
-                  {totalCount > 0 ? (
+                  <View className="items-center justify-center">
                     <DonutChart
                       total={totalCount}
                       data={[
@@ -350,13 +353,10 @@ const DashboardScreen = ({ navigation }: any) => {
                         { value: Math.max(0, pendingCount - urgentCount), color: "#F5A623" },
                         { value: urgentCount, color: "#E55C5C" },
                       ]}
-                      size={110}
+                      size={120}
+                      strokeWidth={14}
                     />
-                  ) : (
-                    <View className="h-[110px] w-[110px] rounded-full border-4 border-surface-muted items-center justify-center">
-                      <Text className="text-[10px] font-bold text-text-muted">NO DATA</Text>
-                    </View>
-                  )}
+                  </View>
                   <View className="ml-8 flex-1">
                     <View className="flex-row items-center justify-between mb-3">
                       <View className="flex-row items-center">

@@ -13,7 +13,6 @@ import {
   ScrollView,
 } from "react-native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
-import { useColorScheme } from "nativewind";
 import {
   Plus,
   RefreshCw,
@@ -71,7 +70,6 @@ const getFirebaseErrorMessage = (error: Error) => {
  */
 const HomeScreen = () => {
   const { user } = useAuthStore();
-  const { colorScheme } = useColorScheme();
   const insets = useSafeAreaInsets();
   const [items, setItems] = useState<GroceryItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -93,7 +91,7 @@ const HomeScreen = () => {
   const [isCategoryFilterOpen, setCategoryFilterOpen] = useState(false);
   const categoryAnimation = useRef(new Animated.Value(0)).current;
 
-  const isDark = colorScheme === "dark";
+  const isDark = false;
 
   useEffect(() => {
     if (!user?.familyId) {

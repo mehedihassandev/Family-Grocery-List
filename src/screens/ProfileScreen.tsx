@@ -11,7 +11,6 @@ import {
   Switch,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useColorScheme } from "nativewind";
 import {
   LogOut,
   Shield,
@@ -20,12 +19,8 @@ import {
   User as UserIcon,
   Edit3,
   Users,
-  Moon,
-  Sun,
-  Monitor,
 } from "lucide-react-native";
 import { useAuthStore } from "../store/useAuthStore";
-import { useThemeStore } from "../store/useThemeStore";
 import { signOut } from "../services/auth";
 import { leaveFamily } from "../services/family";
 import { AppHeader, Card, Chip } from "../components/ui";
@@ -52,11 +47,11 @@ const getInitials = (name?: string | null) => {
 
 /**
  * User profile and settings screen
- * Why: To manage account details, app preferences (like dark mode), and family membership.
+ * Why: To manage account details, app preferences, and family membership.
+ * Note: Dark mode removed to ensure consistent Light Mode branding.
  */
 const ProfileScreen = ({ navigation }: any) => {
   const { user, setUser } = useAuthStore();
-  const { theme } = useThemeStore();
   const [leavingFamily, setLeavingFamily] = useState(false);
 
   const isDark = false;

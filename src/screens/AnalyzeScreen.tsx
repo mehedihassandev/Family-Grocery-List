@@ -1,7 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { ScrollView, StatusBar, Text, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useColorScheme } from "nativewind";
 import {
   ChevronLeft,
   ChevronRight,
@@ -33,10 +32,13 @@ const MONTH_NAMES = [
   "December",
 ];
 
+// Helper to convert Firebase Timestamp or Date string to Date object
 const toDate = (value: any): Date | null => {
-  if (value?.toDate) return value.toDate();
+  if (!value) return null;
   if (value instanceof Date) return value;
-  return null;
+  if (typeof value === "object" && value.toDate) return value.toDate();
+  const d = new Date(value);
+  return isNaN(d.getTime()) ? null : d;
 };
 
 const formatMonthLabel = (date: Date) => `${MONTH_NAMES[date.getMonth()]} ${date.getFullYear()}`;
@@ -44,10 +46,11 @@ const formatMonthLabel = (date: Date) => `${MONTH_NAMES[date.getMonth()]} ${date
 /**
  * Premium Analytics Screen
  * Why: To provide a consistent, high-fidelity experience for tracking grocery habits.
+ * Fix: Re-implemented DonutChart using react-native-gifted-charts for stability and animation.
+ * Note: Strictly Light Mode as per user request.
  */
 const AnalyzeScreen = () => {
   const { user } = useAuthStore();
-  const { colorScheme } = useColorScheme();
   const [items, setItems] = useState<GroceryItem[]>([]);
   const [isNotifOpen, setNotifOpen] = useState(false);
   const [selectedMonth, setSelectedMonth] = useState(() => {
@@ -55,7 +58,7 @@ const AnalyzeScreen = () => {
     return new Date(now.getFullYear(), now.getMonth(), 1);
   });
 
-  const isDark = colorScheme === "dark";
+  const isDark = false; // Forced to false for Light Mode only
 
   useEffect(() => {
     if (!user?.familyId) {
@@ -72,101 +75,83 @@ const AnalyzeScreen = () => {
     return () => unsubscribe();
   }, [user?.familyId]);
 
+  // Filtering items for the selected month
   const monthlyItems = useMemo(() => {
-    const start = new Date(selectedMonth.getFullYear(), selectedMonth.getMonth(), 1);
-    const end = new Date(selectedMonth.getFullYear(), selectedMonth.getMonth() + 1, 1);
-
     return items.filter((item) => {
-      const created = toDate(item.createdAt);
-      if (!created) return false;
-      return created >= start && created < end;
+      const date = toDate(item.createdAt);
+      if (!date) return false;
+      return (
+        date.getMonth() === selectedMonth.getMonth() &&
+        date.getFullYear() === selectedMonth.getFullYear()
+      );
     });
   }, [items, selectedMonth]);
 
   const summary = useMemo(() => {
     const total = monthlyItems.length;
-    const completed = monthlyItems.filter((item) => item.status === "completed").length;
-    const pending = monthlyItems.filter((item) => item.status === "pending").length;
+    const completed = monthlyItems.filter((i) => i.status === "completed").length;
+    const pending = monthlyItems.filter((i) => i.status === "pending").length;
     const urgent = monthlyItems.filter(
-      (item) => item.status === "pending" && item.priority === "Urgent",
+      (i) => i.status === "pending" && i.priority === "Urgent",
     ).length;
-    const completionRate = total === 0 ? 0 : Math.round((completed / total) * 100);
+    const completionRate = total > 0 ? Math.round((completed / total) * 100) : 0;
 
     return { total, completed, pending, urgent, completionRate };
   }, [monthlyItems]);
 
-  const categoryBreakdown = useMemo(() => {
-    const categoryMap = monthlyItems.reduce<Record<string, number>>((acc, item) => {
-      acc[item.category] = (acc[item.category] ?? 0) + 1;
-      return acc;
-    }, {});
-
-    return Object.entries(categoryMap).sort((a, b) => b[1] - a[1]);
+  const categoryData = useMemo(() => {
+    const stats: Record<string, number> = {};
+    monthlyItems.forEach((item) => {
+      stats[item.category] = (stats[item.category] || 0) + 1;
+    });
+    return Object.entries(stats).sort((a, b) => b[1] - a[1]);
   }, [monthlyItems]);
 
-  const topCategory = categoryBreakdown[0]?.[0] ?? "None";
-
-  const nextMonthDisabled = (() => {
-    const now = new Date();
-    return (
-      selectedMonth.getFullYear() === now.getFullYear() &&
-      selectedMonth.getMonth() === now.getMonth()
-    );
-  })();
+  const changeMonth = (offset: number) => {
+    setSelectedMonth((prev) => {
+      const next = new Date(prev);
+      next.setMonth(next.getMonth() + offset);
+      return next;
+    });
+  };
 
   return (
     <SafeAreaView edges={["top", "left", "right"]} className="flex-1 bg-background">
       <StatusBar barStyle="dark-content" />
-
-      <AppHeader
-        title="Analytics"
-        eyebrow="Insights"
-        onNotificationPress={() => setNotifOpen(true)}
-      />
+      <AppHeader title="Analytics" eyebrow="Overview" />
 
       <ScrollView
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: 130 }}
+        contentContainerStyle={{ paddingBottom: 100 }}
         className="flex-1"
       >
         {/* Month Selector */}
-        <View className="px-6 pt-6">
-          <View className="flex-row items-center justify-between bg-white rounded-3xl border border-border p-2 shadow-sm">
-            <TouchableOpacity
-              activeOpacity={0.7}
-              onPress={() =>
-                setSelectedMonth((prev) => new Date(prev.getFullYear(), prev.getMonth() - 1, 1))
-              }
-              className="h-11 w-11 items-center justify-center rounded-2xl bg-surface-muted border border-border"
-            >
-              <ChevronLeft stroke="#4A5568" size={20} strokeWidth={3} />
-            </TouchableOpacity>
+        <View className="px-6 pt-4 flex-row items-center justify-between">
+          <TouchableOpacity
+            onPress={() => changeMonth(-1)}
+            className="h-10 w-10 items-center justify-center rounded-xl bg-white border border-border shadow-xs"
+          >
+            <ChevronLeft size={20} stroke="#4A5568" />
+          </TouchableOpacity>
 
-            <View className="flex-row items-center">
-              <CalendarIcon stroke="#3DB87A" size={18} strokeWidth={2.5} className="mr-2" />
-              <Text className="text-[17px] font-bold text-text-primary tracking-tight">
-                {formatMonthLabel(selectedMonth)}
-              </Text>
-            </View>
-
-            <TouchableOpacity
-              activeOpacity={0.7}
-              disabled={nextMonthDisabled}
-              onPress={() =>
-                setSelectedMonth((prev) => new Date(prev.getFullYear(), prev.getMonth() + 1, 1))
-              }
-              className={`h-11 w-11 items-center justify-center rounded-2xl bg-surface-muted border border-border ${
-                nextMonthDisabled ? "opacity-20" : ""
-              }`}
-            >
-              <ChevronRight stroke="#4A5568" size={20} strokeWidth={3} />
-            </TouchableOpacity>
+          <View className="flex-row items-center">
+            <CalendarIcon size={16} stroke="#3DB87A" className="mr-2" />
+            <Text className="text-[17px] font-bold text-text-primary">
+              {formatMonthLabel(selectedMonth)}
+            </Text>
           </View>
+
+          <TouchableOpacity
+            onPress={() => changeMonth(1)}
+            className="h-10 w-10 items-center justify-center rounded-xl bg-white border border-border shadow-xs"
+          >
+            <ChevronRight size={20} stroke="#4A5568" />
+          </TouchableOpacity>
         </View>
 
         {monthlyItems.length > 0 ? (
           <>
-            {/* Main Stats Card */}
+            {/* Main Stats Card with Professional Donut Chart */}
             <View className="px-6 pt-8">
               <Card className="mb-8 items-center py-10">
                 <DonutChart
@@ -182,96 +167,82 @@ const AnalyzeScreen = () => {
 
                 <View className="mt-10 flex-row flex-wrap justify-center gap-6">
                   <View className="flex-row items-center">
-                    <View className="h-3 w-3 rounded-full bg-primary-500 mr-2" />
-                    <Text className="text-[14px] font-bold text-text-secondary">Completed</Text>
+                    <View className="h-2.5 w-2.5 rounded-full bg-primary-500 mr-2" />
+                    <Text className="text-[13px] font-bold text-text-primary mr-1">
+                      {summary.completed}
+                    </Text>
+                    <Text className="text-[13px] font-medium text-text-muted">Done</Text>
                   </View>
                   <View className="flex-row items-center">
-                    <View className="h-3 w-3 rounded-full bg-warning-DEFAULT mr-2" />
-                    <Text className="text-[14px] font-bold text-text-secondary">Pending</Text>
+                    <View className="h-2.5 w-2.5 rounded-full bg-warning-DEFAULT mr-2" />
+                    <Text className="text-[13px] font-bold text-text-primary mr-1">
+                      {summary.pending}
+                    </Text>
+                    <Text className="text-[13px] font-medium text-text-muted">Pending</Text>
                   </View>
                   <View className="flex-row items-center">
-                    <View className="h-3 w-3 rounded-full bg-danger-DEFAULT mr-2" />
-                    <Text className="text-[14px] font-bold text-text-secondary">Urgent</Text>
+                    <View className="h-2.5 w-2.5 rounded-full bg-danger-DEFAULT mr-2" />
+                    <Text className="text-[13px] font-bold text-text-primary mr-1">
+                      {summary.urgent}
+                    </Text>
+                    <Text className="text-[13px] font-medium text-text-muted">Urgent</Text>
                   </View>
                 </View>
               </Card>
+            </View>
 
-              {/* Stats Grid */}
-              <View className="flex-row gap-4 mb-8">
-                <View className="flex-1 bg-white p-5 rounded-[24px] border border-border shadow-xs flex-row justify-between">
-                  <View>
-                    <Text className="text-2xl font-bold text-text-primary">
-                      {summary.completed}
-                    </Text>
-                    <Text className="text-[10px] font-bold text-text-muted uppercase mt-1">
-                      Completed
-                    </Text>
-                  </View>
-                  <CheckCircle2 size={16} stroke="#3DB87A" />
-                </View>
-                <View className="flex-1 bg-white p-5 rounded-[24px] border border-border shadow-xs flex-row justify-between">
-                  <View>
-                    <Text className="text-2xl font-bold text-text-primary">
-                      {summary.completionRate}%
-                    </Text>
-                    <Text className="text-[10px] font-bold text-text-muted uppercase mt-1">
-                      Completion
-                    </Text>
-                  </View>
-                  <TrendingUp size={16} stroke="#3DB87A" />
-                </View>
+            {/* Quick Metrics */}
+            <View className="px-6 flex-row gap-4 mb-8">
+              <View className="flex-1 bg-surface-alt rounded-2xl p-4 border border-border/50">
+                <TrendingUp size={18} stroke="#3DB87A" className="mb-2" />
+                <Text className="text-2xl font-bold text-text-primary">{summary.total}</Text>
+                <Text className="text-[11px] font-bold text-text-muted uppercase tracking-wider">
+                  Total Items
+                </Text>
+              </View>
+              <View className="flex-1 bg-surface-alt rounded-2xl p-4 border border-border/50">
+                <BarChart3 size={18} stroke="#4A90D9" className="mb-2" />
+                <Text className="text-2xl font-bold text-text-primary">{categoryData.length}</Text>
+                <Text className="text-[11px] font-bold text-text-muted uppercase tracking-wider">
+                  Categories
+                </Text>
               </View>
             </View>
 
-            {/* Category Breakdown */}
+            {/* Categories List */}
             <View className="px-6">
-              <Text className="mb-5 text-[18px] font-bold tracking-tight text-text-primary">
-                By Category
+              <Text className="text-text-primary text-[18px] font-bold tracking-tight mb-5">
+                Category Distribution
               </Text>
-              <Card className="mb-8">
-                {categoryBreakdown.map(([category, count], index) => (
-                  <ProgressBar
-                    key={category}
-                    label={category}
-                    progress={(count / (summary.total || 1)) * 100}
-                    color={index % 2 === 0 ? "#3DB87A" : "#F5A623"}
-                    height={8}
-                    showPercentage
-                  />
+              <Card className="p-6">
+                {categoryData.map(([cat, count], index) => (
+                  <View key={cat} className={index !== 0 ? "mt-6" : ""}>
+                    <View className="flex-row justify-between items-center mb-2">
+                      <Text className="text-[15px] font-bold text-text-primary">{cat}</Text>
+                      <Text className="text-[13px] font-bold text-primary-500">
+                        {count} item{count !== 1 ? "s" : ""}
+                      </Text>
+                    </View>
+                    <ProgressBar
+                      progress={(count / summary.total) * 100}
+                      color={index === 0 ? "#3DB87A" : index === 1 ? "#4A90D9" : "#F5A623"}
+                      height={8}
+                    />
+                  </View>
                 ))}
-              </Card>
-            </View>
-
-            {/* Insights Card */}
-            <View className="px-6">
-              <Card className="bg-primary-500/5 border-primary-500/20 flex-row items-center p-6">
-                <View className="h-14 w-14 rounded-2xl bg-primary-500 items-center justify-center shadow-lg shadow-primary-500/20">
-                  <BarChart3 stroke="white" size={26} strokeWidth={2.5} />
-                </View>
-                <View className="ml-5 flex-1">
-                  <Text className="text-[15px] font-bold text-text-primary mb-1">
-                    Top Pattern: {topCategory}
-                  </Text>
-                  <Text className="text-[13px] font-medium text-text-secondary leading-relaxed">
-                    You&apos;ve added {summary.total} items this month. {topCategory} is your most
-                    frequent category.
-                  </Text>
-                </View>
               </Card>
             </View>
           </>
         ) : (
-          <View className="px-6 pt-32 items-center justify-center">
-            <View className="h-24 w-24 items-center justify-center rounded-[32px] bg-surface-muted mb-6">
-              <BarChart3 stroke="#9AA3AF" size={40} strokeWidth={1.5} />
+          <View className="flex-1 items-center justify-center px-10 pt-20">
+            <View className="h-20 w-20 rounded-3xl bg-surface-alt items-center justify-center mb-6">
+              <BarChart3 size={40} stroke="#9AA3AF" strokeWidth={1.5} />
             </View>
-            <Text className="text-[22px] font-bold text-text-primary text-center tracking-tight">
-              No Insights Yet
+            <Text className="text-xl font-bold text-text-primary text-center">
+              No Data for {formatMonthLabel(selectedMonth)}
             </Text>
-            <Text className="mt-3 text-[15px] leading-6 text-text-muted text-center px-10">
-              {"Add items to your list for "}
-              {formatMonthLabel(selectedMonth)}
-              {" to see how your family shops."}
+            <Text className="text-text-secondary text-center mt-2 leading-6">
+              Start adding and completing items to see your family&apos;s shopping trends.
             </Text>
           </View>
         )}

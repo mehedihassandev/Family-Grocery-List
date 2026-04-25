@@ -1,11 +1,9 @@
 import "./src/styles/global.css";
-import React, { useCallback, useEffect } from "react";
+import React from "react";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import RootNavigator from "./src/navigation/RootNavigator";
-import { colorScheme } from "nativewind";
 import { NavigationContainer } from "@react-navigation/native";
-import * as SplashScreen from 'expo-splash-screen';
 import { 
   useFonts, 
   DMSans_400Regular, 
@@ -17,12 +15,15 @@ import {
   DMMono_500Medium 
 } from '@expo-google-fonts/dm-mono';
 
+import * as SplashScreen from 'expo-splash-screen';
+
 // Keep the splash screen visible while we fetch resources
 SplashScreen.preventAutoHideAsync();
 
 /**
  * Main application component
- * Why: Orchestrates the root configuration including fonts, navigation, and theme.
+ * Why: Orchestrates the root configuration including fonts and navigation.
+ * Note: Theme-related logic (Dark/Light mode) has been completely removed to enforce a single light theme.
  */
 export default function App() {
     const [fontsLoaded, fontError] = useFonts({
@@ -33,21 +34,15 @@ export default function App() {
         DMMono_500Medium,
     });
 
-    useEffect(() => {
-        // Force Light Mode for stability as per project requirement
-        colorScheme.set("light");
-    }, []);
-
-    const onLayoutRootView = useCallback(async () => {
-        if (fontsLoaded || fontError) {
-            // Hide splash screen once fonts are loaded or an error occurs
-            await SplashScreen.hideAsync();
-        }
-    }, [fontsLoaded, fontError]);
-
     if (!fontsLoaded && !fontError) {
         return null;
     }
+
+    const onLayoutRootView = async () => {
+        if (fontsLoaded || fontError) {
+            await SplashScreen.hideAsync();
+        }
+    };
 
     return (
         <GestureHandlerRootView style={{ flex: 1 }} onLayout={onLayoutRootView}>

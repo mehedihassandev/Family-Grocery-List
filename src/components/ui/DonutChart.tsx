@@ -1,6 +1,6 @@
 import React from "react";
 import { View, Text, StyleSheet } from "react-native";
-import Svg, { G, Circle } from "react-native-svg";
+import { PieChart } from "react-native-gifted-charts";
 
 interface ChartData {
   value: number;
@@ -15,71 +15,49 @@ interface DonutChartProps {
 }
 
 /**
- * Simple Donut Chart using SVG
- * Why: To visualize item distribution (completed/pending/urgent) as seen in the design screenshots.
+ * Professional Donut Chart using react-native-gifted-charts
+ * Why: To provide a high-fidelity, animated, and stable charting experience.
+ * Note: Replaces the previous hand-written SVG version to ensure perfect rendering.
  */
 const DonutChart = ({
-  data,
-  total,
+  data = [],
+  total = 0,
   size = 120,
-  strokeWidth = 12,
+  strokeWidth = 14,
 }: DonutChartProps) => {
-  const center = size / 2;
-  const radius = (size - strokeWidth) / 2;
-  const circumference = 2 * Math.PI * radius;
+  // Map our internal format to gifted-charts format
+  const chartData = data.map(item => ({
+    value: item.value || 0,
+    color: item.color,
+    // Add a slight shift to the first segment for better aesthetic
+    focused: false,
+  }));
 
-  let currentOffset = 0;
+  const radius = size / 2;
+  const innerRadius = radius - strokeWidth;
 
   return (
     <View style={[styles.container, { width: size, height: size }]}>
-      <Svg width={size} height={size}>
-        <G rotation="-90" origin={`${center}, ${center}`}>
-          {/* Background circle */}
-          <Circle
-            cx={center}
-            cy={center}
-            r={radius}
-            stroke="#F0F2F5"
-            strokeWidth={strokeWidth}
-            fill="transparent"
-          />
-          {/* Data segments */}
-          {data.map((item, index) => {
-            // Safety: ignore zero or negative values
-            if (item.value <= 0 || total <= 0) {
-              currentOffset += Math.max(0, item.value);
-              return null;
-            }
-
-            const percentage = (item.value / total) * 100;
-            const strokeDashoffset = circumference - (circumference * percentage) / 100;
-            const rotation = (currentOffset / total) * 360;
-            currentOffset += item.value;
-
-            return (
-              <Circle
-                key={index}
-                cx={center}
-                cy={center}
-                r={radius}
-                stroke={item.color}
-                strokeWidth={strokeWidth}
-                strokeDasharray={circumference}
-                strokeDashoffset={strokeDashoffset}
-                strokeLinecap="round"
-                fill="transparent"
-                rotation={rotation}
-                originX={center}
-                originY={center}
-              />
-            );
-          })}
-        </G>
-      </Svg>
-      <View style={styles.labelContainer}>
-        <Text style={styles.totalValue}>{total || 0}</Text>
-        <Text style={styles.totalLabel}>TOTAL</Text>
-      </View>
+      <PieChart
+        donut
+        data={chartData}
+        radius={radius}
+        innerRadius={innerRadius}
+        innerCircleColor="#FFFFFF"
+        centerLabelComponent={() => {
+          return (
+            <View style={styles.labelContainer}>
+              <Text style={styles.totalValue}>{total}</Text>
+              <Text style={styles.totalLabel}>TOTAL</Text>
+            </View>
+          );
+        }}
+        // Animations
+        showGradient={false}
+        focusOnPress={false}
+        sectionAutoFocus={false}
+        animationDuration={1000}
+      />
     </View>
   );
 };
@@ -90,7 +68,6 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   labelContainer: {
-    position: "absolute",
     alignItems: "center",
     justifyContent: "center",
   },
@@ -98,6 +75,7 @@ const styles = StyleSheet.create({
     fontSize: 22,
     fontWeight: "800",
     color: "#0D1117",
+    fontFamily: "DMSans_700Bold",
   },
   totalLabel: {
     fontSize: 10,
@@ -105,6 +83,7 @@ const styles = StyleSheet.create({
     color: "#9AA3AF",
     letterSpacing: 1,
     marginTop: -2,
+    fontFamily: "DMSans_700Bold",
   },
 });
 
