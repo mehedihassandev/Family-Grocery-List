@@ -8,13 +8,13 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from "react-native";
-import { X } from "lucide-react-native";
+import { X, Check } from "lucide-react-native";
 import { useColorScheme } from "nativewind";
 import { Priority, Category } from "../types";
 import { addGroceryItem } from "../services/grocery";
 import { addCustomCategory, subscribeToCategories, CustomCategory } from "../services/categories";
 import { GROCERY_CATEGORIES } from "../features/grocery";
-import { InputField, PrimaryButton, Chip } from "./ui";
+import { InputField, PrimaryButton, Chip, StatusModal, LoadingOverlay } from "./ui";
 
 const CATEGORIES: Category[] = [...GROCERY_CATEGORIES];
 const PRIORITIES: Priority[] = ["Low", "Medium", "Urgent"];
@@ -27,8 +27,8 @@ interface AddItemModalProps {
 }
 
 /**
- * Modal form to add a new grocery item
- * Why: To provide a focused, user-friendly interface for adding items with full categorization and priority options.
+ * Premium Add Item Modal
+ * Why: To provide a high-fidelity experience for adding groceries with elegant feedback.
  */
 const AddItemModal = ({ visible, onClose, familyId, user }: AddItemModalProps) => {
   const { colorScheme } = useColorScheme();
@@ -43,6 +43,8 @@ const AddItemModal = ({ visible, onClose, familyId, user }: AddItemModalProps) =
   const [customCategories, setCustomCategories] = useState<CustomCategory[]>([]);
   const [newCatInput, setNewCatInput] = useState("");
   const [showAddCat, setShowAddCat] = useState(false);
+  
+  const [showSuccess, setShowSuccess] = useState(false);
 
   useEffect(() => {
     if (!familyId || !visible) return;
@@ -69,7 +71,7 @@ const AddItemModal = ({ visible, onClose, familyId, user }: AddItemModalProps) =
       setNewCatInput("");
       setShowAddCat(false);
     } catch (error) {
-      console.error("[AddItemModal] error adding category:", error);
+      console.error(error);
     }
   };
 
@@ -88,115 +90,124 @@ const AddItemModal = ({ visible, onClose, familyId, user }: AddItemModalProps) =
         },
         user,
       );
-
-      // Reset and close
+      
+      setShowSuccess(true);
+      // Reset fields
       setName("");
       setCategory("Other");
       setPriority("Medium");
       setQuantity("");
       setNotes("");
-      onClose();
     } catch (error) {
-      console.error("[AddItemModal] error saving item:", error);
+      console.error(error);
     } finally {
       setLoading(false);
     }
   };
 
+  const handleSuccessClose = () => {
+    setShowSuccess(false);
+    onClose();
+  };
+
   return (
     <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
       <View className="flex-1 justify-end" style={{ backgroundColor: "rgba(0,0,0,0.5)" }}>
+        <LoadingOverlay visible={loading} />
+        <StatusModal 
+          visible={showSuccess}
+          title="Item Added"
+          message={`"${name}" has been added to your family list.`}
+          onClose={handleSuccessClose}
+        />
+
         <KeyboardAvoidingView
           behavior={Platform.OS === "ios" ? "padding" : "height"}
-          className="rounded-t-4xl bg-background dark:bg-background-dark px-6 pb-10 pt-3 shadow-2xl"
-          style={{ maxHeight: "85%" }}
+          className="rounded-t-[40px] bg-white px-6 pb-12 pt-3 shadow-2xl"
+          style={{ maxHeight: "90%" }}
         >
           <View className="mb-4 items-center">
-            <View className="h-1 w-9 rounded-full bg-handle" />
+            <View className="h-1.5 w-12 rounded-full bg-border/50" />
           </View>
 
-          <View className="mb-6 flex-row items-center justify-between">
+          <View className="mb-8 flex-row items-center justify-between">
             <View>
-              <Text className="mb-1 text-[11px] font-bold uppercase tracking-[0.08em] text-primary-500">
-                New Entry
+              <Text className="mb-1 text-[11px] font-black uppercase tracking-[2px] text-primary-500">
+                New Grocery
               </Text>
-              <Text className="text-[24px] font-bold tracking-tight text-text-900 dark:text-text-dark-primary">
+              <Text className="text-[28px] font-bold tracking-tight text-text-primary">
                 Add Item
               </Text>
             </View>
             <TouchableOpacity
               onPress={onClose}
               activeOpacity={0.7}
-              className="h-10 w-10 items-center justify-center rounded-full bg-surface-muted dark:bg-surface-dark-muted border border-border-muted dark:border-border-dark"
+              className="h-12 w-12 items-center justify-center rounded-2xl bg-surface-alt border border-border"
             >
-              <X stroke={isDark ? "#cbd5cf" : "#748379"} size={20} strokeWidth={3} />
+              <X stroke="#748379" size={24} strokeWidth={2.5} />
             </TouchableOpacity>
           </View>
 
           <ScrollView
             showsVerticalScrollIndicator={false}
-            className="max-h-[70vh]"
+            className="max-h-[65vh]"
             contentContainerStyle={{ paddingBottom: 20 }}
           >
             <InputField
-              label="Item Name"
-              placeholder="What needs to be bought?"
+              label="ITEM NAME"
+              placeholder="E.g. Fresh Milk, Organic Eggs"
               value={name}
               onChangeText={setName}
               containerClassName="mb-6"
+              inputClassName="h-16 text-lg font-bold"
               autoFocus
             />
 
-            <InputField
-              label="Quantity"
-              placeholder="e.g. 2L, 5pcs"
-              value={quantity}
-              onChangeText={setQuantity}
-              containerClassName="mb-6"
-            />
-
-            <View className="mb-6">
-              <Text className="mb-2 ml-1 text-[11px] font-bold uppercase tracking-[0.08em] text-text-muted dark:text-text-dark-muted">
-                Priority
-              </Text>
-              <View className="h-11 flex-row rounded-md bg-surface-muted dark:bg-surface-dark-muted p-1 items-center">
-                {PRIORITIES.map((p) => {
-                  const isActive = priority === p;
-                  const activeStyle =
-                    p === "Low" ? "bg-primary-100" : p === "Medium" ? "bg-warning-light" : "bg-danger-light";
-                  const activeText =
-                    p === "Low"
-                      ? "text-primary-600"
-                      : p === "Medium"
-                        ? "text-warning-dark"
-                        : "text-danger-dark";
-
-                  return (
-                    <TouchableOpacity
-                      key={p}
-                      onPress={() => setPriority(p)}
-                      activeOpacity={0.75}
-                      className={`flex-1 items-center justify-center rounded-sm h-full ${
-                        isActive ? activeStyle : ""
-                      }`}
-                    >
-                      <Text
-                        className={`text-[12px] font-bold uppercase tracking-wide ${
-                          isActive ? activeText : "text-text-muted dark:text-text-dark-muted"
+            <View className="flex-row gap-4 mb-6">
+              <InputField
+                label="QUANTITY"
+                placeholder="E.g. 2L, 1 Dozen"
+                value={quantity}
+                onChangeText={setQuantity}
+                containerClassName="flex-1"
+                inputClassName="h-14 font-bold"
+              />
+              <View className="flex-1">
+                <Text className="mb-2 ml-1 text-[11px] font-black uppercase tracking-[1.5px] text-text-muted">
+                  PRIORITY
+                </Text>
+                <View className="h-14 flex-row rounded-2xl bg-surface-alt p-1.5 items-center border border-border">
+                  {PRIORITIES.map((p) => {
+                    const isActive = priority === p;
+                    const activeStyle = p === "Low" ? "bg-primary-500" : p === "Medium" ? "bg-warning-DEFAULT" : "bg-danger-DEFAULT";
+                    
+                    return (
+                      <TouchableOpacity
+                        key={p}
+                        onPress={() => setPriority(p)}
+                        activeOpacity={0.75}
+                        className={`flex-1 items-center justify-center rounded-xl h-full ${
+                          isActive ? activeStyle : ""
                         }`}
                       >
-                        {p}
-                      </Text>
-                    </TouchableOpacity>
-                  );
-                })}
+                        <Text
+                          className={`text-[10px] font-black uppercase tracking-wider ${
+                            isActive ? "text-white" : "text-text-muted"
+                          }`}
+                        >
+                          {p.charAt(0)}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
               </View>
             </View>
 
-            <View className="mb-6">
-              <View className="mb-3 flex-row items-center justify-between px-1">
-                <Text className="text-[11px] font-bold uppercase tracking-[0.08em] text-text-muted dark:text-text-dark-muted">
-                  Category
+            <View className="mb-8">
+              <View className="mb-4 flex-row items-center justify-between px-1">
+                <Text className="text-[11px] font-black uppercase tracking-[1.5px] text-text-muted">
+                  CATEGORY
                 </Text>
                 <TouchableOpacity
                   onPress={() => setShowAddCat(!showAddCat)}
@@ -210,21 +221,20 @@ const AddItemModal = ({ visible, onClose, familyId, user }: AddItemModalProps) =
               </View>
 
               {showAddCat && (
-                <View className="mb-4 flex-row gap-2">
+                <View className="mb-6 flex-row gap-2">
                   <InputField
-                    placeholder="New Category"
+                    placeholder="Category Name"
                     value={newCatInput}
                     onChangeText={setNewCatInput}
                     containerClassName="flex-1"
+                    inputClassName="h-12"
                   />
                   <TouchableOpacity
                     onPress={handleAddCategory}
                     activeOpacity={0.8}
-                    className="h-12 items-center justify-center rounded-2xl bg-primary-600 dark:bg-primary-500 px-6"
+                    className="h-12 items-center justify-center rounded-2xl bg-primary-600 px-6"
                   >
-                    <Text className="text-[11px] font-black uppercase tracking-wide text-white">
-                      Add
-                    </Text>
+                    <Check stroke="white" size={18} strokeWidth={3} />
                   </TouchableOpacity>
                 </View>
               )}
@@ -241,29 +251,29 @@ const AddItemModal = ({ visible, onClose, familyId, user }: AddItemModalProps) =
                     label={cat}
                     selected={category === cat}
                     onPress={() => setCategory(cat)}
-                    className="mr-2"
+                    className="mr-3"
                   />
                 ))}
               </ScrollView>
             </View>
 
             <InputField
-              label="Notes (Optional)"
-              placeholder="Any specific brand or detail?"
+              label="ADDITIONAL NOTES"
+              placeholder="Brand, size, or specific store..."
               value={notes}
               onChangeText={setNotes}
               multiline
               numberOfLines={3}
-              containerClassName="mb-8"
-              inputClassName="h-24 pt-3"
+              containerClassName="mb-10"
+              inputClassName="h-32 pt-4 leading-6"
               textAlignVertical="top"
             />
 
             <PrimaryButton
               title="Add to List"
               onPress={handleSave}
-              loading={loading}
-              disabled={!name.trim()}
+              disabled={!name.trim() || loading}
+              icon={<Check size={20} stroke="#FFF" strokeWidth={2.5} />}
             />
           </ScrollView>
         </KeyboardAvoidingView>

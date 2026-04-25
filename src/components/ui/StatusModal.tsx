@@ -1,0 +1,100 @@
+import React from "react";
+import { Modal, Text, View, TouchableOpacity, StyleSheet } from "react-native";
+import { CheckCircle2, XCircle, AlertTriangle, HelpCircle } from "lucide-react-native";
+import { PrimaryButton } from "./PrimaryButton";
+
+type StatusType = "success" | "error" | "warning" | "confirm";
+
+interface StatusModalProps {
+  visible: boolean;
+  onClose: () => void;
+  title: string;
+  message: string;
+  type?: StatusType;
+  confirmLabel?: string;
+  cancelLabel?: string;
+  onConfirm?: () => void;
+}
+
+/**
+ * Elegant multi-purpose status modal
+ * Why: To provide clear, beautiful feedback for user actions (success, errors, confirmations).
+ */
+const StatusModal = ({
+  visible,
+  onClose,
+  title,
+  message,
+  type = "success",
+  confirmLabel = "Continue",
+  cancelLabel = "Cancel",
+  onConfirm,
+}: StatusModalProps) => {
+  const getIcon = () => {
+    switch (type) {
+      case "success":
+        return <CheckCircle2 size={48} stroke="#3DB87A" strokeWidth={1.5} />;
+      case "error":
+        return <XCircle size={48} stroke="#E55C5C" strokeWidth={1.5} />;
+      case "warning":
+        return <AlertTriangle size={48} stroke="#F5A623" strokeWidth={1.5} />;
+      case "confirm":
+        return <HelpCircle size={48} stroke="#4A90D9" strokeWidth={1.5} />;
+    }
+  };
+
+  const getIconBg = () => {
+    switch (type) {
+      case "success": return "bg-primary-50";
+      case "error": return "bg-danger-light";
+      case "warning": return "bg-warning-light";
+      case "confirm": return "bg-info-light";
+    }
+  };
+
+  return (
+    <Modal visible={visible} transparent animationType="fade">
+      <View style={styles.overlay} className="bg-black/40">
+        <View className="w-[85%] rounded-[32px] bg-white p-8 items-center shadow-2xl">
+          <View className={`h-24 w-24 rounded-[32px] items-center justify-center mb-6 ${getIconBg()}`}>
+            {getIcon()}
+          </View>
+          
+          <Text className="text-2xl font-bold text-text-primary text-center mb-2 tracking-tight">
+            {title}
+          </Text>
+          
+          <Text className="text-[15px] leading-6 text-text-secondary text-center mb-8 px-2">
+            {message}
+          </Text>
+
+          <View className="w-full gap-3">
+            <PrimaryButton 
+              title={confirmLabel} 
+              onPress={onConfirm || onClose} 
+            />
+            
+            {type === "confirm" && (
+              <TouchableOpacity 
+                onPress={onClose}
+                className="py-3 items-center"
+              >
+                <Text className="text-text-muted font-bold text-[15px]">{cancelLabel}</Text>
+              </TouchableOpacity>
+            )}
+          </View>
+        </View>
+      </View>
+    </Modal>
+  );
+};
+
+const styles = StyleSheet.create({
+  overlay: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+});
+
+export default StatusModal;

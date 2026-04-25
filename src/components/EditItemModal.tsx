@@ -1,21 +1,19 @@
 import React, { useEffect, useMemo, useState } from "react";
 import {
-  ActivityIndicator,
-  Alert,
   KeyboardAvoidingView,
   Modal,
   Platform,
   ScrollView,
   Text,
-  TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
-import { X } from "lucide-react-native";
+import { X, Check, Trash2 } from "lucide-react-native";
 import { Category, GroceryItem, Priority } from "../types";
 import { deleteGroceryItem, updateGroceryItem } from "../services/grocery";
 import { addCustomCategory, CustomCategory, subscribeToCategories } from "../services/categories";
 import { GROCERY_CATEGORIES } from "../features/grocery";
+import { InputField, PrimaryButton, Chip, LoadingOverlay, StatusModal } from "./ui";
 
 const CATEGORIES: Category[] = [...GROCERY_CATEGORIES];
 const PRIORITIES: Priority[] = ["Low", "Medium", "Urgent"];
@@ -27,6 +25,10 @@ interface EditItemModalProps {
   familyId: string;
 }
 
+/**
+ * Premium Edit Item Modal
+ * Why: To provide a high-fidelity experience for updating groceries with elegant feedback and safety confirmations.
+ */
 const EditItemModal = ({ visible, onClose, item, familyId }: EditItemModalProps) => {
   const [name, setName] = useState("");
   const [category, setCategory] = useState<string>("Other");
@@ -36,8 +38,21 @@ const EditItemModal = ({ visible, onClose, item, familyId }: EditItemModalProps)
   const [customCategories, setCustomCategories] = useState<CustomCategory[]>([]);
   const [newCatInput, setNewCatInput] = useState("");
   const [showAddCat, setShowAddCat] = useState(false);
-  const [saving, setSaving] = useState(false);
-  const [deleting, setDeleting] = useState(false);
+  const [loading, setLoading] = useState(false);
+  
+  // Modal states
+  const [statusModal, setStatusModal] = useState<{
+    visible: boolean;
+    title: string;
+    message: string;
+    type: "success" | "error" | "confirm";
+    onConfirm?: () => void;
+  }>({
+    visible: false,
+    title: "",
+    message: "",
+    type: "success",
+  });
 
   useEffect(() => {
     if (!item || !visible) return;
@@ -67,7 +82,6 @@ const EditItemModal = ({ visible, onClose, item, familyId }: EditItemModalProps)
 
   const handleAddCategory = async () => {
     if (!newCatInput.trim() || !familyId) return;
-
     try {
       await addCustomCategory(familyId, newCatInput.trim());
       setCategory(newCatInput.trim());
@@ -80,9 +94,8 @@ const EditItemModal = ({ visible, onClose, item, familyId }: EditItemModalProps)
 
   const handleSave = async () => {
     if (!item || !name.trim()) return;
-
+    setLoading(true);
     try {
-      setSaving(true);
       await updateGroceryItem(item.id, {
         name: name.trim(),
         category,
@@ -90,233 +103,234 @@ const EditItemModal = ({ visible, onClose, item, familyId }: EditItemModalProps)
         quantity: quantity.trim(),
         notes: notes.trim(),
       });
-      onClose();
+      setStatusModal({
+        visible: true,
+        title: "Item Updated",
+        message: "Your changes have been saved successfully.",
+        type: "success",
+      });
     } catch (error) {
-      console.error(error);
-      Alert.alert("Update failed", "Could not save item changes.");
+      setStatusModal({
+        visible: true,
+        title: "Update Failed",
+        message: "Could not save changes. Please try again.",
+        type: "error",
+      });
     } finally {
-      setSaving(false);
+      setLoading(false);
     }
   };
 
-  const confirmDelete = () => {
-    if (!item || deleting) return;
-
-    Alert.alert("Delete item?", "This action cannot be undone.", [
-      { text: "Cancel", style: "cancel" },
-      {
-        text: "Delete",
-        style: "destructive",
-        onPress: async () => {
-          try {
-            setDeleting(true);
-            await deleteGroceryItem(item.id);
-            onClose();
-          } catch (error) {
-            console.error(error);
-            Alert.alert("Delete failed", "Could not delete this item.");
-          } finally {
-            setDeleting(false);
-          }
-        },
-      },
-    ]);
+  const handleDelete = () => {
+    if (!item) return;
+    setStatusModal({
+      visible: true,
+      title: "Delete Item",
+      message: `Are you sure you want to delete "${item.name}"? This cannot be undone.`,
+      type: "confirm",
+      onConfirm: async () => {
+        setStatusModal(prev => ({ ...prev, visible: false }));
+        setLoading(true);
+        try {
+          await deleteGroceryItem(item.id);
+          onClose();
+        } catch (error) {
+          setStatusModal({
+            visible: true,
+            title: "Delete Failed",
+            message: "Could not delete item. Please try again.",
+            type: "error",
+          });
+        } finally {
+          setLoading(false);
+        }
+      }
+    });
   };
 
   if (!item) return null;
 
   return (
     <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
-      <View className="flex-1 justify-end" style={{ backgroundColor: "rgba(0,0,0,0.28)" }}>
+      <View className="flex-1 justify-end" style={{ backgroundColor: "rgba(0,0,0,0.5)" }}>
+        <LoadingOverlay visible={loading} />
+        <StatusModal 
+          visible={statusModal.visible}
+          title={statusModal.title}
+          message={statusModal.message}
+          type={statusModal.type}
+          onConfirm={statusModal.onConfirm}
+          onClose={() => {
+            const isSuccess = statusModal.type === "success";
+            setStatusModal(prev => ({ ...prev, visible: false }));
+            if (isSuccess) onClose();
+          }}
+        />
+
         <KeyboardAvoidingView
           behavior={Platform.OS === "ios" ? "padding" : "height"}
-          className="rounded-t-[30px] bg-surface px-5 pb-8 pt-3 shadow-2xl"
+          className="rounded-t-[40px] bg-white px-6 pb-12 pt-3 shadow-2xl"
+          style={{ maxHeight: "90%" }}
         >
           <View className="mb-4 items-center">
-            <View className="h-1 w-12 rounded-full bg-border-muted" />
+            <View className="h-1.5 w-12 rounded-full bg-border/50" />
           </View>
 
-          <View className="mb-5 flex-row items-center justify-between">
+          <View className="mb-8 flex-row items-center justify-between">
             <View>
-              <Text className="mb-1 text-[10px] font-bold uppercase tracking-[2px] text-primary-600">
-                Edit Entry
+              <Text className="mb-1 text-[11px] font-black uppercase tracking-[2px] text-primary-500">
+                Update Entry
               </Text>
-              <Text className="text-[34px] font-black tracking-tight text-text-primary">
-                Update Item
+              <Text className="text-[28px] font-bold tracking-tight text-text-primary">
+                Edit Item
               </Text>
             </View>
             <TouchableOpacity
               onPress={onClose}
               activeOpacity={0.7}
-              className="rounded-xl border border-border-muted bg-surface-muted p-2"
+              className="h-12 w-12 items-center justify-center rounded-2xl bg-surface-alt border border-border"
             >
-              <X stroke="#748379" size={20} strokeWidth={2.5} />
+              <X stroke="#748379" size={24} strokeWidth={2.5} />
             </TouchableOpacity>
           </View>
 
           <ScrollView
             showsVerticalScrollIndicator={false}
-            className="max-h-[68vh]"
-            contentContainerStyle={{ paddingBottom: 16 }}
+            className="max-h-[65vh]"
+            contentContainerStyle={{ paddingBottom: 20 }}
           >
-            <View className="mb-5">
-              <Text className="mb-2 ml-1 text-[11px] font-bold uppercase tracking-[2px] text-text-muted">
-                Item Name
-              </Text>
-              <TextInput
-                value={name}
-                onChangeText={setName}
-                placeholder="What needs to be bought?"
-                placeholderTextColor="#95a39a"
-                className="h-12 rounded-xl border border-border-muted bg-surface-muted px-4 text-[15px] font-semibold text-text-primary"
-              />
-            </View>
+            <InputField
+              label="ITEM NAME"
+              placeholder="What needs to be bought?"
+              value={name}
+              onChangeText={setName}
+              containerClassName="mb-6"
+              inputClassName="h-16 text-lg font-bold"
+            />
 
-            <View className="mb-5 flex-row">
-              <View className="mr-3 flex-1">
-                <Text className="mb-2 ml-1 text-[11px] font-bold uppercase tracking-[2px] text-text-muted">
-                  Quantity
+            <View className="flex-row gap-4 mb-6">
+              <InputField
+                label="QUANTITY"
+                placeholder="e.g. 2L, 5pcs"
+                value={quantity}
+                onChangeText={setQuantity}
+                containerClassName="flex-1"
+                inputClassName="h-14 font-bold"
+              />
+              <View className="flex-1">
+                <Text className="mb-2 ml-1 text-[11px] font-black uppercase tracking-[1.5px] text-text-muted">
+                  PRIORITY
                 </Text>
-                <TextInput
-                  value={quantity}
-                  onChangeText={setQuantity}
-                  placeholder="e.g. 2L, 5pcs"
-                  placeholderTextColor="#95a39a"
-                  className="h-12 rounded-xl border border-border-muted bg-surface-muted px-4 text-[15px] font-semibold text-text-primary"
-                />
-              </View>
-              <View className="flex-[1.5]">
-                <Text className="mb-2 ml-1 text-[11px] font-bold uppercase tracking-[2px] text-text-muted">
-                  Priority
-                </Text>
-                <View className="flex-row rounded-xl border border-border-muted bg-surface-muted p-1">
-                  {PRIORITIES.map((level) => (
-                    <TouchableOpacity
-                      key={level}
-                      onPress={() => setPriority(level)}
-                      activeOpacity={0.7}
-                      className={`flex-1 items-center rounded-lg py-2.5 ${priority === level ? "bg-surface" : ""}`}
-                    >
-                      <Text
-                        className={`text-[10px] font-bold uppercase tracking-widest ${priority === level ? "text-primary-700" : "text-text-muted"}`}
+                <View className="h-14 flex-row rounded-2xl bg-surface-alt p-1.5 items-center border border-border">
+                  {PRIORITIES.map((p) => {
+                    const isActive = priority === p;
+                    const activeStyle = p === "Low" ? "bg-primary-500" : p === "Medium" ? "bg-warning-DEFAULT" : "bg-danger-DEFAULT";
+                    
+                    return (
+                      <TouchableOpacity
+                        key={p}
+                        onPress={() => setPriority(p)}
+                        activeOpacity={0.75}
+                        className={`flex-1 items-center justify-center rounded-xl h-full ${
+                          isActive ? activeStyle : ""
+                        }`}
                       >
-                        {level}
-                      </Text>
-                    </TouchableOpacity>
-                  ))}
+                        <Text
+                          className={`text-[10px] font-black uppercase tracking-wider ${
+                            isActive ? "text-white" : "text-text-muted"
+                          }`}
+                        >
+                          {p.charAt(0)}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })}
                 </View>
               </View>
             </View>
 
-            <View className="mb-5">
-              <View className="mb-2 flex-row items-center justify-between px-1">
-                <Text className="text-[11px] font-bold uppercase tracking-[2px] text-text-muted">
-                  Category
+            <View className="mb-8">
+              <View className="mb-4 flex-row items-center justify-between px-1">
+                <Text className="text-[11px] font-black uppercase tracking-[1.5px] text-text-muted">
+                  CATEGORY
                 </Text>
                 <TouchableOpacity
-                  onPress={() => setShowAddCat((prev) => !prev)}
-                  activeOpacity={0.7}
-                  className="rounded-md px-2 py-1"
+                  onPress={() => setShowAddCat(!showAddCat)}
+                  activeOpacity={0.75}
+                  className="rounded-full border border-primary-500 px-3 py-1"
                 >
-                  <Text className="text-[10px] font-bold uppercase tracking-wider text-primary-700">
-                    + Custom
+                  <Text className="text-[10px] font-bold uppercase tracking-wider text-primary-500">
+                    {showAddCat ? "Cancel" : "+ Custom"}
                   </Text>
                 </TouchableOpacity>
               </View>
 
-              {showAddCat ? (
-                <View className="mb-3 flex-row">
-                  <TextInput
+              {showAddCat && (
+                <View className="mb-6 flex-row gap-2">
+                  <InputField
+                    placeholder="New Category"
                     value={newCatInput}
                     onChangeText={setNewCatInput}
-                    placeholder="New Category"
-                    placeholderTextColor="#95a39a"
-                    className="mr-2 h-11 flex-1 rounded-xl border border-border-muted bg-surface-muted px-3 font-semibold text-text-primary"
+                    containerClassName="flex-1"
                   />
                   <TouchableOpacity
                     onPress={handleAddCategory}
                     activeOpacity={0.8}
-                    className="items-center justify-center rounded-xl bg-primary-600 px-5"
+                    className="h-12 items-center justify-center rounded-2xl bg-primary-600 px-6"
                   >
-                    <Text className="text-xs font-bold uppercase tracking-wide text-text-inverse">
-                      Add
-                    </Text>
+                    <Check stroke="white" size={18} strokeWidth={3} />
                   </TouchableOpacity>
                 </View>
-              ) : null}
+              )}
 
               <ScrollView
                 horizontal
                 showsHorizontalScrollIndicator={false}
-                contentContainerStyle={{ paddingHorizontal: 2 }}
+                className="flex-row"
+                contentContainerStyle={{ paddingRight: 20 }}
               >
                 {allCategories.map((cat) => (
-                  <TouchableOpacity
+                  <Chip
                     key={cat}
+                    label={cat}
+                    selected={category === cat}
                     onPress={() => setCategory(cat)}
-                    activeOpacity={0.8}
-                    className={`mr-2 rounded-lg border px-4 py-2.5 ${category === cat ? "border-primary-300 bg-primary-50" : "border-border-muted bg-surface-muted"}`}
-                  >
-                    <Text
-                      className={`text-[10px] font-bold uppercase tracking-wide ${category === cat ? "text-primary-700" : "text-text-muted"}`}
-                    >
-                      {cat}
-                    </Text>
-                  </TouchableOpacity>
+                    className="mr-3"
+                  />
                 ))}
               </ScrollView>
             </View>
 
-            <View className="mb-7">
-              <Text className="mb-2 ml-1 text-[11px] font-bold uppercase tracking-[2px] text-text-muted">
-                Notes (Optional)
-              </Text>
-              <TextInput
-                value={notes}
-                onChangeText={setNotes}
-                placeholder="Any specific brand or detail?"
-                placeholderTextColor="#95a39a"
-                multiline
-                numberOfLines={3}
-                textAlignVertical="top"
-                className="rounded-xl border border-border-muted bg-surface-muted px-4 py-3 text-sm font-semibold text-text-primary"
-              />
+            <InputField
+              label="NOTES"
+              placeholder="Any specific brand or detail?"
+              value={notes}
+              onChangeText={setNotes}
+              multiline
+              numberOfLines={3}
+              containerClassName="mb-10"
+              inputClassName="h-32 pt-4 leading-6"
+              textAlignVertical="top"
+            />
+
+            <View className="flex-row gap-4">
+              <TouchableOpacity
+                onPress={handleDelete}
+                activeOpacity={0.8}
+                className="h-16 w-16 items-center justify-center rounded-2xl bg-danger-light border border-danger/20"
+              >
+                <Trash2 stroke="#E55C5C" size={24} strokeWidth={2.5} />
+              </TouchableOpacity>
+              <View className="flex-1">
+                <PrimaryButton
+                  title="Save Changes"
+                  onPress={handleSave}
+                  disabled={!name.trim() || loading}
+                  icon={<Check size={20} stroke="#FFF" strokeWidth={2.5} />}
+                />
+              </View>
             </View>
           </ScrollView>
-
-          <View className="flex-row items-center gap-2">
-            <TouchableOpacity
-              onPress={confirmDelete}
-              disabled={saving || deleting}
-              activeOpacity={0.9}
-              className={`h-12 flex-1 items-center justify-center rounded-xl border border-urgent/25 ${saving || deleting ? "bg-surface-subtle" : "bg-urgent/10"}`}
-            >
-              {deleting ? (
-                <ActivityIndicator color="#c36262" />
-              ) : (
-                <Text className="text-center text-[13px] font-bold uppercase tracking-wide text-urgent">
-                  Delete
-                </Text>
-              )}
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              onPress={handleSave}
-              disabled={saving || deleting || !name.trim()}
-              activeOpacity={0.9}
-              className={`h-12 flex-1 items-center justify-center rounded-xl ${saving || deleting || !name.trim() ? "bg-surface-subtle" : "bg-primary-600"}`}
-            >
-              {saving ? (
-                <ActivityIndicator color="#f6fbf7" />
-              ) : (
-                <Text
-                  className={`text-center text-[13px] font-bold uppercase tracking-wide ${saving || deleting || !name.trim() ? "text-text-subtle" : "text-text-inverse"}`}
-                >
-                  Save
-                </Text>
-              )}
-            </TouchableOpacity>
-          </View>
         </KeyboardAvoidingView>
       </View>
     </Modal>

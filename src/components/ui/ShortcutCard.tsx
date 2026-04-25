@@ -11,8 +11,8 @@ type ShortcutCardProps = {
 };
 
 /**
- * Circle shortcut button with icon and label
- * Why: To provide quick navigation to main features in a visually clean way.
+ * Modern shortcut button with icon and label
+ * Why: To provide quick navigation to main features in a visually premium, rounded-square format.
  */
 const ShortcutCard = ({
   icon: Icon,
@@ -26,11 +26,11 @@ const ShortcutCard = ({
       <TouchableOpacity
         activeOpacity={0.7}
         onPress={onPress}
-        className={`mb-2 h-[56px] w-[56px] items-center justify-center rounded-full border border-border ${iconBgColor}`}
+        className={`mb-3 h-[68px] w-[68px] items-center justify-center rounded-[24px] border border-border/50 shadow-sm ${iconBgColor}`}
       >
-        <Icon stroke={iconColor} size={24} strokeWidth={2.2} />
+        <Icon stroke={iconColor} size={26} strokeWidth={2.2} />
       </TouchableOpacity>
-      <Text className="text-[13px] font-semibold text-text-secondary text-center">
+      <Text className="text-[13px] font-bold text-text-secondary text-center">
         {label}
       </Text>
     </View>

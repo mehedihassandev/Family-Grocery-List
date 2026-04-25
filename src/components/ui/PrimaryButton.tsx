@@ -13,7 +13,7 @@ type PrimaryButtonProps = TouchableOpacityProps & {
   icon?: React.ReactNode;
 };
 
-const PrimaryButton = ({
+export const PrimaryButton = ({
   title,
   loading = false,
   disabled,

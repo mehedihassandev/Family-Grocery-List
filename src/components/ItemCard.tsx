@@ -1,11 +1,9 @@
 import React from "react";
 import { View, Text, TouchableOpacity, Image } from "react-native";
-import { CheckCircle2, Circle, Clock } from "lucide-react-native";
+import { CheckCircle2 } from "lucide-react-native";
 import { GroceryItem } from "../types";
 import { formatDistanceToNow } from "date-fns";
-import { GroceryPriority } from "../features/grocery";
 import { Card, PriorityBadge } from "./ui";
-import { useColorScheme } from "nativewind";
 
 interface ItemCardProps {
   item: GroceryItem;
@@ -15,102 +13,85 @@ interface ItemCardProps {
 }
 
 /**
- * Individual grocery list item card
- * Why: To display item details and allow for status toggling in a clean, consistent way.
+ * Premium Grocery Item Card
+ * Why: To display item details in the main list with a layout consistent with the new dashboard.
  */
-const ItemCard = ({ item, onToggle, onPress, currentUserId }: ItemCardProps) => {
-  const { colorScheme } = useColorScheme();
+const ItemCard = ({ item, onToggle, onPress }: ItemCardProps) => {
   const isCompleted = item.status === "completed";
-  const isDark = colorScheme === "dark";
 
   const timeAgo = item.createdAt
     ? formatDistanceToNow(item.createdAt.toDate(), { addSuffix: true })
     : "just now";
-
-  const modelPriority: GroceryPriority =
-    item.priority === "Urgent" ? "urgent" : item.priority === "Medium" ? "medium" : "low";
 
   return (
     <TouchableOpacity
       onPress={() => onPress(item)}
       activeOpacity={0.8}
       className="mb-4"
-      style={isCompleted ? { opacity: 0.6 } : undefined}
     >
-      <Card padding={false} className="flex-row overflow-hidden min-h-[80px]">
+      <Card padding={false} className="flex-row overflow-hidden min-h-[100px]">
         {/* Priority left border accent */}
         <View 
           style={{ 
-            width: 4, 
+            width: 5, 
             backgroundColor: isCompleted 
-              ? "#9AA3AF" 
-              : modelPriority === "urgent" 
+              ? "#E8EBF0" 
+              : item.priority === "Urgent" 
                 ? "#E55C5C" 
-                : modelPriority === "medium" 
+                : item.priority === "Medium" 
                   ? "#F5A623" 
                   : "#3DB87A" 
           }} 
         />
 
-        <View className="flex-1 flex-row items-center p-4">
-          <TouchableOpacity onPress={() => onToggle(item)} className="mr-4" activeOpacity={0.6}>
-            <View
-              className={`h-6 w-6 items-center justify-center rounded-full ${
-                isCompleted
-                  ? "bg-primary-100"
-                  : "border-2 border-border bg-surface"
-              }`}
+        <View className="flex-1 p-5">
+          <View className="flex-row items-center justify-between mb-3">
+            <TouchableOpacity 
+              onPress={() => onToggle(item)} 
+              activeOpacity={0.6}
+              className="flex-row items-center flex-1 mr-2"
             >
-              {isCompleted ? (
-                <CheckCircle2 stroke="#3DB87A" size={14} strokeWidth={3} />
-              ) : null}
-            </View>
-          </TouchableOpacity>
-
-          <View className="flex-1">
-            <View className="flex-row items-center">
-              <Text
-                className={`text-[15px] font-bold ${
-                  isCompleted
-                    ? "text-text-muted"
-                    : "text-text-900"
+              <View
+                className={`h-6 w-6 items-center justify-center rounded-full border-2 ${
+                  isCompleted ? "bg-primary-500 border-primary-500" : "border-border bg-white"
                 }`}
-                style={isCompleted ? { textDecorationLine: "line-through" } : undefined}
+              >
+                {isCompleted && <CheckCircle2 stroke="#FFF" size={14} strokeWidth={3} />}
+              </View>
+              <Text
+                className={`ml-3 text-[17px] font-bold flex-1 ${
+                  isCompleted ? "text-text-muted line-through" : "text-text-primary"
+                }`}
                 numberOfLines={1}
               >
                 {item.name}
               </Text>
-              
-              {item.quantity ? (
-                <View className="ml-2 px-2 py-0.5 rounded-sm bg-primary-100">
-                  <Text className="text-[11px] font-bold uppercase text-primary-600">
-                    {item.quantity}
-                  </Text>
-                </View>
-              ) : null}
-            </View>
+            </TouchableOpacity>
+            
+            {!isCompleted && <PriorityBadge priority={item.priority} />}
+          </View>
 
-            <View className="flex-row items-center mt-2">
-              <View className="px-2 py-0.5 rounded-sm bg-surface-muted border border-border">
+          <View className="flex-row items-center justify-between mt-auto">
+            <View className="flex-row items-center">
+              <View className="bg-surface-muted px-2 py-1 rounded-md border border-border/50">
                 <Text className="text-[11px] font-bold text-text-secondary">
-                  {item.category}
+                  {item.category} {item.quantity ? `· ${item.quantity}` : ""}
                 </Text>
               </View>
-              
               <Text className="ml-3 text-[11px] font-medium text-text-muted">
                 {timeAgo}
               </Text>
             </View>
-          </View>
 
-          <View className="h-6 w-6 rounded-full bg-surface-alt border border-border items-center justify-center ml-2 overflow-hidden">
-            {item.addedBy.photoURL ? (
-              <Image source={{ uri: item.addedBy.photoURL }} className="h-full w-full" />
-            ) : (
-              <Text className="text-[10px] font-bold text-text-muted">
-                {item.addedBy.name.charAt(0)}
-              </Text>
-            )}
+            <View className="h-7 w-7 rounded-full bg-primary-600 border-2 border-white items-center justify-center overflow-hidden shadow-sm">
+              {item.addedBy.photoURL ? (
+                <Image source={{ uri: item.addedBy.photoURL }} className="h-full w-full" />
+              ) : (
+                <Text className="text-white text-[10px] font-bold">
+                  {item.addedBy.name.charAt(0).toUpperCase()}
+                </Text>
+              )}
+            </View>
           </View>
         </View>
       </Card>

@@ -1,12 +1,12 @@
 import React, { useState } from "react";
-import { View, Text, Alert, ActivityIndicator, TouchableOpacity, Image } from "react-native";
+import { View, Text, TouchableOpacity, Image } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useNavigation } from "@react-navigation/native";
 import { Lock, Camera, Check } from "lucide-react-native";
 import { useForm } from "react-hook-form";
 import * as yup from "yup";
 import { yupResolver } from "@hookform/resolvers/yup";
-import { SubHeader, Card, PrimaryButton, RhfTextfield } from "../components/ui";
+import { SubHeader, Card, PrimaryButton, RhfTextfield, LoadingOverlay, StatusModal } from "../components/ui";
 import { useAuthStore } from "../store/useAuthStore";
 import { updateUserAccountProfile } from "../services/auth";
 
@@ -15,13 +15,24 @@ const schema = yup.object().shape({
 });
 
 /**
- * EditProfileScreen allows users to update their display name and view account info.
- * It resolves the "coming soon" dead-end by providing actual functionality.
+ * Premium Edit Profile Screen
+ * Why: To provide a high-fidelity experience for updating personal information with elegant feedback.
  */
 const EditProfileScreen = () => {
   const navigation = useNavigation();
   const { user } = useAuthStore();
   const [loading, setLoading] = useState(false);
+  const [statusModal, setStatusModal] = useState<{
+    visible: boolean;
+    title: string;
+    message: string;
+    type: "success" | "error";
+  }>({
+    visible: false,
+    title: "",
+    message: "",
+    type: "success",
+  });
 
   const { control, handleSubmit } = useForm({
     resolver: yupResolver(schema),
@@ -38,46 +49,72 @@ const EditProfileScreen = () => {
       await updateUserAccountProfile(user.uid, {
         displayName: data.displayName,
       });
-      Alert.alert("Success", "Profile updated successfully");
-      navigation.goBack();
+      setStatusModal({
+        visible: true,
+        title: "Success",
+        message: "Your profile has been updated successfully.",
+        type: "success",
+      });
     } catch (error) {
-      Alert.alert("Error", error instanceof Error ? error.message : "Failed to update profile");
+      setStatusModal({
+        visible: true,
+        title: "Update Failed",
+        message: error instanceof Error ? error.message : "Failed to update profile",
+        type: "error",
+      });
     } finally {
       setLoading(false);
     }
   };
 
+  const handleModalClose = () => {
+    const isSuccess = statusModal.type === "success";
+    setStatusModal(prev => ({ ...prev, visible: false }));
+    if (isSuccess) {
+      navigation.goBack();
+    }
+  };
+
   return (
     <SafeAreaView edges={["top", "left", "right"]} className="flex-1 bg-background">
+      <LoadingOverlay visible={loading} />
+      <StatusModal 
+        visible={statusModal.visible}
+        title={statusModal.title}
+        message={statusModal.message}
+        type={statusModal.type}
+        onClose={handleModalClose}
+      />
+      
       <SubHeader title="Edit Profile" />
 
       <View className="flex-1 p-6">
         <View className="items-center mb-8">
           <TouchableOpacity
             activeOpacity={0.8}
-            className="h-24 w-24 rounded-full bg-surface border-2 border-primary-500 items-center justify-center overflow-hidden"
+            className="h-24 w-24 rounded-[32px] bg-white shadow-md border-2 border-primary-500 items-center justify-center overflow-hidden"
           >
             {user?.photoURL ? (
               <Image source={{ uri: user.photoURL }} className="h-full w-full" />
             ) : (
-              <View className="h-full w-full bg-primary-100 items-center justify-center">
+              <View className="h-full w-full bg-primary-50 items-center justify-center">
                 <Text className="text-primary-600 text-3xl font-bold">
                   {user?.displayName?.charAt(0).toUpperCase() || "?"}
                 </Text>
               </View>
             )}
-            <View className="absolute bottom-0 right-0 h-8 w-8 rounded-full bg-primary-500 items-center justify-center border-2 border-surface">
+            <View className="absolute bottom-0 right-0 h-8 w-8 rounded-full bg-primary-500 items-center justify-center border-2 border-white">
               <Camera size={14} stroke="#FFFFFF" />
             </View>
           </TouchableOpacity>
           <Text className="mt-4 text-text-primary font-bold text-lg">{user?.displayName}</Text>
-          <Text className="text-text-muted text-xs uppercase tracking-widest mt-1">
+          <Text className="text-text-muted text-xs uppercase tracking-widest mt-1 font-bold">
             Tap to change photo
           </Text>
         </View>
 
-        <Card className="p-5 mb-6">
-          <Text className="text-text-muted text-[11px] font-bold uppercase tracking-widest mb-4">
+        <Card className="p-6 mb-6">
+          <Text className="text-text-muted text-[11px] font-bold uppercase tracking-[1.5px] mb-5">
             Personal Information
           </Text>
 
@@ -88,13 +125,13 @@ const EditProfileScreen = () => {
             placeholder="Enter your name"
           />
 
-          <View className="mt-4 opacity-60">
+          <View className="mt-6 opacity-60">
             <Text className="text-text-secondary text-[13px] font-bold mb-2">Email Address</Text>
-            <View className="flex-row items-center bg-surface-muted rounded-xl px-4 py-3 border border-border">
-              <Text className="flex-1 text-text-muted text-[15px]">{user?.email}</Text>
+            <View className="flex-row items-center bg-surface-muted rounded-2xl px-4 py-4 border border-border">
+              <Text className="flex-1 text-text-muted text-[15px] font-medium">{user?.email}</Text>
               <Lock size={16} stroke="#9AA3AF" />
             </View>
-            <Text className="text-text-muted text-[11px] mt-2">
+            <Text className="text-text-muted text-[11px] mt-2 font-medium">
               Email cannot be changed for security reasons.
             </Text>
           </View>
@@ -102,10 +139,9 @@ const EditProfileScreen = () => {
 
         <View className="mt-auto">
           <PrimaryButton
-            title={loading ? "Saving..." : "Save Changes"}
+            title="Save Changes"
             onPress={handleSubmit(onSubmit)}
-            disabled={loading}
-            icon={loading ? <ActivityIndicator color="#FFF" size="small" /> : <Check size={20} stroke="#FFF" />}
+            icon={<Check size={20} stroke="#FFF" strokeWidth={2.5} />}
           />
         </View>
       </View>

@@ -8,12 +8,14 @@ import {
   BarChart3,
   TrendingUp,
   Calendar as CalendarIcon,
+  Clock,
+  CheckCircle2,
+  AlertCircle,
 } from "lucide-react-native";
-import Svg, { G, Circle } from "react-native-svg";
 import { useAuthStore } from "../store/useAuthStore";
 import { subscribeToGroceryList } from "../services/grocery";
 import { GroceryItem } from "../types";
-import { AppHeader, Card } from "../components/ui";
+import { AppHeader, Card, DonutChart, ProgressBar } from "../components/ui";
 import NotificationModal from "../components/NotificationModal";
 
 const MONTH_NAMES = [
@@ -31,10 +33,6 @@ const MONTH_NAMES = [
   "December",
 ];
 
-const BRAND_GREEN = "#3DB87A";
-const BRAND_AMBER = "#F5A623";
-const BRAND_RED = "#E55C5C";
-
 const toDate = (value: any): Date | null => {
   if (value?.toDate) return value.toDate();
   if (value instanceof Date) return value;
@@ -44,8 +42,8 @@ const toDate = (value: any): Date | null => {
 const formatMonthLabel = (date: Date) => `${MONTH_NAMES[date.getMonth()]} ${date.getFullYear()}`;
 
 /**
- * Analytics and insights screen
- * Why: To help users visualize their grocery habits, track completion rates, and identify top spending categories.
+ * Premium Analytics Screen
+ * Why: To provide a consistent, high-fidelity experience for tracking grocery habits.
  */
 const AnalyzeScreen = () => {
   const { user } = useAuthStore();
@@ -103,13 +101,11 @@ const AnalyzeScreen = () => {
       return acc;
     }, {});
 
-    const entries = Object.entries(categoryMap).sort((a, b) => b[1] - a[1]);
-    const maxValue = entries[0]?.[1] ?? 1;
-
-    return { entries, maxValue };
+    return Object.entries(categoryMap).sort((a, b) => b[1] - a[1]);
   }, [monthlyItems]);
 
-  const topCategory = categoryBreakdown.entries[0]?.[0] ?? "None";
+  const topCategory = categoryBreakdown[0]?.[0] ?? "None";
+
   const nextMonthDisabled = (() => {
     const now = new Date();
     return (
@@ -118,28 +114,9 @@ const AnalyzeScreen = () => {
     );
   })();
 
-  // Chart configuration
-  const radius = 65;
-  const strokeWidth = 22;
-  const circumference = 2 * Math.PI * radius;
-  const donutSegments = useMemo(() => {
-    const urgent = summary.urgent;
-    const completed = summary.completed;
-    const pendingNonUrgent = Math.max(0, summary.pending - urgent);
-
-    return [
-      { key: "completed", label: "Completed", value: completed, color: BRAND_GREEN },
-      { key: "pending", label: "Pending", value: pendingNonUrgent, color: BRAND_AMBER },
-      { key: "urgent", label: "Urgent", value: urgent, color: BRAND_RED },
-    ].filter((seg) => seg.value > 0);
-  }, [summary.completed, summary.pending, summary.urgent]);
-
   return (
-    <SafeAreaView
-      edges={["top", "left", "right"]}
-      className="flex-1 bg-background dark:bg-background-dark"
-    >
-      <StatusBar barStyle={isDark ? "light-content" : "dark-content"} />
+    <SafeAreaView edges={["top", "left", "right"]} className="flex-1 bg-background">
+      <StatusBar barStyle="dark-content" />
 
       <AppHeader
         title="Analytics"
@@ -154,20 +131,20 @@ const AnalyzeScreen = () => {
       >
         {/* Month Selector */}
         <View className="px-6 pt-6">
-          <View className="flex-row items-center justify-between bg-surface dark:bg-surface-dark rounded-2xl border border-border-muted dark:border-border-dark p-2 shadow-sm">
+          <View className="flex-row items-center justify-between bg-white rounded-3xl border border-border p-2 shadow-sm">
             <TouchableOpacity
               activeOpacity={0.7}
               onPress={() =>
                 setSelectedMonth((prev) => new Date(prev.getFullYear(), prev.getMonth() - 1, 1))
               }
-              className="h-10 w-10 items-center justify-center rounded-xl bg-surface-muted dark:bg-surface-dark-muted border border-border-muted dark:border-border-dark"
+              className="h-11 w-11 items-center justify-center rounded-2xl bg-surface-muted border border-border"
             >
-              <ChevronLeft stroke={isDark ? "#cbd5cf" : "#748379"} size={20} strokeWidth={3} />
+              <ChevronLeft stroke="#4A5568" size={20} strokeWidth={3} />
             </TouchableOpacity>
 
             <View className="flex-row items-center">
-              <CalendarIcon stroke={BRAND_GREEN} size={16} strokeWidth={2.5} className="mr-2" />
-              <Text className="text-[15px] font-black text-text-primary dark:text-text-dark-primary tracking-tight">
+              <CalendarIcon stroke="#3DB87A" size={18} strokeWidth={2.5} className="mr-2" />
+              <Text className="text-[17px] font-bold text-text-primary tracking-tight">
                 {formatMonthLabel(selectedMonth)}
               </Text>
             </View>
@@ -178,214 +155,123 @@ const AnalyzeScreen = () => {
               onPress={() =>
                 setSelectedMonth((prev) => new Date(prev.getFullYear(), prev.getMonth() + 1, 1))
               }
-              className={`h-10 w-10 items-center justify-center rounded-xl bg-surface-muted dark:bg-surface-dark-muted border border-border-muted dark:border-border-dark ${
+              className={`h-11 w-11 items-center justify-center rounded-2xl bg-surface-muted border border-border ${
                 nextMonthDisabled ? "opacity-20" : ""
               }`}
             >
-              <ChevronRight stroke={isDark ? "#cbd5cf" : "#748379"} size={20} strokeWidth={3} />
+              <ChevronRight stroke="#4A5568" size={20} strokeWidth={3} />
             </TouchableOpacity>
           </View>
         </View>
 
         {monthlyItems.length > 0 ? (
           <>
-            {/* Donut Chart */}
-            <View className="px-6 pt-10 mb-8 items-center">
-              <View className="relative items-center justify-center">
-                <Svg width={200} height={200} viewBox="0 0 200 200">
-                  <G rotation="-90" origin="100, 100">
-                    <Circle
-                      cx="100"
-                      cy="100"
-                      r={radius}
-                      stroke={isDark ? "#1a241e" : "#f1f5f2"}
-                      strokeWidth={strokeWidth}
-                      fill="transparent"
-                    />
-                    {(() => {
-                      let currentOffset = 0;
-                      return donutSegments.map((segment) => {
-                        const percentage = segment.value / summary.total;
-                        const strokeDasharray = `${percentage * circumference} ${circumference}`;
-                        const strokeDashoffset = -currentOffset;
-                        currentOffset += percentage * circumference;
+            {/* Main Stats Card */}
+            <View className="px-6 pt-8">
+              <Card className="mb-8 items-center py-10">
+                <DonutChart
+                  total={summary.total}
+                  data={[
+                    { value: summary.completed, color: "#3DB87A" },
+                    { value: Math.max(0, summary.pending - summary.urgent), color: "#F5A623" },
+                    { value: summary.urgent, color: "#E55C5C" },
+                  ]}
+                  size={160}
+                  strokeWidth={16}
+                />
 
-                        return (
-                          <Circle
-                            key={segment.key}
-                            cx="100"
-                            cy="100"
-                            r={radius}
-                            stroke={segment.color}
-                            strokeWidth={strokeWidth}
-                            strokeDasharray={strokeDasharray}
-                            strokeDashoffset={strokeDashoffset}
-                            fill="transparent"
-                            strokeLinecap="round"
-                          />
-                        );
-                      });
-                    })()}
-                  </G>
-                </Svg>
-                <View className="absolute items-center justify-center">
-                  <Text className="text-[11px] font-bold text-text-muted dark:text-text-dark-muted uppercase tracking-[2px]">
-                    Total Items
-                  </Text>
-                  <Text className="text-[36px] font-black text-text-primary dark:text-text-dark-primary mt-0.5 leading-none">
-                    {summary.total}
-                  </Text>
-                </View>
-              </View>
-
-              <View className="mt-6 flex-row items-center justify-center gap-4">
-                <View className="flex-row items-center">
-                  <View className="h-2 w-2 rounded-full" style={{ backgroundColor: BRAND_GREEN }} />
-                  <Text className="ml-2 text-[12px] font-medium text-text-secondary dark:text-text-dark-secondary">
-                    Completed
-                  </Text>
-                </View>
-                <View className="flex-row items-center">
-                  <View className="h-2 w-2 rounded-full" style={{ backgroundColor: BRAND_AMBER }} />
-                  <Text className="ml-2 text-[12px] font-medium text-text-secondary dark:text-text-dark-secondary">
-                    Pending
-                  </Text>
-                </View>
-                <View className="flex-row items-center">
-                  <View className="h-2 w-2 rounded-full" style={{ backgroundColor: BRAND_RED }} />
-                  <Text className="ml-2 text-[12px] font-medium text-text-secondary dark:text-text-dark-secondary">
-                    Urgent
-                  </Text>
-                </View>
-              </View>
-            </View>
-
-            {/* Quick Stats Grid */}
-            <View className="px-6">
-              <Card padding={false} className="overflow-hidden">
-                <View className="flex-row border-b border-border-muted dark:border-border-dark">
-                  <View className="flex-1 border-r border-border-muted dark:border-border-dark p-5">
-                    <Text className="text-[10px] font-black uppercase tracking-widest text-text-muted dark:text-text-dark-muted">
-                      Completed
-                    </Text>
-                    <Text className="mt-1 text-[24px] font-black tracking-tight text-primary-600 dark:text-primary-400">
-                      {summary.completed}
-                    </Text>
+                <View className="mt-10 flex-row flex-wrap justify-center gap-6">
+                  <View className="flex-row items-center">
+                    <View className="h-3 w-3 rounded-full bg-primary-500 mr-2" />
+                    <Text className="text-[14px] font-bold text-text-secondary">Completed</Text>
                   </View>
-                  <View className="flex-1 p-5">
-                    <Text className="text-[10px] font-black uppercase tracking-widest text-text-muted dark:text-text-dark-muted">
-                      Pending
-                    </Text>
-                    <Text className="mt-1 text-[24px] font-black tracking-tight text-medium">
-                      {summary.pending}
-                    </Text>
+                  <View className="flex-row items-center">
+                    <View className="h-3 w-3 rounded-full bg-warning-DEFAULT mr-2" />
+                    <Text className="text-[14px] font-bold text-text-secondary">Pending</Text>
                   </View>
-                </View>
-                <View className="flex-row">
-                  <View className="flex-1 border-r border-border-muted dark:border-border-dark p-5">
-                    <Text className="text-[10px] font-black uppercase tracking-widest text-text-muted dark:text-text-dark-muted">
-                      Urgent
-                    </Text>
-                    <Text className="mt-1 text-[24px] font-black tracking-tight text-urgent">
-                      {summary.urgent}
-                    </Text>
-                  </View>
-                  <View className="flex-1 p-5">
-                    <View className="flex-row items-center justify-between">
-                      <Text className="text-[10px] font-black uppercase tracking-widest text-text-muted dark:text-text-dark-muted">
-                        Completion
-                      </Text>
-                      <TrendingUp stroke={BRAND_GREEN} size={12} strokeWidth={3} />
-                    </View>
-                    <Text className="mt-1 text-[24px] font-black tracking-tight text-primary-700 dark:text-primary-400">
-                      {summary.completionRate}%
-                    </Text>
+                  <View className="flex-row items-center">
+                    <View className="h-3 w-3 rounded-full bg-danger-DEFAULT mr-2" />
+                    <Text className="text-[14px] font-bold text-text-secondary">Urgent</Text>
                   </View>
                 </View>
               </Card>
+
+              {/* Stats Grid */}
+              <View className="flex-row gap-4 mb-8">
+                <View className="flex-1 bg-white p-5 rounded-[24px] border border-border shadow-xs flex-row justify-between">
+                  <View>
+                    <Text className="text-2xl font-bold text-text-primary">
+                      {summary.completed}
+                    </Text>
+                    <Text className="text-[10px] font-bold text-text-muted uppercase mt-1">
+                      Completed
+                    </Text>
+                  </View>
+                  <CheckCircle2 size={16} stroke="#3DB87A" />
+                </View>
+                <View className="flex-1 bg-white p-5 rounded-[24px] border border-border shadow-xs flex-row justify-between">
+                  <View>
+                    <Text className="text-2xl font-bold text-text-primary">
+                      {summary.completionRate}%
+                    </Text>
+                    <Text className="text-[10px] font-bold text-text-muted uppercase mt-1">
+                      Completion
+                    </Text>
+                  </View>
+                  <TrendingUp size={16} stroke="#3DB87A" />
+                </View>
+              </View>
             </View>
 
             {/* Category Breakdown */}
-            <View className="px-6 pt-8">
-              <Text className="mb-4 text-[18px] font-bold tracking-tight text-text-primary dark:text-text-dark-primary">
+            <View className="px-6">
+              <Text className="mb-5 text-[18px] font-bold tracking-tight text-text-primary">
                 By Category
               </Text>
-              <Card padding={false} className="py-2">
-                {categoryBreakdown.entries.map(([category, count], index) => {
-                  const progress = Math.max(
-                    8,
-                    Math.round((count / categoryBreakdown.maxValue) * 100),
-                  );
-                  const color = ["#4A90D9", "#7C5CBF", "#14b8a6", "#ec4899", "#3b82f6", "#8b5cf6"][
-                    index % 6
-                  ];
-                  const isLast = index === categoryBreakdown.entries.length - 1;
-
-                  return (
-                    <View
-                      key={category}
-                      className={`px-5 py-4 flex-row items-center ${
-                        !isLast ? "border-b border-border-muted/40 dark:border-border-dark/40" : ""
-                      }`}
-                    >
-                      <View
-                        className="mr-4 h-10 w-10 items-center justify-center rounded-xl"
-                        style={{ backgroundColor: `${color}15` }}
-                      >
-                        <View className="h-3 w-3 rounded-full" style={{ backgroundColor: color }} />
-                      </View>
-                      <View className="flex-1">
-                        <View className="mb-1.5 flex-row items-center justify-between">
-                          <Text className="text-[15px] font-bold text-text-primary dark:text-text-dark-primary">
-                            {category}
-                          </Text>
-                          <Text className="text-[13px] font-bold text-text-muted dark:text-text-dark-muted">
-                            {count} {count === 1 ? "item" : "items"}
-                          </Text>
-                        </View>
-                        <View className="h-1.5 rounded-full bg-surface-muted dark:bg-surface-dark-muted overflow-hidden">
-                          <View
-                            className="h-full rounded-full"
-                            style={{ width: `${progress}%`, backgroundColor: color }}
-                          />
-                        </View>
-                      </View>
-                    </View>
-                  );
-                })}
+              <Card className="mb-8">
+                {categoryBreakdown.map(([category, count], index) => (
+                  <ProgressBar
+                    key={category}
+                    label={category}
+                    progress={(count / (summary.total || 1)) * 100}
+                    color={index % 2 === 0 ? "#3DB87A" : "#F5A623"}
+                    height={8}
+                    showPercentage
+                  />
+                ))}
               </Card>
             </View>
 
             {/* Insights Card */}
-            <View className="px-6 pt-8">
-              <Card className="bg-primary-50/50 dark:bg-primary-900/10 border-primary-100 dark:border-primary-900/30 flex-row items-center">
-                <View className="mr-4 h-12 w-12 items-center justify-center rounded-2xl bg-primary-600 dark:bg-primary-500 shadow-md">
-                  <BarChart3 stroke="white" size={24} strokeWidth={2.5} />
+            <View className="px-6">
+              <Card className="bg-primary-500/5 border-primary-500/20 flex-row items-center p-6">
+                <View className="h-14 w-14 rounded-2xl bg-primary-500 items-center justify-center shadow-lg shadow-primary-500/20">
+                  <BarChart3 stroke="white" size={26} strokeWidth={2.5} />
                 </View>
-                <View className="flex-1">
-                  <Text className="text-[14px] font-black text-primary-800 dark:text-primary-300 mb-1">
-                    Top Category: {topCategory}
+                <View className="ml-5 flex-1">
+                  <Text className="text-[15px] font-bold text-text-primary mb-1">
+                    Top Pattern: {topCategory}
                   </Text>
-                  <Text className="text-[12px] font-medium text-primary-700/80 dark:text-primary-400/80 leading-relaxed">
-                    Based on your patterns, you purchase {topCategory.toLowerCase()} most
-                    frequently.
+                  <Text className="text-[13px] font-medium text-text-secondary leading-relaxed">
+                    You&apos;ve added {summary.total} items this month. {topCategory} is your most
+                    frequent category.
                   </Text>
                 </View>
               </Card>
             </View>
           </>
         ) : (
-          <View className="px-6 pt-20 items-center justify-center">
-            <View className="h-20 w-20 items-center justify-center rounded-full bg-surface-muted dark:bg-surface-dark-muted mb-6">
-              <BarChart3 stroke={isDark ? "#4f5f56" : "#95a39a"} size={32} strokeWidth={2} />
+          <View className="px-6 pt-32 items-center justify-center">
+            <View className="h-24 w-24 items-center justify-center rounded-[32px] bg-surface-muted mb-6">
+              <BarChart3 stroke="#9AA3AF" size={40} strokeWidth={1.5} />
             </View>
-            <Text className="text-[24px] font-black tracking-tight text-text-primary dark:text-text-dark-primary text-center">
-              No Data Available
+            <Text className="text-[22px] font-bold text-text-primary text-center tracking-tight">
+              No Insights Yet
             </Text>
-            <Text className="mt-2 text-[15px] leading-6 text-text-muted dark:text-text-dark-muted text-center px-8">
-              {"We couldn't find any items for "}
+            <Text className="mt-3 text-[15px] leading-6 text-text-muted text-center px-10">
+              {"Add items to your list for "}
               {formatMonthLabel(selectedMonth)}
-              {". Start adding items to see your list insights!"}
+              {" to see how your family shops."}
             </Text>
           </View>
         )}

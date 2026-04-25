@@ -6,21 +6,20 @@ import {
   Image,
   TouchableOpacity,
   Share,
-  ActivityIndicator,
   StatusBar,
-  Alert,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useColorScheme } from "nativewind";
-import { Share2, Crown, User as UserIcon, Trash2 } from "lucide-react-native";
+import { Share2, Crown, Trash2, LogOut } from "lucide-react-native";
 import { useAuthStore } from "../store/useAuthStore";
 import {
   subscribeToFamilyMembers,
   getFamilyDetails,
   removeMemberAsOwner,
+  leaveFamily,
 } from "../services/family";
 import { User, Family } from "../types";
-import { AppHeader, Card } from "../components/ui";
+import { AppHeader, Card, StatusModal, LoadingOverlay, PriorityBadge } from "../components/ui";
 import NotificationModal from "../components/NotificationModal";
 
 const getFamilyActionErrorMessage = (error: unknown, fallback: string) => {
@@ -35,8 +34,8 @@ const getFamilyActionErrorMessage = (error: unknown, fallback: string) => {
 };
 
 /**
- * Family members management screen
- * Why: To allow users to see who is in their family, invite others via code, and manage membership (for owners).
+ * Premium Family Members Management
+ * Why: To provide a high-fidelity experience for managing family groups with elegant feedback.
  */
 const MembersScreen = () => {
   const { user } = useAuthStore();
@@ -44,41 +43,42 @@ const MembersScreen = () => {
   const [members, setMembers] = useState<User[]>([]);
   const [family, setFamily] = useState<Family | null>(null);
   const [loading, setLoading] = useState(true);
-  const [membersError, setMembersError] = useState<string | null>(null);
-  const [removingMemberId, setRemovingMemberId] = useState<string | null>(null);
+  const [actionLoading, setActionLoading] = useState(false);
   const [isNotifOpen, setNotifOpen] = useState(false);
+  
+  // Modal states
+  const [statusModal, setStatusModal] = useState<{
+    visible: boolean;
+    title: string;
+    message: string;
+    type: "success" | "error" | "warning" | "confirm";
+    onConfirm?: () => void;
+  }>({
+    visible: false,
+    title: "",
+    message: "",
+    type: "success",
+  });
 
   const isDark = colorScheme === "dark";
-  const myRole = members.find((member) => member.uid === user?.uid)?.role ?? user?.role;
+  const myMember = members.find((m) => m.uid === user?.uid);
+  const myRole = myMember?.role ?? user?.role;
   const isOwner = myRole === "owner";
 
   useEffect(() => {
     if (!user?.familyId) return;
 
-    // Fetch family details (invite code)
     getFamilyDetails(user.familyId)
       .then(setFamily)
-      .catch((error) => {
-        console.error("[MembersScreen] getFamilyDetails error:", error);
-      });
+      .catch(console.error);
 
-    // Subscribe to members
     const unsubscribe = subscribeToFamilyMembers(
       user.familyId,
       (newMembers) => {
         setMembers(newMembers);
-        setMembersError(null);
         setLoading(false);
       },
-      (error) => {
-        const message = error.message || "";
-        if (message.includes("permission-denied")) {
-          setMembersError("Missing Firestore permission to read members.");
-        } else {
-          setMembersError("Could not load family members.");
-        }
-        setLoading(false);
-      },
+      () => setLoading(false)
     );
 
     return () => unsubscribe();
@@ -91,81 +91,120 @@ const MembersScreen = () => {
         message: `Join our family grocery list! Use invite code: ${family.inviteCode}`,
       });
     } catch (error) {
-      console.error("[MembersScreen] share error:", error);
+      console.error(error);
     }
   };
 
   const handleRemoveMember = (member: User) => {
     if (!user?.uid || !user.familyId || !isOwner) return;
-    const familyId = user.familyId;
 
-    Alert.alert("Remove Member", `Remove ${member.displayName} from this family?`, [
-      { text: "Cancel", style: "cancel" },
-      {
-        text: "Remove",
-        style: "destructive",
-        onPress: async () => {
-          try {
-            setRemovingMemberId(member.uid);
-            await removeMemberAsOwner({
-              ownerId: user.uid,
-              familyId,
-              targetUserId: member.uid,
-            });
-          } catch (error) {
-            const message = getFamilyActionErrorMessage(error, "Could not remove member.");
-            Alert.alert("Remove Failed", message);
-          } finally {
-            setRemovingMemberId(null);
-          }
-        },
-      },
-    ]);
+    setStatusModal({
+      visible: true,
+      title: "Remove Member",
+      message: `Are you sure you want to remove ${member.displayName} from the family?`,
+      type: "confirm",
+      onConfirm: async () => {
+        setStatusModal(prev => ({ ...prev, visible: false }));
+        setActionLoading(true);
+        try {
+          await removeMemberAsOwner({
+            ownerId: user.uid,
+            familyId: user.familyId!,
+            targetUserId: member.uid,
+          });
+        } catch (error) {
+          setStatusModal({
+            visible: true,
+            title: "Remove Failed",
+            message: getFamilyActionErrorMessage(error, "Could not remove member."),
+            type: "error",
+          });
+        } finally {
+          setActionLoading(false);
+        }
+      }
+    });
+  };
+
+  const handleLeaveFamily = () => {
+    if (!user?.uid || !user.familyId) return;
+
+    setStatusModal({
+      visible: true,
+      title: "Leave Family",
+      message: isOwner 
+        ? "You are the owner. If you leave, ownership will be transferred to another member or the family will be deleted if you are the last one. Continue?"
+        : "Are you sure you want to leave this family group?",
+      type: "confirm",
+      onConfirm: async () => {
+        setStatusModal(prev => ({ ...prev, visible: false }));
+        setActionLoading(true);
+        try {
+          await leaveFamily({
+            userId: user.uid,
+            familyId: user.familyId!,
+            role: myRole,
+          });
+        } catch (error) {
+          setStatusModal({
+            visible: true,
+            title: "Leave Failed",
+            message: getFamilyActionErrorMessage(error, "Could not leave family."),
+            type: "error",
+          });
+        } finally {
+          setActionLoading(false);
+        }
+      }
+    });
   };
 
   return (
-    <SafeAreaView
-      edges={["top", "left", "right"]}
-      className="flex-1 bg-background dark:bg-background-dark"
-    >
-      <StatusBar barStyle={isDark ? "light-content" : "dark-content"} />
+    <SafeAreaView edges={["top", "left", "right"]} className="flex-1 bg-background">
+      <StatusBar barStyle="dark-content" />
+      <LoadingOverlay visible={actionLoading || (loading && members.length === 0)} />
+      <StatusModal 
+        visible={statusModal.visible}
+        title={statusModal.title}
+        message={statusModal.message}
+        type={statusModal.type}
+        onConfirm={statusModal.onConfirm}
+        onClose={() => setStatusModal(prev => ({ ...prev, visible: false }))}
+      />
 
       <AppHeader
-        title="Family Members"
-        eyebrow="My Group"
+        title="Family Group"
+        eyebrow="Management"
         onNotificationPress={() => setNotifOpen(true)}
       />
 
       <View className="px-6 flex-1 pt-6">
-        <Card className="mb-8 p-6 border-primary-100 bg-primary-50/50">
-          <Text className="mb-4 text-[13px] font-bold uppercase tracking-[0.08em] text-primary-500">
-            Invite Members
+        <Card className="mb-10 p-6 bg-primary-500/5 border-primary-500/10">
+          <Text className="mb-4 text-[11px] font-bold uppercase tracking-[1.5px] text-primary-600">
+            Invite Your Family
           </Text>
-          <View className="flex-row items-center justify-between rounded-md bg-white border border-border px-5 py-4 shadow-xs">
+          <View className="flex-row items-center justify-between rounded-2xl bg-white border border-border/50 px-6 py-5 shadow-sm">
             <View>
-              <Text className="text-[10px] font-bold text-text-muted uppercase tracking-widest mb-1">
+              <Text className="text-[10px] font-bold text-text-muted uppercase tracking-[2px] mb-1">
                 Family Code
               </Text>
-              <Text className="text-[26px] font-black tracking-[4px] text-text-900">
-                {family?.inviteCode || "----"}
+              <Text className="text-[28px] font-black tracking-[4px] text-text-primary">
+                {family?.inviteCode || "------"}
               </Text>
             </View>
             <TouchableOpacity
               onPress={handleShare}
               activeOpacity={0.7}
-              className="h-11 w-11 items-center justify-center rounded-full bg-primary-500 shadow-green"
+              className="h-14 w-14 items-center justify-center rounded-2xl bg-primary-500 shadow-lg shadow-primary-500/30"
             >
-              <Share2 stroke="white" size={18} strokeWidth={3} />
+              <Share2 stroke="white" size={22} strokeWidth={2.5} />
             </TouchableOpacity>
           </View>
-          <Text className="mt-4 text-[13px] leading-relaxed text-text-secondary">
-            Share this code to collaborate with your family.
-          </Text>
         </Card>
 
-        <View className="flex-row items-center justify-between mb-4 px-1">
-          <Text className="text-[18px] font-bold tracking-tight text-text-900">
-            Members
+        <View className="flex-row items-center justify-between mb-6">
+          <Text className="text-[20px] font-bold tracking-tight text-text-primary">
+            Group Members
           </Text>
           <View className="rounded-full bg-surface-alt px-3 py-1 border border-border">
             <Text className="text-[11px] font-bold text-text-muted">
@@ -174,79 +213,70 @@ const MembersScreen = () => {
           </View>
         </View>
 
-        {membersError ? (
-          <View className="mb-4 rounded-md bg-danger-light p-3 border border-danger/20">
-            <Text className="text-[12px] font-medium text-danger-dark">
-              {membersError}
-            </Text>
-          </View>
-        ) : null}
-
-        {loading ? (
-          <View className="flex-1 items-center justify-center">
-            <ActivityIndicator color="#3DB87A" size="large" />
-          </View>
-        ) : (
-          <FlatList
-            data={members}
-            keyExtractor={(item) => item.uid}
-            showsVerticalScrollIndicator={false}
-            contentContainerStyle={{ paddingBottom: 100 }}
-            renderItem={({ item }) => (
-              <Card className="mb-4 py-4 px-5">
-                <View className="flex-row items-center">
-                  <View className="mr-4 h-12 w-12 items-center justify-center overflow-hidden rounded-md bg-surface-alt border border-border">
-                    {item.photoURL ? (
-                      <Image source={{ uri: item.photoURL }} className="h-full w-full" />
-                    ) : (
-                      <View className="h-full w-full bg-primary-100 items-center justify-center">
-                        <Text className="text-primary-600 text-lg font-bold">
-                          {item.displayName.charAt(0).toUpperCase()}
-                        </Text>
-                      </View>
-                    )}
-                  </View>
-                  <View className="flex-1">
-                    <Text className="text-[15px] font-bold text-text-900">
-                      {item.displayName}
-                    </Text>
-                    <Text className="mt-0.5 text-[12px] text-text-muted">
-                      {item.email}
-                    </Text>
-                  </View>
-
-                  {item.role === "owner" ? (
-                    <View className="flex-row items-center rounded-sm bg-primary-100 px-3 py-1.5 border border-primary-200">
-                      <Crown stroke="#2D6A4F" size={12} strokeWidth={2.5} />
-                      <Text className="ml-1.5 text-[10px] font-bold uppercase tracking-wider text-primary-600">
-                        Owner
-                      </Text>
-                    </View>
-                  ) : isOwner && item.uid !== user?.uid ? (
-                    <TouchableOpacity
-                      onPress={() => handleRemoveMember(item)}
-                      disabled={removingMemberId === item.uid}
-                      activeOpacity={0.7}
-                      className="h-10 w-10 items-center justify-center rounded-full bg-danger-light border border-danger/20"
-                    >
-                      {removingMemberId === item.uid ? (
-                        <ActivityIndicator color="#E55C5C" size="small" />
-                      ) : (
-                        <Trash2 stroke="#E55C5C" size={18} strokeWidth={2.5} />
-                      )}
-                    </TouchableOpacity>
+        <FlatList
+          data={members}
+          keyExtractor={(item) => item.uid}
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={{ paddingBottom: 120 }}
+          renderItem={({ item }) => (
+            <Card className="mb-4 p-5">
+              <View className="flex-row items-center">
+                <View className="mr-4 h-12 w-12 items-center justify-center overflow-hidden rounded-xl bg-primary-50 border border-primary-100">
+                  {item.photoURL ? (
+                    <Image source={{ uri: item.photoURL }} className="h-full w-full" />
                   ) : (
-                    <View className="rounded-sm bg-surface-muted px-3 py-1.5 border border-border">
-                      <Text className="text-[10px] font-bold text-text-muted uppercase tracking-wider">
-                        Member
-                      </Text>
-                    </View>
+                    <Text className="text-primary-600 text-lg font-black">
+                      {item.displayName?.charAt(0).toUpperCase() || "?"}
+                    </Text>
                   )}
                 </View>
-              </Card>
-            )}
-          />
-        )}
+                <View className="flex-1">
+                  <Text className="text-[16px] font-bold text-text-primary">
+                    {item.displayName || "Unknown User"} {item.uid === user?.uid ? "(You)" : ""}
+                  </Text>
+                  <Text className="text-[12px] text-text-muted font-medium mt-0.5">
+                    {item.email}
+                  </Text>
+                </View>
+
+                {item.role === "owner" ? (
+                  <View className="bg-primary-500/10 px-3 py-1.5 rounded-lg flex-row items-center border border-primary-500/20">
+                    <Crown stroke="#3DB87A" size={12} strokeWidth={3} />
+                    <Text className="ml-1.5 text-[10px] font-black uppercase tracking-widest text-primary-600">
+                      Owner
+                    </Text>
+                  </View>
+                ) : isOwner && item.uid !== user?.uid ? (
+                  <TouchableOpacity
+                    onPress={() => handleRemoveMember(item)}
+                    activeOpacity={0.7}
+                    className="h-10 w-10 items-center justify-center rounded-xl bg-danger-light border border-danger/20"
+                  >
+                    <Trash2 stroke="#E55C5C" size={18} strokeWidth={2.5} />
+                  </TouchableOpacity>
+                ) : (
+                  <View className="bg-surface-muted px-3 py-1.5 rounded-lg border border-border/50">
+                    <Text className="text-[10px] font-black uppercase tracking-widest text-text-muted">
+                      Member
+                    </Text>
+                  </View>
+                )}
+              </View>
+            </Card>
+          )}
+        />
+        
+        {/* Leave Family Action */}
+        <View className="py-4">
+           <TouchableOpacity 
+             onPress={handleLeaveFamily}
+             activeOpacity={0.8}
+             className="flex-row items-center justify-center py-4 bg-white border border-danger-light rounded-2xl"
+           >
+             <LogOut stroke="#E55C5C" size={18} strokeWidth={2.5} />
+             <Text className="ml-2 text-danger-dark font-bold text-[15px]">Leave Family Group</Text>
+           </TouchableOpacity>
+        </View>
       </View>
 
       <NotificationModal visible={isNotifOpen} onClose={() => setNotifOpen(false)} />

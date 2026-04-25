@@ -351,14 +351,14 @@ const HomeScreen = () => {
           contentContainerStyle={{ paddingBottom: 140 }}
           ListHeaderComponent={
             <View className="px-6 pt-6">
-              <View className="mb-6 flex-row items-center rounded-md border border-border bg-surface-alt px-4 shadow-xs">
-                <Search stroke="#9AA3AF" size={18} />
+              <View className="mb-6 flex-row items-center rounded-2xl border border-border/50 bg-white px-4 shadow-xs">
+                <Search stroke="#9AA3AF" size={20} />
                 <TextInput
                   value={searchQuery}
                   onChangeText={setSearchQuery}
                   placeholder={SEARCH_PLACEHOLDER}
                   placeholderTextColor="#C0C8D2"
-                  className="ml-3 h-[52px] flex-1 text-[15px] font-medium text-text-900"
+                  className="ml-3 h-[56px] flex-1 text-[15px] font-bold text-text-primary"
                 />
               </View>
 

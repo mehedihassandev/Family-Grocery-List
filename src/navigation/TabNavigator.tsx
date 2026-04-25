@@ -35,6 +35,9 @@ const TabNavigator = () => {
     } else {
       clearNotifications();
     }
+
+    // Cleanup on unmount to prevent persistent listeners after logout
+    return () => clearNotifications();
   }, [clearNotifications, initNotifications, user?.familyId]);
 
   return (

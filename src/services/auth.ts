@@ -14,7 +14,7 @@ import {
   signOut as firebaseSignOut,
   updateProfile,
 } from "firebase/auth";
-import { doc, getDoc, setDoc, updateDoc } from "firebase/firestore";
+import { doc, getDoc, setDoc, updateDoc, onSnapshot } from "firebase/firestore";
 import { auth, db } from "./firebaseConfig";
 import { useAuthStore } from "../store/useAuthStore";
 import { User } from "../types";
@@ -650,26 +650,44 @@ export const signOut = async () => {
 export const listenToAuthChanges = () => {
   const { setUser, setLoading } = useAuthStore.getState();
   let authEventVersion = 0;
+  let userDocUnsubscribe: (() => void) | null = null;
 
   return onAuthStateChanged(auth, async (firebaseUser) => {
     const currentEventVersion = ++authEventVersion;
 
+    // Cleanup previous doc listener if it exists
+    if (userDocUnsubscribe) {
+      userDocUnsubscribe();
+      userDocUnsubscribe = null;
+    }
+
     try {
       if (firebaseUser) {
-        // Never block UI on Firestore; show fallback user immediately.
+        // 1. Set initial basic info from Auth (fastest UI update)
         setUser(mapFirebaseUserToAppUser(firebaseUser));
 
-        const user = await upsertUserProfile(firebaseUser);
+        // 2. Start real-time listener for Firestore profile
+        const userDocRef = doc(db, "users", firebaseUser.uid);
+        userDocUnsubscribe = onSnapshot(
+          userDocRef,
+          (snapshot) => {
+            // Avoid stale writes if auth state changed while waiting for snapshot
+            if (currentEventVersion !== authEventVersion || auth.currentUser?.uid !== firebaseUser.uid) {
+              return;
+            }
 
-        // Avoid stale async writes overriding a newer auth state (e.g. logout).
-        if (
-          currentEventVersion !== authEventVersion ||
-          auth.currentUser?.uid !== firebaseUser.uid
-        ) {
-          return;
-        }
-
-        setUser(user);
+            if (snapshot.exists()) {
+              const userData = snapshot.data() as Partial<User>;
+              setUser(mapFirebaseUserToAppUser(firebaseUser, userData));
+            } else {
+              // Document doesn't exist yet, try to create it (fallback logic)
+              void upsertUserProfile(firebaseUser);
+            }
+          },
+          (error) => {
+            if (__DEV__) console.warn("User Doc Listener Error:", error);
+          },
+        );
       } else {
         setUser(null);
         await clearPersistedAuthSession();

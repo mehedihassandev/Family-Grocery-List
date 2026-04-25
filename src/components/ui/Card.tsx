@@ -11,7 +11,7 @@ interface CardProps {
 /**
  * Standard Card component
  * Why: To maintain consistent layout, radius, and shadows across the app.
- * Simplified and locked to Light Mode for maximum stability.
+ * Improved for a premium look with better radius and shadow.
  */
 export const Card = ({ children, className, style, padding = true }: CardProps) => {
   return (
@@ -23,17 +23,17 @@ export const Card = ({ children, className, style, padding = true }: CardProps) 
 
 const styles = StyleSheet.create({
   card: {
-    borderRadius: 16,
+    borderRadius: 24,
     borderWidth: 1,
-    borderColor: "#E8EBF0", // border
-    backgroundColor: "#ffffff", // surface
+    borderColor: "#F0F2F5",
+    backgroundColor: "#ffffff",
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.02,
-    shadowRadius: 8,
-    elevation: 1,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.04,
+    shadowRadius: 12,
+    elevation: 2,
   },
   padding: {
-    padding: 16,
+    padding: 20,
   },
 });
