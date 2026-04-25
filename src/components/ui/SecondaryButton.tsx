@@ -1,15 +1,20 @@
 import React from "react";
 import { Text, TouchableOpacity, TouchableOpacityProps } from "react-native";
 
-type SecondaryButtonProps = TouchableOpacityProps & {
+interface ISecondaryButtonProps extends TouchableOpacityProps {
   title: string;
-};
+}
 
+/**
+ * Secondary action button for less prominent tasks
+ * Why: To provide a consistent, visually subtle button component for secondary actions.
+ * @param props - Component props including title and standard touchable attributes
+ */
 const SecondaryButton = ({
   title,
   className,
   ...props
-}: SecondaryButtonProps) => {
+}: ISecondaryButtonProps) => {
   return (
     <TouchableOpacity
       {...props}

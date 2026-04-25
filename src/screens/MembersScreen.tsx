@@ -17,10 +17,15 @@ import {
   removeMemberAsOwner,
   leaveFamily,
 } from "../services/family";
-import { User, Family } from "../types";
+import { IUser, IFamily } from "../types";
 import { AppHeader, Card, StatusModal, LoadingOverlay } from "../components/ui";
 import NotificationModal from "../components/NotificationModal";
 
+/**
+ * Maps family-related operation errors to user-friendly messages
+ * @param error - The error object
+ * @param fallback - The default message if error is unknown
+ */
 const getFamilyActionErrorMessage = (error: unknown, fallback: string) => {
   const rawMessage = error instanceof Error ? error.message : "";
   const normalized = rawMessage.toLowerCase();
@@ -33,13 +38,13 @@ const getFamilyActionErrorMessage = (error: unknown, fallback: string) => {
 };
 
 /**
- * Premium Family Members Management
+ * Premium Family Members Management Screen
  * Why: To provide a high-fidelity experience for managing family groups with elegant feedback.
  */
 const MembersScreen = () => {
   const { user } = useAuthStore();
-  const [members, setMembers] = useState<User[]>([]);
-  const [family, setFamily] = useState<Family | null>(null);
+  const [members, setMembers] = useState<IUser[]>([]);
+  const [family, setFamily] = useState<IFamily | null>(null);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
   const [isNotifOpen, setNotifOpen] = useState(false);
@@ -81,6 +86,9 @@ const MembersScreen = () => {
     return () => unsubscribe();
   }, [user?.familyId]);
 
+  /**
+   * Opens the system share sheet with the family invite code
+   */
   const handleShare = async () => {
     if (!family) return;
     try {
@@ -92,7 +100,11 @@ const MembersScreen = () => {
     }
   };
 
-  const handleRemoveMember = (member: User) => {
+  /**
+   * Prompts to remove a member from the family (Owner only)
+   * @param member - The user to remove
+   */
+  const handleRemoveMember = (member: IUser) => {
     if (!user?.uid || !user.familyId || !isOwner) return;
 
     setStatusModal({
@@ -123,6 +135,9 @@ const MembersScreen = () => {
     });
   };
 
+  /**
+   * Prompts the current user to leave the family
+   */
   const handleLeaveFamily = () => {
     if (!user?.uid || !user.familyId) return;
 

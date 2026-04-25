@@ -1,17 +1,21 @@
 import React from "react";
 import { Modal, ScrollView, Text, TouchableOpacity, View } from "react-native";
 import { X, Edit2, Calendar, User, ShoppingBasket, AlignLeft, Info } from "lucide-react-native";
-import { GroceryItem } from "../types";
+import { IGroceryItem } from "../types";
 import { GroceryPriority } from "../features/grocery";
 import { Card, Chip, PriorityBadge } from "./ui";
 
-type ItemDetailModalProps = {
+interface IItemDetailModalProps {
   visible: boolean;
-  item: GroceryItem | null;
+  item: IGroceryItem | null;
   onClose: () => void;
-  onEdit: (item: GroceryItem) => void;
-};
+  onEdit: (item: IGroceryItem) => void;
+}
 
+/**
+ * Formats a Firestore timestamp or date value to a readable string
+ * @param dateValue - The date value to format
+ */
 const formatDate = (dateValue: any) => {
   if (!dateValue) return "Unknown";
   const dateStr =
@@ -22,8 +26,9 @@ const formatDate = (dateValue: any) => {
 /**
  * Modal to display detailed information about a grocery item
  * Why: To provide a deep dive into item specifics (who added it, when, notes, etc.) without cluttering the main list.
+ * @param props - Component props including visibility, item data, and handlers
  */
-const ItemDetailModal = ({ visible, item, onClose, onEdit }: ItemDetailModalProps) => {
+const ItemDetailModal = ({ visible, item, onClose, onEdit }: IItemDetailModalProps) => {
   if (!item) return null;
 
   const modelPriority: GroceryPriority =

@@ -7,12 +7,17 @@ import {
   View,
 } from "react-native";
 
-type PrimaryButtonProps = TouchableOpacityProps & {
+interface IPrimaryButtonProps extends TouchableOpacityProps {
   title: string;
   loading?: boolean;
   icon?: React.ReactNode;
-};
+}
 
+/**
+ * Main action button with premium styling
+ * Why: To provide a consistent, visually prominent call-to-action component.
+ * @param props - Component props including title, loading state, and optional icon
+ */
 export const PrimaryButton = ({
   title,
   loading = false,
@@ -20,7 +25,7 @@ export const PrimaryButton = ({
   icon,
   className,
   ...props
-}: PrimaryButtonProps) => {
+}: IPrimaryButtonProps) => {
   const isDisabled = disabled || loading;
 
   return (

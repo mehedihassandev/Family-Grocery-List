@@ -1,7 +1,7 @@
 import React, { useEffect, useRef } from "react";
 import { View, Text, Animated, StyleSheet } from "react-native";
 
-interface ProgressBarProps {
+interface IProgressBarProps {
   progress: number; // 0 to 100
   color?: string;
   backgroundColor?: string;
@@ -13,6 +13,7 @@ interface ProgressBarProps {
 /**
  * Animated progress bar with premium styling
  * Why: To visualize progress (e.g., category-wise or overall list completion) in a clean, animated way.
+ * @param props - Component props including progress value and styling overrides
  */
 const ProgressBar = ({
   progress,
@@ -21,7 +22,7 @@ const ProgressBar = ({
   height = 8,
   label,
   showPercentage = false,
-}: ProgressBarProps) => {
+}: IProgressBarProps) => {
   const animatedWidth = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {

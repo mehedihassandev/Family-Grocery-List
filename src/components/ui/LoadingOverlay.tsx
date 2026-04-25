@@ -1,11 +1,16 @@
 import React, { useEffect, useRef } from "react";
 import { View, StyleSheet, Animated, Easing } from "react-native";
 
+interface ILoadingOverlayProps {
+  visible: boolean;
+}
+
 /**
  * Elegant, modern loading overlay
  * Why: To provide a clean, visually premium loading state for async actions.
+ * @param props - Component props including visibility flag
  */
-const LoadingOverlay = ({ visible }: { visible: boolean }) => {
+const LoadingOverlay = ({ visible }: ILoadingOverlayProps) => {
   const rotateAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {

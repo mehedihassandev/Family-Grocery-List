@@ -4,7 +4,15 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { HelpCircle, Bug, ExternalLink, Info } from "lucide-react-native";
 import { SubHeader, Card } from "../components/ui";
 
-const BulletList = ({ items }: { items: string[] }) => {
+interface IBulletListProps {
+  items: string[];
+}
+
+/**
+ * Renders a list of items with bullet points
+ * @param props - Component props containing the array of strings to display
+ */
+const BulletList = ({ items }: IBulletListProps) => {
   return (
     <View className="gap-3">
       {items.map((item) => (
@@ -19,7 +27,15 @@ const BulletList = ({ items }: { items: string[] }) => {
   );
 };
 
+/**
+ * Screen providing help resources and support links
+ * Why: To guide users through common troubleshooting steps and provide direct links to documentation and bug reporting.
+ */
 const HelpSupportScreen = () => {
+  /**
+   * Opens an external URL in the default browser
+   * @param url - The URL to open
+   */
   const openUrl = async (url: string) => {
     try {
       const canOpen = await Linking.canOpenURL(url);

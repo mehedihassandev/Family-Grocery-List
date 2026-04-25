@@ -7,16 +7,17 @@ import { markNotificationsAsRead } from "../services/notification";
 import { formatDistanceToNow } from "date-fns";
 import { Card } from "./ui";
 
-type NotificationModalProps = {
+interface INotificationModalProps {
   visible: boolean;
   onClose: () => void;
-};
+}
 
 /**
  * Modal to display recent family activities and notifications
  * Why: To keep users updated on grocery list changes (items added, completed) in a centralized place.
+ * @param props - Component props including visibility and close handler
  */
-const NotificationModal = ({ visible, onClose }: NotificationModalProps) => {
+const NotificationModal = ({ visible, onClose }: INotificationModalProps) => {
   const { user } = useAuthStore();
   const notifications = useNotificationStore((state) => state.notifications);
   const [filter, setFilter] = useState<"all" | "unread">("all");
@@ -28,12 +29,19 @@ const NotificationModal = ({ visible, onClose }: NotificationModalProps) => {
   const displayList = filter === "unread" ? feed.filter((n) => !n.readBy.includes(myUid)) : feed;
   const unreadIds = feed.filter((n) => !n.readBy.includes(myUid)).map((n) => n.id);
 
+  /**
+   * Marks all unread notifications as read by the current user
+   */
   const handleMarkAllRead = async () => {
     if (unreadIds.length > 0) {
       await markNotificationsAsRead(unreadIds, myUid);
     }
   };
 
+  /**
+   * Formats a timestamp into a "time ago" string
+   * @param timestamp - The timestamp to format
+   */
   const formatTime = (timestamp: any) => {
     if (!timestamp) return "Just now";
     try {
@@ -44,6 +52,10 @@ const NotificationModal = ({ visible, onClose }: NotificationModalProps) => {
     }
   };
 
+  /**
+   * Returns icon and color configuration based on notification type
+   * @param type - The notification type
+   */
   const getIconData = (type: string) => {
     switch (type) {
       case "item_added":

@@ -29,7 +29,7 @@ import {
   createFamily,
 } from "../services/family";
 import { subscribeToGroceryList } from "../services/grocery";
-import { Family, GroceryItem } from "../types";
+import { IFamily, IGroceryItem } from "../types";
 import {
   Card,
   ShortcutCard,
@@ -40,6 +40,7 @@ import {
   StatusModal,
 } from "../components/ui";
 import NotificationModal from "../components/NotificationModal";
+import { ERootRoutes, ETabRoutes } from "../navigation/routes";
 
 // Helper to convert Firebase Timestamp or Date string to Date object
 const toDate = (value: any): Date | null => {
@@ -60,7 +61,7 @@ const DashboardScreen = ({ navigation }: any) => {
   const { user } = useAuthStore();
   const [familyName, setFamilyName] = useState("Our Family");
   const [members, setMembers] = useState<any[]>([]);
-  const [items, setItems] = useState<GroceryItem[]>([]);
+  const [items, setItems] = useState<IGroceryItem[]>([]);
   const [isNotifOpen, setNotifOpen] = useState(false);
 
   // UI State
@@ -85,7 +86,7 @@ const DashboardScreen = ({ navigation }: any) => {
     void getFamilyDetails(user.familyId)
       .then((family) => {
         if (!mounted) return;
-        const name = (family as Family | undefined)?.name?.trim();
+        const name = (family as IFamily | undefined)?.name?.trim();
         setFamilyName(name || "Our Family");
       })
       .catch(() => {
@@ -171,6 +172,9 @@ const DashboardScreen = ({ navigation }: any) => {
 
   const firstName = user?.displayName?.split(" ")[0] || "Friend";
 
+  /**
+   * Joins a family group using the entered invite code
+   */
   const handleJoinFamily = async () => {
     if (!user || !joinCode.trim()) return;
     setIsLoading(true);
@@ -261,7 +265,7 @@ const DashboardScreen = ({ navigation }: any) => {
                       </Text>
                     </View>
                     <TouchableOpacity
-                      onPress={() => navigation.navigate("Members")}
+                      onPress={() => navigation.navigate(ETabRoutes.MEMBERS)}
                       className="h-11 w-11 rounded-xl bg-primary-50 items-center justify-center border border-primary-100"
                     >
                       <Users size={20} stroke="#3DB87A" />
@@ -406,7 +410,7 @@ const DashboardScreen = ({ navigation }: any) => {
 
               {/* Up Next Card */}
               {nextItem && (
-                <TouchableOpacity activeOpacity={0.9} onPress={() => navigation.navigate("List")}>
+                <TouchableOpacity activeOpacity={0.9} onPress={() => navigation.navigate(ETabRoutes.LIST)}>
                   <Card className="mb-8 border-primary-100 bg-primary-50/20 p-4 border-2">
                     <View className="flex-row items-center">
                       <View className="h-12 w-12 rounded-xl bg-primary-100 items-center justify-center">
@@ -479,7 +483,7 @@ const DashboardScreen = ({ navigation }: any) => {
               </View>
 
               <TouchableOpacity
-                onPress={() => navigation.navigate("CreateFamily")}
+                onPress={() => navigation.navigate(ERootRoutes.CREATE_FAMILY)}
                 activeOpacity={0.7}
                 className="w-[90%] py-3 rounded-2xl items-center border border-primary-500/20 bg-primary-50/20"
               >
@@ -498,25 +502,25 @@ const DashboardScreen = ({ navigation }: any) => {
                 <ShortcutCard
                   icon={ShoppingBasket}
                   label="List"
-                  onPress={() => navigation.navigate("List")}
+                  onPress={() => navigation.navigate(ETabRoutes.LIST)}
                   iconBgColor="bg-primary-50/50"
                 />
                 <ShortcutCard
                   icon={Users}
                   label="Members"
-                  onPress={() => navigation.navigate("Members")}
+                  onPress={() => navigation.navigate(ETabRoutes.MEMBERS)}
                   iconBgColor="bg-primary-50/50"
                 />
                 <ShortcutCard
                   icon={BarChart3}
                   label="Analyze"
-                  onPress={() => navigation.navigate("Analyze")}
+                  onPress={() => navigation.navigate(ETabRoutes.ANALYZE)}
                   iconBgColor="bg-primary-50/50"
                 />
                 <ShortcutCard
                   icon={UsersRound}
                   label="Profile"
-                  onPress={() => navigation.navigate("Profile")}
+                  onPress={() => navigation.navigate(ETabRoutes.PROFILE)}
                   iconBgColor="bg-primary-50/50"
                 />
               </View>
@@ -530,7 +534,7 @@ const DashboardScreen = ({ navigation }: any) => {
                 <Text className="text-text-primary text-[18px] font-bold tracking-tight">
                   Analytics Overview
                 </Text>
-                <TouchableOpacity onPress={() => navigation.navigate("Analyze")}>
+                <TouchableOpacity onPress={() => navigation.navigate(ETabRoutes.ANALYZE)}>
                   <Text className="text-primary-500 font-bold text-[13px]">Full Report</Text>
                 </TouchableOpacity>
               </View>
@@ -594,7 +598,7 @@ const DashboardScreen = ({ navigation }: any) => {
                 <Text className="text-text-primary text-[18px] font-bold tracking-tight">
                   Recent Pending
                 </Text>
-                <TouchableOpacity onPress={() => navigation.navigate("List")}>
+                <TouchableOpacity onPress={() => navigation.navigate(ETabRoutes.LIST)}>
                   <Text className="text-primary-500 font-bold text-[13px]">View All</Text>
                 </TouchableOpacity>
               </View>
@@ -603,7 +607,7 @@ const DashboardScreen = ({ navigation }: any) => {
                 <TouchableOpacity
                   key={item.id}
                   activeOpacity={0.8}
-                  onPress={() => navigation.navigate("List")}
+                  onPress={() => navigation.navigate(ETabRoutes.LIST)}
                   className="mb-4"
                 >
                   <Card padding={false} className="flex-row overflow-hidden min-h-[96px]">

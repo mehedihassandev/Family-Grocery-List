@@ -1,18 +1,19 @@
 import React, { ReactNode } from "react";
 import { Text, TextInput, TextInputProps, View } from "react-native";
 
-export type InputFieldProps = TextInputProps & {
+export interface IInputFieldProps extends TextInputProps {
   label?: string;
   icon?: ReactNode;
   rightIcon?: ReactNode;
   error?: string;
   containerClassName?: string;
   inputClassName?: string;
-};
+}
 
 /**
  * Standard text input field with label and error support
  * Why: To provide a consistent, theme-aware input experience across all forms.
+ * @param props - Component props including label, icon, and text input attributes
  */
 const InputField = ({
   label,
@@ -22,7 +23,7 @@ const InputField = ({
   containerClassName,
   inputClassName,
   ...props
-}: InputFieldProps) => {
+}: IInputFieldProps) => {
   return (
     <View className={`w-full ${containerClassName ?? ""}`}>
       {label ? (

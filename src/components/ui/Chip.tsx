@@ -1,16 +1,17 @@
 import React from "react";
 import { Text, TouchableOpacity, TouchableOpacityProps } from "react-native";
 
-type ChipProps = TouchableOpacityProps & {
+interface IChipProps extends TouchableOpacityProps {
   label: string;
   selected?: boolean;
-};
+}
 
 /**
  * Reusable Chip component for filters and categories
  * Why: To provide a consistent interactive element for selection.
+ * @param props - Component props including label and selection state
  */
-const Chip = ({ label, selected = false, className, ...props }: ChipProps) => {
+const Chip = ({ label, selected = false, className, ...props }: IChipProps) => {
   return (
     <TouchableOpacity
       {...props}

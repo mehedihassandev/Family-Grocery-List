@@ -18,6 +18,10 @@ import { useAuthStore } from "../store/useAuthStore";
 
 const FAMILY_ACTION_TIMEOUT_MS = 15000;
 
+/**
+ * Maps family operation errors to user-friendly messages
+ * @param error - The error object
+ */
 const getFamilyErrorMessage = (error: unknown) => {
   if (error instanceof FirebaseError) {
     switch (error.code) {
@@ -39,6 +43,11 @@ const getFamilyErrorMessage = (error: unknown) => {
   return "Unexpected error. Try again.";
 };
 
+/**
+ * Wraps a family action promise with a timeout
+ * @param operation - The promise to wrap
+ * @param timeoutMessage - Message to display on timeout
+ */
 async function withFamilyActionTimeout<T>(
   operation: Promise<T>,
   timeoutMessage: string,
@@ -61,6 +70,10 @@ async function withFamilyActionTimeout<T>(
   }
 }
 
+/**
+ * Initial setup screen for users not yet in a family
+ * Why: To guide users through creating or joining a family group immediately after signup.
+ */
 const FamilySetupScreen = () => {
   const { user, setUser } = useAuthStore();
   const [mode, setMode] = useState<"selection" | "create" | "join">("selection");
@@ -72,6 +85,9 @@ const FamilySetupScreen = () => {
   const [familyNameError, setFamilyNameError] = useState<string | null>(null);
   const [inviteCodeError, setInviteCodeError] = useState<string | null>(null);
 
+  /**
+   * Handles creating a new family group
+   */
   const handleCreateFamily = async () => {
     const normalizedFamilyName = familyName.trim();
 
@@ -85,20 +101,12 @@ const FamilySetupScreen = () => {
     try {
       setLoading(true);
       setActionError(null);
-      console.log("[FamilySetup] createFamily:start", {
-        uid: user.uid,
-        familyName: normalizedFamilyName,
-      });
       const family = await withFamilyActionTimeout(
         createFamily(user.uid, normalizedFamilyName),
         "Create family timed out after 15s. Check network/Firestore rules.",
       );
-      console.log("[FamilySetup] createFamily:success", {
-        familyId: family.id,
-      });
       setUser({ ...user, familyId: family.id, role: "owner" });
     } catch (error) {
-      console.error("[FamilySetup] createFamily:error", error);
       const errorMessage = getFamilyErrorMessage(error);
       setActionError(errorMessage);
       Alert.alert("Create Family Failed", errorMessage);
@@ -107,6 +115,9 @@ const FamilySetupScreen = () => {
     }
   };
 
+  /**
+   * Handles joining an existing family group
+   */
   const handleJoinFamily = async () => {
     const normalizedInviteCode = inviteCode.trim().toUpperCase();
 
@@ -124,20 +135,12 @@ const FamilySetupScreen = () => {
     try {
       setLoading(true);
       setActionError(null);
-      console.log("[FamilySetup] joinFamily:start", {
-        uid: user.uid,
-        inviteCode: normalizedInviteCode,
-      });
       const family = await withFamilyActionTimeout(
         joinFamily(user.uid, normalizedInviteCode),
         "Join family timed out after 15s. Check network/Firestore rules.",
       );
-      console.log("[FamilySetup] joinFamily:success", {
-        familyId: family.id,
-      });
       setUser({ ...user, familyId: family.id, role: "member" });
     } catch (error) {
-      console.error("[FamilySetup] joinFamily:error", error);
       const errorMessage = getFamilyErrorMessage(error);
       setActionError(errorMessage);
       Alert.alert("Join Family Failed", errorMessage);

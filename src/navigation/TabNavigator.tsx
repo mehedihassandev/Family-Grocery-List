@@ -11,6 +11,7 @@ import { useAuthStore } from "../store/useAuthStore";
 import { useNotificationStore } from "../store/useNotificationStore";
 import type { TabParamList } from "../types";
 import { View } from "react-native";
+import { ETabRoutes } from "./routes";
 
 // Passing TabParamList ensures tab names match the declared param list;
 // mistyped screen names become TypeScript errors at compile time.
@@ -18,8 +19,11 @@ const Tab = createBottomTabNavigator<TabParamList>();
 
 const TAB_ICON_SIZE = 20;
 const TAB_ICON_STROKE_WIDTH = 2.5;
-const TAB_LABEL_FONT_SIZE = 11;
 
+/**
+ * Main bottom tab navigator
+ * Why: To provide easy access to the core features of the application.
+ */
 const TabNavigator = () => {
   const insets = useSafeAreaInsets();
   const tabBarPaddingBottom = Math.max(insets.bottom, 10);
@@ -72,7 +76,7 @@ const TabNavigator = () => {
       }}
     >
       <Tab.Screen
-        name="Home"
+        name={ETabRoutes.HOME}
         component={DashboardScreen}
         options={{
           tabBarIcon: ({ color, focused }) => (
@@ -89,7 +93,7 @@ const TabNavigator = () => {
       {user?.familyId ? (
         <>
           <Tab.Screen
-            name="List"
+            name={ETabRoutes.LIST}
             component={HomeScreen}
             options={{
               tabBarIcon: ({ color, focused }) => (
@@ -107,7 +111,7 @@ const TabNavigator = () => {
             }}
           />
           <Tab.Screen
-            name="Members"
+            name={ETabRoutes.MEMBERS}
             component={MembersScreen}
             options={{
               tabBarIcon: ({ color, focused }) => (
@@ -121,7 +125,7 @@ const TabNavigator = () => {
             }}
           />
           <Tab.Screen
-            name="Analyze"
+            name={ETabRoutes.ANALYZE}
             component={AnalyzeScreen}
             options={{
               tabBarIcon: ({ color, focused }) => (
@@ -142,7 +146,7 @@ const TabNavigator = () => {
       ) : null}
 
       <Tab.Screen
-        name="Profile"
+        name={ETabRoutes.PROFILE}
         component={ProfileScreen}
         options={{
           tabBarIcon: ({ color, focused }) => (

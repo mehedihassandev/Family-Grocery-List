@@ -10,17 +10,23 @@ import {
   serverTimestamp,
 } from "firebase/firestore";
 import { db } from "./firebaseConfig";
-import { GroceryItem, Priority } from "../types";
+import { IGroceryItem } from "../types";
 import { createNotification } from "./notification";
 
+/**
+ * Adds a new grocery item to the family list
+ * @param familyId - The ID of the family
+ * @param item - The partial item data
+ * @param user - The user adding the item
+ */
 export const addGroceryItem = async (
   familyId: string,
-  item: Partial<GroceryItem>,
+  item: Partial<IGroceryItem>,
   user: { uid: string; name: string },
 ) => {
   try {
     const itemRef = doc(collection(db, "grocery_items"));
-    const newItem: GroceryItem = {
+    const newItem: IGroceryItem = {
       id: itemRef.id,
       familyId,
       name: item.name || "",
@@ -52,7 +58,12 @@ export const addGroceryItem = async (
   }
 };
 
-export const updateGroceryItem = async (itemId: string, updates: Partial<GroceryItem>) => {
+/**
+ * Updates an existing grocery item
+ * @param itemId - The ID of the item to update
+ * @param updates - The partial updates to apply
+ */
+export const updateGroceryItem = async (itemId: string, updates: Partial<IGroceryItem>) => {
   try {
     const itemRef = doc(db, "grocery_items", itemId);
     await updateDoc(itemRef, {
@@ -65,6 +76,11 @@ export const updateGroceryItem = async (itemId: string, updates: Partial<Grocery
   }
 };
 
+/**
+ * Toggles the completion status of a grocery item
+ * @param item - The item to toggle
+ * @param user - The user toggling the status
+ */
 export const toggleItemCompletion = async (
   item: { id: string; name: string; status: "pending" | "completed"; familyId: string },
   user: { uid: string; name: string },
@@ -95,6 +111,10 @@ export const toggleItemCompletion = async (
   }
 };
 
+/**
+ * Deletes a grocery item from the list
+ * @param itemId - The ID of the item to delete
+ */
 export const deleteGroceryItem = async (itemId: string) => {
   try {
     const itemRef = doc(db, "grocery_items", itemId);
@@ -105,9 +125,15 @@ export const deleteGroceryItem = async (itemId: string) => {
   }
 };
 
+/**
+ * Subscribes to real-time updates for the family grocery list
+ * @param familyId - The ID of the family
+ * @param callback - Function to call with the updated list
+ * @param onError - Optional error handler
+ */
 export const subscribeToGroceryList = (
   familyId: string,
-  callback: (items: GroceryItem[]) => void,
+  callback: (items: IGroceryItem[]) => void,
   onError?: (error: Error) => void,
 ) => {
   const itemsRef = collection(db, "grocery_items");
@@ -116,7 +142,7 @@ export const subscribeToGroceryList = (
   return onSnapshot(
     q,
     (snapshot) => {
-      const items = snapshot.docs.map((doc) => doc.data() as GroceryItem);
+      const items = snapshot.docs.map((doc) => doc.data() as IGroceryItem);
       callback(items);
     },
     (error) => {

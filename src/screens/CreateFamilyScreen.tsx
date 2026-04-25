@@ -14,6 +14,10 @@ import { createFamilySchema, type CreateFamilyFormValues } from "../utils/valida
 
 const FAMILY_ACTION_TIMEOUT_MS = 15000;
 
+/**
+ * Maps family operation errors to user-friendly messages
+ * @param error - The error object
+ */
 const getFamilyErrorMessage = (error: unknown) => {
   if (error instanceof FirebaseError) {
     switch (error.code) {
@@ -31,6 +35,11 @@ const getFamilyErrorMessage = (error: unknown) => {
   return "Unexpected error. Try again.";
 };
 
+/**
+ * Wraps a family action promise with a timeout
+ * @param operation - The promise to wrap
+ * @param timeoutMessage - Message to display on timeout
+ */
 async function withFamilyActionTimeout<T>(
   operation: Promise<T>,
   timeoutMessage: string,
@@ -76,6 +85,10 @@ const CreateFamilyScreen = () => {
     defaultValues: { name: "" },
   });
 
+  /**
+   * Handles the creation of a new family
+   * @param values - Validated form values containing the family name
+   */
   const handleCreate = async (values: CreateFamilyFormValues) => {
     setLoading(true);
     try {
@@ -105,6 +118,9 @@ const CreateFamilyScreen = () => {
     }
   };
 
+  /**
+   * Handles closing the status modal and navigating back on success
+   */
   const handleModalClose = () => {
     const isSuccess = statusModal.type === "success";
     setStatusModal(prev => ({ ...prev, visible: false }));

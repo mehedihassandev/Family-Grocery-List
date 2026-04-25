@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { View, Text, TouchableOpacity } from "react-native";
+import { View, Text } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useNavigation } from "@react-navigation/native";
 import { Users, ArrowRight } from "lucide-react-native";
@@ -14,6 +14,10 @@ import { joinFamilySchema, type JoinFamilyFormValues } from "../utils/validation
 
 const FAMILY_ACTION_TIMEOUT_MS = 15000;
 
+/**
+ * Maps family operation errors to user-friendly messages
+ * @param error - The error object
+ */
 const getFamilyErrorMessage = (error: unknown) => {
   if (error instanceof FirebaseError) {
     switch (error.code) {
@@ -31,6 +35,11 @@ const getFamilyErrorMessage = (error: unknown) => {
   return "Unexpected error. Try again.";
 };
 
+/**
+ * Wraps a family action promise with a timeout
+ * @param operation - The promise to wrap
+ * @param timeoutMessage - Message to display on timeout
+ */
 async function withFamilyActionTimeout<T>(
   operation: Promise<T>,
   timeoutMessage: string,
@@ -76,6 +85,10 @@ const JoinFamilyScreen = () => {
     defaultValues: { code: "" },
   });
 
+  /**
+   * Handles joining an existing family via invite code
+   * @param values - Validated form values containing the invite code
+   */
   const handleJoin = async (values: JoinFamilyFormValues) => {
     setLoading(true);
     try {
@@ -111,6 +124,9 @@ const JoinFamilyScreen = () => {
     }
   };
 
+  /**
+   * Handles closing the status modal and navigating back on success
+   */
   const handleModalClose = () => {
     const isSuccess = statusModal.type === "success";
     setStatusModal(prev => ({ ...prev, visible: false }));

@@ -6,16 +6,21 @@ import {
   Path,
   UseControllerProps,
 } from "react-hook-form";
-import InputField, { InputFieldProps } from "./InputField";
+import InputField, { IInputFieldProps } from "./InputField";
 
-export interface RhfTextfieldProps<T extends FieldValues>
-  extends Omit<InputFieldProps, "value"> {
+export interface IRhfTextfieldProps<T extends FieldValues>
+  extends Omit<IInputFieldProps, "value"> {
   name: Path<T>;
   control: Control<T>;
   rules?: UseControllerProps<T, Path<T>>["rules"];
   transform?: (text: string) => string;
 }
 
+/**
+ * React Hook Form wrapper for InputField
+ * Why: To provide a declarative way to bind form state to our custom input components.
+ * @param props - Component props including form control, name, and optional transformation rules
+ */
 export function RhfTextfield<T extends FieldValues>({
   name,
   control,
@@ -23,7 +28,7 @@ export function RhfTextfield<T extends FieldValues>({
   transform,
   onChangeText,
   ...inputProps
-}: RhfTextfieldProps<T>) {
+}: IRhfTextfieldProps<T>) {
   const {
     field: { value, onChange, onBlur },
     fieldState: { error },

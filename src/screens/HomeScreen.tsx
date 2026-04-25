@@ -17,7 +17,6 @@ import {
   Plus,
   RefreshCw,
   Search,
-  Users,
   ShoppingBasket,
   SlidersHorizontal,
   ChevronDown,
@@ -25,26 +24,26 @@ import {
 } from "lucide-react-native";
 import { useAuthStore } from "../store/useAuthStore";
 import { subscribeToGroceryList, toggleItemCompletion } from "../services/grocery";
-import { Family, GroceryItem } from "../types";
+import { IFamily, IGroceryItem } from "../types";
 import ItemCard from "../components/ItemCard";
 import AddItemModal from "../components/AddItemModal";
 import EditItemModal from "../components/EditItemModal";
 import EmptyState from "../components/EmptyState";
 import { GROCERY_CATEGORIES, sortLegacyGroceryItemsForHome } from "../features/grocery";
 import { getFamilyDetails, subscribeToFamilyMembers } from "../services/family";
-import { AppHeader, Card, Chip } from "../components/ui";
+import { AppHeader, Chip } from "../components/ui";
 import ItemDetailModal from "../components/ItemDetailModal";
 import NotificationModal from "../components/NotificationModal";
 
-type StatusFilter = "all" | "pending" | "completed";
+type TStatusFilter = "all" | "pending" | "completed";
 
-type GrocerySection = {
+interface IGrocerySection {
   key: string;
   title: string;
-  data: GroceryItem[];
-};
+  data: IGroceryItem[];
+}
 
-const STATUS_FILTERS: Array<{ key: StatusFilter; label: string }> = [
+const STATUS_FILTERS: Array<{ key: TStatusFilter; label: string }> = [
   { key: "all", label: "All" },
   { key: "pending", label: "Pending" },
   { key: "completed", label: "Completed" },
@@ -53,6 +52,11 @@ const STATUS_FILTERS: Array<{ key: StatusFilter; label: string }> = [
 const ALL_CATEGORY = "All";
 const SEARCH_PLACEHOLDER = "Search items, categories, notes";
 const PERMISSION_ERROR_LABEL = "Missing Firestore permission for this query.";
+
+/**
+ * Maps Firebase error messages to user-friendly strings
+ * @param error - The error object from Firestore
+ */
 const getFirebaseErrorMessage = (error: Error) => {
   const message = error.message || "";
   if (message.includes("permission-denied")) {
@@ -71,10 +75,10 @@ const getFirebaseErrorMessage = (error: Error) => {
 const HomeScreen = () => {
   const { user } = useAuthStore();
   const insets = useSafeAreaInsets();
-  const [items, setItems] = useState<GroceryItem[]>([]);
+  const [items, setItems] = useState<IGroceryItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [isModalVisible, setModalVisible] = useState(false);
-  const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
+  const [statusFilter, setStatusFilter] = useState<TStatusFilter>("all");
   const [activeCategory, setActiveCategory] = useState<string>(ALL_CATEGORY);
   const [searchQuery, setSearchQuery] = useState("");
   const [familyName, setFamilyName] = useState("Our Family");
@@ -129,7 +133,7 @@ const HomeScreen = () => {
     void getFamilyDetails(user.familyId)
       .then((family) => {
         if (!isMounted) return;
-        const name = (family as Family | undefined)?.name?.trim();
+        const name = (family as IFamily | undefined)?.name?.trim();
         setFamilyName(name || "Our Family");
       })
       .catch(() => {
@@ -205,13 +209,13 @@ const HomeScreen = () => {
     });
   }, [sortedItems, statusFilter, activeCategory, searchQuery]);
 
-  const sections = useMemo<GrocerySection[]>(() => {
+  const sections = useMemo<IGrocerySection[]>(() => {
     const pending = filteredItems.filter((item) => item.status === "pending");
     const completed = filteredItems.filter((item) => item.status === "completed");
-    const output: GrocerySection[] = [];
+    const output: IGrocerySection[] = [];
 
     if (statusFilter !== "completed" && pending.length > 0) {
-      const grouped = pending.reduce<Record<string, GroceryItem[]>>((acc, item) => {
+      const grouped = pending.reduce<Record<string, IGroceryItem[]>>((acc, item) => {
         const cat = item.category || "Uncategorized";
         if (!acc[cat]) acc[cat] = [];
         acc[cat].push(item);
@@ -244,7 +248,11 @@ const HomeScreen = () => {
     return output;
   }, [filteredItems, statusFilter, showCompleted]);
 
-  const handleToggle = async (item: GroceryItem) => {
+  /**
+   * Toggles the completion status of a grocery item
+   * @param item - The grocery item to toggle
+   */
+  const handleToggle = async (item: IGroceryItem) => {
     if (!user) return;
     await toggleItemCompletion(item, {
       uid: user.uid,
@@ -263,6 +271,9 @@ const HomeScreen = () => {
     return [ALL_CATEGORY, ...merged];
   }, [sortedItems]);
 
+  /**
+   * Manually refreshes the list data
+   */
   const handleRefresh = () => {
     setRefreshing(true);
     setRefreshSeed((prev) => prev + 1);

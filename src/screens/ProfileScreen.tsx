@@ -15,15 +15,20 @@ import {
   Shield,
   HelpCircle,
   ChevronRight,
-  User as UserIcon,
   Edit3,
   Users,
 } from "lucide-react-native";
 import { useAuthStore } from "../store/useAuthStore";
 import { signOut } from "../services/auth";
 import { leaveFamily } from "../services/family";
-import { AppHeader, Card, Chip } from "../components/ui";
+import { AppHeader, Card } from "../components/ui";
+import { ERootRoutes, ETabRoutes } from "../navigation/routes";
 
+/**
+ * Maps family-related operation errors to user-friendly messages
+ * @param error - The error object
+ * @param fallback - The default message if error is unknown
+ */
 const getFamilyActionErrorMessage = (error: unknown, fallback: string) => {
   const rawMessage = error instanceof Error ? error.message : "";
   const normalized = rawMessage.toLowerCase();
@@ -35,6 +40,10 @@ const getFamilyActionErrorMessage = (error: unknown, fallback: string) => {
   return rawMessage.trim() || fallback;
 };
 
+/**
+ * Extracts initials from a user's display name
+ * @param name - The full name
+ */
 const getInitials = (name?: string | null) => {
   if (!name) return "U";
   const parts = name.trim().split(" ");
@@ -53,6 +62,9 @@ const ProfileScreen = ({ navigation }: any) => {
   const { user, setUser } = useAuthStore();
   const [leavingFamily, setLeavingFamily] = useState(false);
 
+  /**
+   * Handles leaving the family group with confirmation alerts
+   */
   const handleLeaveFamily = () => {
     if (!user?.uid || !user.familyId || leavingFamily) return;
 
@@ -75,7 +87,7 @@ const ProfileScreen = ({ navigation }: any) => {
               role: user.role,
             });
             setUser({ ...user, familyId: null, role: "member" });
-            navigation.navigate("Dashboard");
+            navigation.navigate(ETabRoutes.HOME);
           } catch (error) {
             const message = getFamilyActionErrorMessage(error, "Could not leave family.");
             Alert.alert("Leave Failed", message);
@@ -174,7 +186,7 @@ const ProfileScreen = ({ navigation }: any) => {
               </View>
               <TouchableOpacity
                 activeOpacity={0.7}
-                onPress={() => navigation.navigate("EditProfile")}
+                onPress={() => navigation.navigate(ERootRoutes.EDIT_PROFILE)}
                 className="h-10 w-10 items-center justify-center rounded-full bg-white border border-border"
               >
                 <Edit3 stroke="#4A5568" size={18} strokeWidth={2.5} />
@@ -188,12 +200,12 @@ const ProfileScreen = ({ navigation }: any) => {
             <MenuItem
               icon={Shield}
               title="Privacy & Security"
-              onPress={() => navigation.navigate("PrivacySecurity")}
+              onPress={() => navigation.navigate(ERootRoutes.PRIVACY_SECURITY)}
             />
             <MenuItem
               icon={HelpCircle}
               title="Help & Support"
-              onPress={() => navigation.navigate("HelpSupport")}
+              onPress={() => navigation.navigate(ERootRoutes.HELP_SUPPORT)}
             />
           </Card>
 

@@ -1,18 +1,22 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
-import { User } from "../types";
+import { IUser } from "../types";
 
-interface AuthState {
-  user: User | null;
+interface IAuthState {
+  user: IUser | null;
   loading: boolean;
   hasHydrated: boolean;
-  setUser: (user: User | null) => void;
+  setUser: (user: IUser | null) => void;
   setLoading: (loading: boolean) => void;
   setHasHydrated: (hasHydrated: boolean) => void;
 }
 
-export const useAuthStore = create<AuthState>()(
+/**
+ * Authentication state store
+ * Why: To manage user session and hydration state across the app.
+ */
+export const useAuthStore = create<IAuthState>()(
   persist(
     (set) => ({
       user: null,

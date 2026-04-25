@@ -3,6 +3,7 @@ import type {
   NativeStackScreenProps,
 } from "@react-navigation/native-stack";
 import type { BottomTabNavigationProp, BottomTabScreenProps } from "@react-navigation/bottom-tabs";
+import { ERootRoutes, ETabRoutes } from "../navigation/routes";
 
 export type Priority = "Urgent" | "Medium" | "Low";
 
@@ -19,7 +20,7 @@ export type Category =
   | "Medicine"
   | "Other";
 
-export interface User {
+export interface IUser {
   uid: string;
   email: string;
   displayName: string;
@@ -28,7 +29,7 @@ export interface User {
   role: "owner" | "member";
 }
 
-export interface Family {
+export interface IFamily {
   id: string;
   name: string;
   inviteCode: string;
@@ -36,7 +37,7 @@ export interface Family {
   createdAt: any;
 }
 
-export interface GroceryItem {
+export interface IGroceryItem {
   id: string;
   familyId: string;
   name: string;
@@ -71,32 +72,32 @@ export type NotificationType = "item_added" | "item_completed" | "urgent_item";
 /** Root (modal) stack — unauthenticated + authenticated screens */
 export type RootStackParamList = {
   /** Splash/loading gate while auth state resolves */
-  Loading: undefined;
+  [ERootRoutes.LOADING]: undefined;
   /** Email / Google sign-in & sign-up */
-  Login: undefined;
+  [ERootRoutes.LOGIN]: undefined;
   /** Authenticated shell — hosts the bottom tab navigator */
-  Main: undefined;
+  [ERootRoutes.MAIN]: undefined;
   /** Prompt user to create or join a family after first login */
-  FamilySetup: undefined;
+  [ERootRoutes.FAMILY_SETUP]: undefined;
   /** Dedicated screen to create a new family group */
-  CreateFamily: undefined;
+  [ERootRoutes.CREATE_FAMILY]: undefined;
   /** Dedicated screen to join via invite code */
-  JoinFamily: undefined;
+  [ERootRoutes.JOIN_FAMILY]: undefined;
   /** Edit user display name / avatar */
-  EditProfile: undefined;
+  [ERootRoutes.EDIT_PROFILE]: undefined;
   /** Privacy & security settings */
-  PrivacySecurity: undefined;
+  [ERootRoutes.PRIVACY_SECURITY]: undefined;
   /** Help & support FAQ */
-  HelpSupport: undefined;
+  [ERootRoutes.HELP_SUPPORT]: undefined;
 };
 
 /** Bottom tab navigator — each tab maps to its own screen */
 export type TabParamList = {
-  Home: undefined;
-  List: undefined;
-  Members: undefined;
-  Analyze: undefined;
-  Profile: undefined;
+  [ETabRoutes.HOME]: undefined;
+  [ETabRoutes.LIST]: undefined;
+  [ETabRoutes.MEMBERS]: undefined;
+  [ETabRoutes.ANALYZE]: undefined;
+  [ETabRoutes.PROFILE]: undefined;
 };
 
 // Convenience prop types — import these in screen components instead of
@@ -113,7 +114,7 @@ export type RootStackScreenProps<T extends keyof RootStackParamList> = NativeSta
 /** Screen-level props for a given tab route name */
 export type TabScreenProps<T extends keyof TabParamList> = BottomTabScreenProps<TabParamList, T>;
 
-export interface AppNotification {
+export interface IAppNotification {
   id: string;
   familyId: string;
   type: NotificationType;

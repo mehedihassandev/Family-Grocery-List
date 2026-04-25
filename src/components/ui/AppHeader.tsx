@@ -4,7 +4,7 @@ import { Bell, ArrowLeft } from "lucide-react-native";
 import { useAuthStore } from "../../store/useAuthStore";
 import { useNotificationStore } from "../../store/useNotificationStore";
 
-type AppHeaderProps = {
+interface IAppHeaderProps {
   eyebrow?: string;
   title: string;
   subtitle?: string;
@@ -13,12 +13,13 @@ type AppHeaderProps = {
   onNotificationPress?: () => void;
   showBackButton?: boolean;
   onBackPress?: () => void;
-};
+}
 
 /**
  * Main application header component
  * Why: To provide consistent navigation and branding across all screens.
  * Features: Title, optional eyebrow/subtitle, back button, and notification bell.
+ * @param props - Component props including title, eyebrow, and interaction handlers
  */
 const AppHeader = ({
   eyebrow,
@@ -29,7 +30,7 @@ const AppHeader = ({
   onNotificationPress,
   showBackButton = false,
   onBackPress,
-}: AppHeaderProps) => {
+}: IAppHeaderProps) => {
   const { user } = useAuthStore();
   const notifications = useNotificationStore((state) => state.notifications);
 

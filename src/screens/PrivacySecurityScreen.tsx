@@ -4,7 +4,15 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Shield, ExternalLink } from "lucide-react-native";
 import { SubHeader, Card } from "../components/ui";
 
-const BulletList = ({ items }: { items: string[] }) => {
+interface IBulletListProps {
+  items: string[];
+}
+
+/**
+ * Renders a list of items with bullet points
+ * @param props - Component props containing the array of strings to display
+ */
+const BulletList = ({ items }: IBulletListProps) => {
   return (
     <View className="gap-3">
       {items.map((item) => (
@@ -19,7 +27,15 @@ const BulletList = ({ items }: { items: string[] }) => {
   );
 };
 
+/**
+ * Screen displaying privacy policy and security information
+ * Why: To provide transparency to users about how their data is handled and secured within the Firebase ecosystem.
+ */
 const PrivacySecurityScreen = () => {
+  /**
+   * Opens an external URL in the default browser
+   * @param url - The URL to open
+   */
   const openUrl = async (url: string) => {
     const canOpen = await Linking.canOpenURL(url);
     if (canOpen) {

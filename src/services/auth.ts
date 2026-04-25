@@ -17,25 +17,25 @@ import {
 import { doc, getDoc, setDoc, updateDoc, onSnapshot } from "firebase/firestore";
 import { auth, db } from "./firebaseConfig";
 import { useAuthStore } from "../store/useAuthStore";
-import { User } from "../types";
+import { IUser } from "../types";
 
 WebBrowser.maybeCompleteAuthSession();
 
-type GoogleTokens = {
+interface IGoogleTokens {
   accessToken?: string | null;
   idToken?: string | null;
-};
+}
 
-type EmailSignInInput = {
+interface IEmailSignInInput {
   email: string;
   password: string;
-};
+}
 
-type EmailSignUpInput = {
+interface IEmailSignUpInput {
   email: string;
   password: string;
   displayName?: string;
-};
+}
 
 const googleScopes = ["openid", "profile", "email"];
 
@@ -46,9 +46,9 @@ const googleClientIds = {
 };
 const firebaseProjectNumber = process.env.EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID;
 
-type GoogleClientIdKey = keyof typeof googleClientIds;
+type TGoogleClientIdKey = keyof typeof googleClientIds;
 
-const googleClientEnvVarMap: Record<GoogleClientIdKey, string> = {
+const googleClientEnvVarMap: Record<TGoogleClientIdKey, string> = {
   androidClientId: "EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID",
   iosClientId: "EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID",
   webClientId: "EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID",
@@ -61,13 +61,19 @@ const FIRESTORE_PROFILE_READ_TIMEOUT_MESSAGE =
 const FIRESTORE_PROFILE_CREATE_TIMEOUT_MESSAGE =
   "Timed out while creating your profile in Firestore.";
 
-type FirebaseProfileUser = {
+interface IFirebaseProfileUser {
   uid: string;
   email: string | null;
   displayName: string | null;
   photoURL: string | null;
-};
+}
 
+/**
+ * Wraps a promise with a timeout
+ * @param operation - The promise to wrap
+ * @param timeoutMs - Timeout in milliseconds
+ * @param timeoutMessage - Message to display on timeout
+ */
 const withTimeout = async <T>(
   operation: Promise<T>,
   timeoutMs: number,
@@ -91,10 +97,15 @@ const withTimeout = async <T>(
   }
 };
 
+/**
+ * Maps a Firebase user object to our internal IUser interface
+ * @param firebaseUser - The Firebase user object
+ * @param overrides - Optional overrides for the mapped user
+ */
 const mapFirebaseUserToAppUser = (
-  firebaseUser: FirebaseProfileUser,
-  overrides?: Partial<User>,
-): User => ({
+  firebaseUser: IFirebaseProfileUser,
+  overrides?: Partial<IUser>,
+): IUser => ({
   uid: firebaseUser.uid,
   email: overrides?.email ?? firebaseUser.email ?? "",
   displayName: overrides?.displayName ?? firebaseUser.displayName ?? "Anonymous",
@@ -103,15 +114,27 @@ const mapFirebaseUserToAppUser = (
   role: overrides?.role === "owner" ? "owner" : "member",
 });
 
+/**
+ * Checks if an error is a Firestore profile timeout
+ * @param error - The error to check
+ */
 const isFirestoreProfileTimeoutError = (error: unknown) =>
   error instanceof Error &&
   (error.message === FIRESTORE_PROFILE_READ_TIMEOUT_MESSAGE ||
     error.message === FIRESTORE_PROFILE_CREATE_TIMEOUT_MESSAGE);
 
+/**
+ * Normalizes an email address for consistent storage/comparison
+ * @param email - The email to normalize
+ */
 const normalizeEmail = (email: string) => email.trim().toLowerCase();
+
 let activeSignOut: Promise<void> | null = null;
 let nativeGoogleSignInConfigured = false;
 
+/**
+ * Configures the native Google Sign-In SDK
+ */
 const configureNativeGoogleSignIn = () => {
   if (Platform.OS === "web" || nativeGoogleSignInConfigured) {
     return;
@@ -126,6 +149,9 @@ const configureNativeGoogleSignIn = () => {
   nativeGoogleSignInConfigured = true;
 };
 
+/**
+ * Clears persisted authentication session from local storage
+ */
 const clearPersistedAuthSession = async () => {
   try {
     await AsyncStorage.removeItem(AUTH_STORE_KEY);
@@ -136,6 +162,9 @@ const clearPersistedAuthSession = async () => {
   }
 };
 
+/**
+ * Gets the appropriate Google Client ID for the current platform
+ */
 const getGoogleClientIdForPlatform = () => {
   if (Platform.OS === "ios") {
     return googleClientIds.iosClientId;
@@ -148,11 +177,18 @@ const getGoogleClientIdForPlatform = () => {
   return googleClientIds.webClientId;
 };
 
+/**
+ * Encodes a key-value object into a URL-encoded form body
+ * @param payload - The data to encode
+ */
 const encodeFormBody = (payload: Record<string, string>) =>
   Object.entries(payload)
     .map(([key, value]) => `${encodeURIComponent(key)}=${encodeURIComponent(value)}`)
     .join("&");
 
+/**
+ * Returns redirection URI options for Google Auth Session
+ */
 const getGoogleRedirectUriOptions = () => {
   if (Platform.OS !== "ios" || !googleClientIds.iosClientId) {
     return {};
@@ -170,15 +206,18 @@ const getGoogleRedirectUriOptions = () => {
   };
 };
 
-type GoogleConfigStatus = {
+interface IGoogleConfigStatus {
   isConfigured: boolean;
   missingEnvVars: string[];
   invalidFormatEnvVars: string[];
   mismatchedProjectEnvVars: string[];
   duplicateClientEnvVars: string[];
-};
+}
 
-const getRequiredGoogleClientIdKeysForPlatform = (): GoogleClientIdKey[] => {
+/**
+ * Returns which Google Client ID keys are required for the current platform
+ */
+const getRequiredGoogleClientIdKeysForPlatform = (): TGoogleClientIdKey[] => {
   if (Platform.OS === "android") {
     return ["webClientId", "androidClientId"];
   }
@@ -190,12 +229,19 @@ const getRequiredGoogleClientIdKeysForPlatform = (): GoogleClientIdKey[] => {
   return ["webClientId"];
 };
 
+/**
+ * Extracts the project number from a Google Client ID string
+ * @param clientId - The client ID to parse
+ */
 const getProjectNumberFromGoogleClientId = (clientId: string) => {
   const match = clientId.trim().match(/^(\d+)-[A-Za-z0-9_-]+\.apps\.googleusercontent\.com$/);
   return match?.[1] ?? null;
 };
 
-export const getGoogleSignInConfigurationStatus = (): GoogleConfigStatus => {
+/**
+ * Validates the Google Sign-In environment configuration
+ */
+export const getGoogleSignInConfigurationStatus = (): IGoogleConfigStatus => {
   const missingEnvVars: string[] = [];
   const invalidFormatEnvVars: string[] = [];
   const mismatchedProjectEnvVars: string[] = [];
@@ -261,8 +307,14 @@ export const getGoogleSignInConfigurationStatus = (): GoogleConfigStatus => {
   };
 };
 
+/**
+ * Returns true if Google Sign-In is properly configured
+ */
 export const hasGoogleSignInConfiguration = () => getGoogleSignInConfigurationStatus().isConfigured;
 
+/**
+ * Returns a detailed message about Google Sign-In configuration issues
+ */
 export const getGoogleSignInSetupMessage = () => {
   const {
     missingEnvVars,
@@ -304,6 +356,9 @@ export const getGoogleSignInSetupMessage = () => {
   return `Fix Google Sign-In configuration:\n\n${issues.join("\n\n")}`;
 };
 
+/**
+ * Creates a placeholder request for when Google Auth is unavailable
+ */
 const createUnavailableGoogleAuthRequest = () =>
   [
     null,
@@ -316,6 +371,9 @@ const createUnavailableGoogleAuthRequest = () =>
 
 const fallbackGoogleClientId = "000000000000-placeholder.apps.googleusercontent.com";
 
+/**
+ * Hook to manage Google ID Token authentication request
+ */
 export const useGoogleAuthRequest = () => {
   const [request, response, promptAsync] = Google.useIdTokenAuthRequest(
     {
@@ -336,7 +394,11 @@ export const useGoogleAuthRequest = () => {
   return [request, response, promptAsync] as const;
 };
 
-const upsertUserProfile = async (firebaseUser: FirebaseProfileUser) => {
+/**
+ * Updates or inserts a user's profile in Firestore
+ * @param firebaseUser - The user object from Firebase Auth
+ */
+const upsertUserProfile = async (firebaseUser: IFirebaseProfileUser) => {
   const fallbackUser = mapFirebaseUserToAppUser(firebaseUser);
 
   try {
@@ -356,7 +418,7 @@ const upsertUserProfile = async (firebaseUser: FirebaseProfileUser) => {
       return fallbackUser;
     }
 
-    return mapFirebaseUserToAppUser(firebaseUser, userDoc.data() as Partial<User>);
+    return mapFirebaseUserToAppUser(firebaseUser, userDoc.data() as Partial<IUser>);
   } catch (error) {
     if (isFirestoreProfileTimeoutError(error)) {
       return fallbackUser;
@@ -366,7 +428,11 @@ const upsertUserProfile = async (firebaseUser: FirebaseProfileUser) => {
   }
 };
 
-export const signInWithGoogleTokens = async ({ accessToken, idToken }: GoogleTokens) => {
+/**
+ * Signs in to Firebase with Google OAuth tokens
+ * @param tokens - Object containing accessToken and/or idToken
+ */
+export const signInWithGoogleTokens = async ({ accessToken, idToken }: IGoogleTokens) => {
   const googleCredential = GoogleAuthProvider.credential(idToken ?? null, accessToken ?? null);
 
   const userCredential = await withTimeout(
@@ -378,6 +444,9 @@ export const signInWithGoogleTokens = async ({ accessToken, idToken }: GoogleTok
   return mapFirebaseUserToAppUser(userCredential.user);
 };
 
+/**
+ * Performs a native Google Sign-In (Android/iOS)
+ */
 export const signInWithGoogle = async () => {
   if (Platform.OS === "web") {
     throw new Error("Google Sign-In is configured for native Android/iOS builds.");
@@ -423,7 +492,11 @@ export const signInWithGoogle = async () => {
   return signInWithGoogleTokens({ accessToken, idToken });
 };
 
-export const signInWithEmailCredentials = async ({ email, password }: EmailSignInInput) => {
+/**
+ * Signs in using email and password
+ * @param credentials - Email and password
+ */
+export const signInWithEmailCredentials = async ({ email, password }: IEmailSignInInput) => {
   const userCredential = await withTimeout(
     firebaseSignInWithEmailAndPassword(auth, normalizeEmail(email), password),
     AUTH_OPERATION_TIMEOUT_MS,
@@ -433,11 +506,15 @@ export const signInWithEmailCredentials = async ({ email, password }: EmailSignI
   return mapFirebaseUserToAppUser(userCredential.user);
 };
 
+/**
+ * Registers a new user with email and password
+ * @param credentials - Registration data including email, password, and name
+ */
 export const signUpWithEmailCredentials = async ({
   email,
   password,
   displayName,
-}: EmailSignUpInput) => {
+}: IEmailSignUpInput) => {
   const trimmedDisplayName = displayName?.trim() ?? "";
 
   const userCredential = await withTimeout(
@@ -461,7 +538,11 @@ export const signUpWithEmailCredentials = async ({
   });
 };
 
-export const getGoogleTokensFromResponse = (response: AuthSessionResult | null): GoogleTokens => {
+/**
+ * Extracts Google OAuth tokens from an Expo Auth Session result
+ * @param response - The result from the Google auth request
+ */
+export const getGoogleTokensFromResponse = (response: AuthSessionResult | null): IGoogleTokens => {
   if (response?.type !== "success") {
     return {};
   }
@@ -478,6 +559,10 @@ export const getGoogleTokensFromResponse = (response: AuthSessionResult | null):
   };
 };
 
+/**
+ * Extracts a Google authorization code from an Expo Auth Session result
+ * @param response - The result from the Google auth request
+ */
 export const getGoogleCodeFromResponse = (response: AuthSessionResult | null) => {
   if (response?.type !== "success") {
     return null;
@@ -487,6 +572,10 @@ export const getGoogleCodeFromResponse = (response: AuthSessionResult | null) =>
   return typeof params?.code === "string" ? params.code : null;
 };
 
+/**
+ * Exchanges a Google authorization code for access and ID tokens
+ * @param options - Code, redirect URI, and PKCE verifier
+ */
 export const exchangeGoogleCodeForTokens = async ({
   code,
   redirectUri,
@@ -495,7 +584,7 @@ export const exchangeGoogleCodeForTokens = async ({
   code: string;
   redirectUri?: string;
   codeVerifier?: string;
-}): Promise<GoogleTokens> => {
+}): Promise<IGoogleTokens> => {
   const clientId = getGoogleClientIdForPlatform();
 
   if (!clientId) {
@@ -552,6 +641,10 @@ export const exchangeGoogleCodeForTokens = async ({
   };
 };
 
+/**
+ * Returns a user-friendly error message for Google Sign-In failures
+ * @param error - The error object to map
+ */
 export const getGoogleSignInErrorMessage = (error: unknown) => {
   if (typeof error === "object" && error !== null && "code" in error) {
     const code = String(error.code);
@@ -578,10 +671,18 @@ export const getGoogleSignInErrorMessage = (error: unknown) => {
   return "Unable to continue with Google Sign-In right now.";
 };
 
+/**
+ * Type guard for FirebaseError
+ * @param error - The error to check
+ */
 const isFirebaseAuthError = (error: unknown): error is FirebaseError =>
   error instanceof FirebaseError ||
   (typeof error === "object" && error !== null && "code" in error);
 
+/**
+ * Returns a user-friendly error message for email authentication failures
+ * @param error - The error object to map
+ */
 export const getEmailAuthErrorMessage = (error: unknown) => {
   if (isFirebaseAuthError(error)) {
     switch (error.code) {
@@ -615,6 +716,9 @@ export const getEmailAuthErrorMessage = (error: unknown) => {
   return "Unable to continue with email authentication.";
 };
 
+/**
+ * Signs the user out of Firebase and clears local session state
+ */
 export const signOut = async () => {
   if (activeSignOut) {
     await activeSignOut;
@@ -647,6 +751,10 @@ export const signOut = async () => {
   }
 };
 
+/**
+ * Listens to authentication state changes and synchronizes Firestore profile
+ * Why: To ensure the application state is always in sync with both Auth and user profile data.
+ */
 export const listenToAuthChanges = () => {
   const { setUser, setLoading } = useAuthStore.getState();
   let authEventVersion = 0;
@@ -677,7 +785,7 @@ export const listenToAuthChanges = () => {
             }
 
             if (snapshot.exists()) {
-              const userData = snapshot.data() as Partial<User>;
+              const userData = snapshot.data() as Partial<IUser>;
               setUser(mapFirebaseUserToAppUser(firebaseUser, userData));
             } else {
               // Document doesn't exist yet, try to create it (fallback logic)

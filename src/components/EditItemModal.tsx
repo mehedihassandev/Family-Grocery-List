@@ -9,33 +9,34 @@ import {
   View,
 } from "react-native";
 import { X, Check, Trash2 } from "lucide-react-native";
-import { Category, GroceryItem, Priority } from "../types";
+import { Category, IGroceryItem, Priority } from "../types";
 import { deleteGroceryItem, updateGroceryItem } from "../services/grocery";
-import { addCustomCategory, CustomCategory, subscribeToCategories } from "../services/categories";
+import { addCustomCategory, ICustomCategory, subscribeToCategories } from "../services/categories";
 import { GROCERY_CATEGORIES } from "../features/grocery";
 import { InputField, PrimaryButton, Chip, LoadingOverlay, StatusModal } from "./ui";
 
 const CATEGORIES: Category[] = [...GROCERY_CATEGORIES];
 const PRIORITIES: Priority[] = ["Low", "Medium", "Urgent"];
 
-interface EditItemModalProps {
+interface IEditItemModalProps {
   visible: boolean;
   onClose: () => void;
-  item: GroceryItem | null;
+  item: IGroceryItem | null;
   familyId: string;
 }
 
 /**
  * Premium Edit Item Modal
  * Why: To provide a high-fidelity experience for updating groceries with elegant feedback and safety confirmations.
+ * @param props - Component props including visibility, item data, and family context
  */
-const EditItemModal = ({ visible, onClose, item, familyId }: EditItemModalProps) => {
+const EditItemModal = ({ visible, onClose, item, familyId }: IEditItemModalProps) => {
   const [name, setName] = useState("");
   const [category, setCategory] = useState<string>("Other");
   const [priority, setPriority] = useState<Priority>("Medium");
   const [quantity, setQuantity] = useState("");
   const [notes, setNotes] = useState("");
-  const [customCategories, setCustomCategories] = useState<CustomCategory[]>([]);
+  const [customCategories, setCustomCategories] = useState<ICustomCategory[]>([]);
   const [newCatInput, setNewCatInput] = useState("");
   const [showAddCat, setShowAddCat] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -80,6 +81,9 @@ const EditItemModal = ({ visible, onClose, item, familyId }: EditItemModalProps)
     );
   }, [customCategories]);
 
+  /**
+   * Adds a new custom category to the family list
+   */
   const handleAddCategory = async () => {
     if (!newCatInput.trim() || !familyId) return;
     try {
@@ -92,6 +96,9 @@ const EditItemModal = ({ visible, onClose, item, familyId }: EditItemModalProps)
     }
   };
 
+  /**
+   * Saves updates to the grocery item
+   */
   const handleSave = async () => {
     if (!item || !name.trim()) return;
     setLoading(true);
@@ -121,6 +128,9 @@ const EditItemModal = ({ visible, onClose, item, familyId }: EditItemModalProps)
     }
   };
 
+  /**
+   * Prompts user for confirmation before deleting an item
+   */
   const handleDelete = () => {
     if (!item) return;
     setStatusModal({

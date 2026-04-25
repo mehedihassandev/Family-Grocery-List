@@ -41,6 +41,10 @@ const EditProfileScreen = () => {
     },
   });
 
+  /**
+   * Handles the submission of profile updates
+   * @param data - The form data containing the new display name
+   */
   const onSubmit = async (data: { displayName: string }) => {
     if (!user) return;
 
@@ -67,6 +71,9 @@ const EditProfileScreen = () => {
     }
   };
 
+  /**
+   * Handles closing the status modal and navigating back on success
+   */
   const handleModalClose = () => {
     const isSuccess = statusModal.type === "success";
     setStatusModal(prev => ({ ...prev, visible: false }));

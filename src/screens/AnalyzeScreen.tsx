@@ -7,13 +7,10 @@ import {
   BarChart3,
   TrendingUp,
   Calendar as CalendarIcon,
-  Clock,
-  CheckCircle2,
-  AlertCircle,
 } from "lucide-react-native";
 import { useAuthStore } from "../store/useAuthStore";
 import { subscribeToGroceryList } from "../services/grocery";
-import { GroceryItem } from "../types";
+import { IGroceryItem } from "../types";
 import { AppHeader, Card, DonutChart, ProgressBar } from "../components/ui";
 import NotificationModal from "../components/NotificationModal";
 
@@ -32,7 +29,10 @@ const MONTH_NAMES = [
   "December",
 ];
 
-// Helper to convert Firebase Timestamp or Date string to Date object
+/**
+ * Helper to convert Firebase Timestamp or Date string to Date object
+ * @param value - The timestamp/date value from Firestore
+ */
 const toDate = (value: any): Date | null => {
   if (!value) return null;
   if (value instanceof Date) return value;
@@ -41,6 +41,10 @@ const toDate = (value: any): Date | null => {
   return isNaN(d.getTime()) ? null : d;
 };
 
+/**
+ * Formats a date into a Month YYYY label
+ * @param date - The date to format
+ */
 const formatMonthLabel = (date: Date) => `${MONTH_NAMES[date.getMonth()]} ${date.getFullYear()}`;
 
 /**
@@ -51,7 +55,7 @@ const formatMonthLabel = (date: Date) => `${MONTH_NAMES[date.getMonth()]} ${date
  */
 const AnalyzeScreen = () => {
   const { user } = useAuthStore();
-  const [items, setItems] = useState<GroceryItem[]>([]);
+  const [items, setItems] = useState<IGroceryItem[]>([]);
   const [isNotifOpen, setNotifOpen] = useState(false);
   const [selectedMonth, setSelectedMonth] = useState(() => {
     const now = new Date();
@@ -105,6 +109,10 @@ const AnalyzeScreen = () => {
     return Object.entries(stats).sort((a, b) => b[1] - a[1]);
   }, [monthlyItems]);
 
+  /**
+   * Adjusts the selected month by the given offset
+   * @param offset - Number of months to add/subtract
+   */
   const changeMonth = (offset: number) => {
     setSelectedMonth((prev) => {
       const next = new Date(prev);

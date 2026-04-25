@@ -2,13 +2,13 @@ import React from "react";
 import { View, Text, StyleSheet } from "react-native";
 import { PieChart } from "react-native-gifted-charts";
 
-interface ChartData {
+interface IChartData {
   value: number;
   color: string;
 }
 
-interface DonutChartProps {
-  data: ChartData[];
+interface IDonutChartProps {
+  data: IChartData[];
   total: number;
   size?: number;
   strokeWidth?: number;
@@ -18,13 +18,14 @@ interface DonutChartProps {
  * Professional Donut Chart using react-native-gifted-charts
  * Why: To provide a high-fidelity, animated, and stable charting experience.
  * Note: Replaces the previous hand-written SVG version to ensure perfect rendering.
+ * @param props - Component props including chart data, total value, and size configuration
  */
 const DonutChart = ({
   data = [],
   total = 0,
   size = 120,
   strokeWidth = 14,
-}: DonutChartProps) => {
+}: IDonutChartProps) => {
   // Map our internal format to gifted-charts format
   const chartData = data.map(item => ({
     value: item.value || 0,

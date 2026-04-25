@@ -3,14 +3,14 @@ import { Modal, Text, View, TouchableOpacity, StyleSheet } from "react-native";
 import { CheckCircle2, XCircle, AlertTriangle, HelpCircle } from "lucide-react-native";
 import { PrimaryButton } from "./PrimaryButton";
 
-type StatusType = "success" | "error" | "warning" | "confirm";
+type TStatusType = "success" | "error" | "warning" | "confirm";
 
-interface StatusModalProps {
+interface IStatusModalProps {
   visible: boolean;
   onClose: () => void;
   title: string;
   message: string;
-  type?: StatusType;
+  type?: TStatusType;
   confirmLabel?: string;
   cancelLabel?: string;
   onConfirm?: () => void;
@@ -19,6 +19,7 @@ interface StatusModalProps {
 /**
  * Elegant multi-purpose status modal
  * Why: To provide clear, beautiful feedback for user actions (success, errors, confirmations).
+ * @param props - Component props including title, message, and modal type
  */
 const StatusModal = ({
   visible,
@@ -29,7 +30,10 @@ const StatusModal = ({
   confirmLabel = "Continue",
   cancelLabel = "Cancel",
   onConfirm,
-}: StatusModalProps) => {
+}: IStatusModalProps) => {
+  /**
+   * Returns the appropriate icon based on the modal type
+   */
   const getIcon = () => {
     switch (type) {
       case "success":
@@ -43,6 +47,9 @@ const StatusModal = ({
     }
   };
 
+  /**
+   * Returns the background color class for the icon container
+   */
   const getIconBg = () => {
     switch (type) {
       case "success": return "bg-primary-50";

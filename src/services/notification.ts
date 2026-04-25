@@ -10,8 +10,16 @@ import {
   arrayUnion,
 } from "firebase/firestore";
 import { db } from "./firebaseConfig";
-import { AppNotification, NotificationType } from "../types";
+import { IAppNotification, NotificationType } from "../types";
 
+/**
+ * Creates a new activity notification in Firestore
+ * @param familyId - The ID of the family
+ * @param type - The type of notification
+ * @param message - The notification message
+ * @param actor - The user performing the action
+ * @param itemDetails - The details of the grocery item involved
+ */
 export const createNotification = async (
   familyId: string,
   type: NotificationType,
@@ -27,7 +35,7 @@ export const createNotification = async (
     if (type === "item_completed") title = "Item Completed";
     if (type === "urgent_item") title = "Urgent Request";
 
-    const newNotif: AppNotification = {
+    const newNotif: IAppNotification = {
       id: notifRef.id,
       familyId,
       type,
@@ -48,9 +56,15 @@ export const createNotification = async (
   }
 };
 
+/**
+ * Subscribes to real-time notifications for the family
+ * @param familyId - The ID of the family
+ * @param callback - Function to call with the updated notification list
+ * @param onError - Optional error handler
+ */
 export const subscribeToNotifications = (
   familyId: string,
-  callback: (notifications: AppNotification[]) => void,
+  callback: (notifications: IAppNotification[]) => void,
   onError?: (error: Error) => void,
 ) => {
   const notifRef = collection(db, "notifications");
@@ -59,7 +73,7 @@ export const subscribeToNotifications = (
   return onSnapshot(
     q,
     (snapshot) => {
-      const notifications = snapshot.docs.map((doc) => doc.data() as AppNotification);
+      const notifications = snapshot.docs.map((doc) => doc.data() as IAppNotification);
       // Sort in memory (since we don't want to enforce a composite index on familyId + createdAt right away)
       const sorted = notifications.sort((a, b) => {
         const timeA = a.createdAt?.toMillis() || 0;
@@ -75,6 +89,11 @@ export const subscribeToNotifications = (
   );
 };
 
+/**
+ * Marks a list of notifications as read by a user
+ * @param notificationIds - The IDs of the notifications to mark as read
+ * @param userId - The ID of the user reading the notifications
+ */
 export const markNotificationsAsRead = async (notificationIds: string[], userId: string) => {
   if (!notificationIds.length || !userId) return;
 

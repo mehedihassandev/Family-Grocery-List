@@ -1,22 +1,23 @@
 import React from "react";
 import { View, Text, TouchableOpacity, Image } from "react-native";
 import { CheckCircle2 } from "lucide-react-native";
-import { GroceryItem } from "../types";
+import { IGroceryItem } from "../types";
 import { formatDistanceToNow } from "date-fns";
 import { Card, PriorityBadge } from "./ui";
 
-interface ItemCardProps {
-  item: GroceryItem;
-  onToggle: (item: GroceryItem) => void;
-  onPress: (item: GroceryItem) => void;
+interface IItemCardProps {
+  item: IGroceryItem;
+  onToggle: (item: IGroceryItem) => void;
+  onPress: (item: IGroceryItem) => void;
   currentUserId?: string;
 }
 
 /**
  * Premium Grocery Item Card
  * Why: To display item details in the main list with a layout consistent with the new dashboard.
+ * @param props - Component props including item data and interaction handlers
  */
-const ItemCard = ({ item, onToggle, onPress }: ItemCardProps) => {
+const ItemCard = ({ item, onToggle, onPress }: IItemCardProps) => {
   const isCompleted = item.status === "completed";
 
   const timeAgo = item.createdAt

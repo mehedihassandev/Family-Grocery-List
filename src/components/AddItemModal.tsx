@@ -11,14 +11,14 @@ import {
 import { X, Check } from "lucide-react-native";
 import { Priority, Category } from "../types";
 import { addGroceryItem } from "../services/grocery";
-import { addCustomCategory, subscribeToCategories, CustomCategory } from "../services/categories";
+import { addCustomCategory, subscribeToCategories, ICustomCategory } from "../services/categories";
 import { GROCERY_CATEGORIES } from "../features/grocery";
 import { InputField, PrimaryButton, Chip, StatusModal, LoadingOverlay } from "./ui";
 
 const CATEGORIES: Category[] = [...GROCERY_CATEGORIES];
 const PRIORITIES: Priority[] = ["Low", "Medium", "Urgent"];
 
-interface AddItemModalProps {
+interface IAddItemModalProps {
   visible: boolean;
   onClose: () => void;
   familyId: string;
@@ -28,18 +28,19 @@ interface AddItemModalProps {
 /**
  * Premium Add Item Modal
  * Why: To provide a high-fidelity experience for adding groceries with elegant feedback.
+ * @param props - Component props including visibility, close handler, and context (family/user)
  */
-const AddItemModal = ({ visible, onClose, familyId, user }: AddItemModalProps) => {
+const AddItemModal = ({ visible, onClose, familyId, user }: IAddItemModalProps) => {
   const [name, setName] = useState("");
   const [category, setCategory] = useState<string>("Other");
   const [priority, setPriority] = useState<Priority>("Medium");
   const [quantity, setQuantity] = useState("");
   const [notes, setNotes] = useState("");
   const [loading, setLoading] = useState(false);
-  const [customCategories, setCustomCategories] = useState<CustomCategory[]>([]);
+  const [customCategories, setCustomCategories] = useState<ICustomCategory[]>([]);
   const [newCatInput, setNewCatInput] = useState("");
   const [showAddCat, setShowAddCat] = useState(false);
-  
+
   const [showSuccess, setShowSuccess] = useState(false);
 
   useEffect(() => {
@@ -59,6 +60,9 @@ const AddItemModal = ({ visible, onClose, familyId, user }: AddItemModalProps) =
     );
   }, [customCategories]);
 
+  /**
+   * Adds a new custom category to the family list
+   */
   const handleAddCategory = async () => {
     if (!newCatInput.trim()) return;
     try {
@@ -71,6 +75,9 @@ const AddItemModal = ({ visible, onClose, familyId, user }: AddItemModalProps) =
     }
   };
 
+  /**
+   * Saves the new grocery item to the family list
+   */
   const handleSave = async () => {
     if (!name.trim()) return;
     try {
@@ -86,7 +93,7 @@ const AddItemModal = ({ visible, onClose, familyId, user }: AddItemModalProps) =
         },
         user,
       );
-      
+
       setShowSuccess(true);
       // Reset fields
       setName("");
@@ -101,6 +108,9 @@ const AddItemModal = ({ visible, onClose, familyId, user }: AddItemModalProps) =
     }
   };
 
+  /**
+   * Closes the success feedback and the modal
+   */
   const handleSuccessClose = () => {
     setShowSuccess(false);
     onClose();
@@ -110,7 +120,7 @@ const AddItemModal = ({ visible, onClose, familyId, user }: AddItemModalProps) =
     <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
       <View className="flex-1 justify-end" style={{ backgroundColor: "rgba(0,0,0,0.5)" }}>
         <LoadingOverlay visible={loading} />
-        <StatusModal 
+        <StatusModal
           visible={showSuccess}
           title="Item Added"
           message={`"${name}" has been added to your family list.`}
@@ -175,8 +185,13 @@ const AddItemModal = ({ visible, onClose, familyId, user }: AddItemModalProps) =
                 <View className="h-14 flex-row rounded-2xl bg-surface-alt p-1.5 items-center border border-border">
                   {PRIORITIES.map((p) => {
                     const isActive = priority === p;
-                    const activeStyle = p === "Low" ? "bg-primary-500" : p === "Medium" ? "bg-warning-DEFAULT" : "bg-danger-DEFAULT";
-                    
+                    const activeStyle =
+                      p === "Low"
+                        ? "bg-primary-500"
+                        : p === "Medium"
+                          ? "bg-warning-DEFAULT"
+                          : "bg-danger-DEFAULT";
+
                     return (
                       <TouchableOpacity
                         key={p}

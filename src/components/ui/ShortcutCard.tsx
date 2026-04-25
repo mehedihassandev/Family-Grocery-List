@@ -2,17 +2,18 @@ import React from "react";
 import { Text, TouchableOpacity, View } from "react-native";
 import { LucideIcon } from "lucide-react-native";
 
-type ShortcutCardProps = {
+interface IShortcutCardProps {
   icon: LucideIcon;
   label: string;
   onPress: () => void;
   iconBgColor?: string;
   iconColor?: string;
-};
+}
 
 /**
  * Modern shortcut button with icon and label
  * Why: To provide quick navigation to main features in a visually premium, rounded-square format.
+ * @param props - Component props including icon, label, and press handler
  */
 const ShortcutCard = ({
   icon: Icon,
@@ -20,7 +21,7 @@ const ShortcutCard = ({
   onPress,
   iconBgColor = "bg-surface-alt",
   iconColor = "#3DB87A",
-}: ShortcutCardProps) => {
+}: IShortcutCardProps) => {
   return (
     <View className="items-center">
       <TouchableOpacity

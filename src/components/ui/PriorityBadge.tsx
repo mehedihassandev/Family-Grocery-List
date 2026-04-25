@@ -1,9 +1,9 @@
 import React from "react";
 import { Text, View } from "react-native";
 
-type PriorityBadgeProps = {
+interface IPriorityBadgeProps {
   priority: string;
-};
+}
 
 const styleMap: Record<string, { bg: string; text: string; border: string }> = {
   Urgent: { bg: "bg-danger-light", text: "text-danger-dark", border: "border-danger-light" },
@@ -14,8 +14,9 @@ const styleMap: Record<string, { bg: string; text: string; border: string }> = {
 /**
  * Premium PriorityBadge
  * Why: To display item priority in a visually clean and consistent way across the app.
+ * @param props - Component props including the priority level string
  */
-const PriorityBadge = ({ priority }: PriorityBadgeProps) => {
+const PriorityBadge = ({ priority }: IPriorityBadgeProps) => {
   const styles = styleMap[priority] || styleMap.Low;
   
   return (

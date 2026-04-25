@@ -3,14 +3,22 @@ import { View, Text, TouchableOpacity } from "react-native";
 import { ArrowLeft } from "lucide-react-native";
 import { useNavigation } from "@react-navigation/native";
 
-interface SubHeaderProps {
+interface ISubHeaderProps {
   title: string;
   onBackPress?: () => void;
 }
 
-export const SubHeader = ({ title, onBackPress }: SubHeaderProps) => {
+/**
+ * Secondary header for internal screens
+ * Why: To provide a consistent back navigation and screen title for secondary application surfaces.
+ * @param props - Component props including screen title and optional back handler override
+ */
+export const SubHeader = ({ title, onBackPress }: ISubHeaderProps) => {
   const navigation = useNavigation();
 
+  /**
+   * Handles the back navigation action
+   */
   const handleBack = () => {
     if (onBackPress) {
       onBackPress();

@@ -6,6 +6,7 @@ import BootSplash from "react-native-bootsplash";
 import { useAuthStore } from "../store/useAuthStore";
 import { listenToAuthChanges } from "../services/auth";
 import type { RootStackParamList } from "../types";
+import { ERootRoutes } from "./routes";
 
 import LoginScreen from "../screens/LoginScreen";
 import TabNavigator from "./TabNavigator";
@@ -34,6 +35,10 @@ const LoadingScreen = () => (
   </View>
 );
 
+/**
+ * Root navigator of the application
+ * Why: Orchestrates the main navigation flow including authentication gates.
+ */
 const RootNavigator = () => {
   const { user, loading, hasHydrated } = useAuthStore();
   const [isNavigationReady, setIsNavigationReady] = useState(false);
@@ -79,18 +84,18 @@ const RootNavigator = () => {
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
       {!isAppReady ? (
-        <Stack.Screen name="Loading" component={LoadingScreen} />
+        <Stack.Screen name={ERootRoutes.LOADING} component={LoadingScreen} />
       ) : !user ? (
-        <Stack.Screen name="Login" component={LoginScreen} />
+        <Stack.Screen name={ERootRoutes.LOGIN} component={LoginScreen} />
       ) : (
         <>
-          <Stack.Screen name="Main" component={TabNavigator} />
-          <Stack.Screen name="FamilySetup" component={FamilySetupScreen} />
-          <Stack.Screen name="JoinFamily" component={JoinFamilyScreen} />
-          <Stack.Screen name="CreateFamily" component={CreateFamilyScreen} />
-          <Stack.Screen name="EditProfile" component={EditProfileScreen} />
-          <Stack.Screen name="PrivacySecurity" component={PrivacySecurityScreen} />
-          <Stack.Screen name="HelpSupport" component={HelpSupportScreen} />
+          <Stack.Screen name={ERootRoutes.MAIN} component={TabNavigator} />
+          <Stack.Screen name={ERootRoutes.FAMILY_SETUP} component={FamilySetupScreen} />
+          <Stack.Screen name={ERootRoutes.JOIN_FAMILY} component={JoinFamilyScreen} />
+          <Stack.Screen name={ERootRoutes.CREATE_FAMILY} component={CreateFamilyScreen} />
+          <Stack.Screen name={ERootRoutes.EDIT_PROFILE} component={EditProfileScreen} />
+          <Stack.Screen name={ERootRoutes.PRIVACY_SECURITY} component={PrivacySecurityScreen} />
+          <Stack.Screen name={ERootRoutes.HELP_SUPPORT} component={HelpSupportScreen} />
         </>
       )}
     </Stack.Navigator>
