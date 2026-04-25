@@ -3,7 +3,6 @@ import { Text, View, TouchableOpacity } from "react-native";
 import { Bell, ArrowLeft } from "lucide-react-native";
 import { useAuthStore } from "../../store/useAuthStore";
 import { useNotificationStore } from "../../store/useNotificationStore";
-import { useColorScheme } from "nativewind";
 
 type AppHeaderProps = {
   eyebrow?: string;
@@ -32,23 +31,20 @@ const AppHeader = ({
   onBackPress,
 }: AppHeaderProps) => {
   const { user } = useAuthStore();
-  const { colorScheme } = useColorScheme();
   const notifications = useNotificationStore((state) => state.notifications);
 
   const unreadCount = notifications.filter(
     (n) => n.actorId !== user?.uid && !n.readBy.includes(user?.uid || ""),
   ).length;
 
-  const isDark = colorScheme === "dark";
-
   return (
-    <View className="flex-row items-center justify-between border-b border-border bg-background px-6 pb-6 pt-3 dark:bg-background-dark">
+    <View className="flex-row items-center justify-between border-b border-border bg-background px-6 pb-6 pt-3">
       <View className="flex-row items-center flex-1">
         {showBackButton && (
           <TouchableOpacity
             onPress={onBackPress}
             activeOpacity={0.7}
-            className="mr-4 h-10 w-10 items-center justify-center rounded-md bg-surface-alt dark:bg-surface-dark-muted border border-border dark:border-border-dark"
+            className="mr-4 h-10 w-10 items-center justify-center rounded-md bg-surface-alt border border-border"
             hitSlop={{ top: 10, right: 10, bottom: 10, left: 10 }}
           >
             <ArrowLeft stroke="#4A5568" size={22} strokeWidth={2.5} />
@@ -61,14 +57,14 @@ const AppHeader = ({
             </Text>
           ) : null}
           <Text
-            className="text-[28px] font-bold tracking-tight text-text-900 dark:text-text-dark-primary leading-tight"
+            className="text-[28px] font-bold tracking-tight text-text-900 leading-tight"
             numberOfLines={1}
             adjustsFontSizeToFit
           >
             {title}
           </Text>
           {subtitle ? (
-            <Text className="mt-1 text-[13px] font-medium text-text-muted dark:text-text-dark-muted leading-5">
+            <Text className="mt-1 text-[13px] font-medium text-text-muted leading-5">
               {subtitle}
             </Text>
           ) : null}
@@ -80,11 +76,11 @@ const AppHeader = ({
           <TouchableOpacity
             onPress={onNotificationPress}
             activeOpacity={0.7}
-            className="h-[52px] w-[52px] items-center justify-center rounded-xl border border-border bg-surface relative dark:border-border-dark dark:bg-surface-dark shadow-sm"
+            className="h-[52px] w-[52px] items-center justify-center rounded-xl border border-border bg-surface relative shadow-sm"
           >
             <Bell stroke="#3DB87A" size={24} strokeWidth={2.2} />
             {unreadCount > 0 && (
-              <View className="absolute -right-1 -top-1 h-5 min-w-[20px] items-center justify-center rounded-full bg-danger px-1 border-2 border-surface dark:border-background-dark">
+              <View className="absolute -right-1 -top-1 h-5 min-w-[20px] items-center justify-center rounded-full bg-danger px-1 border-2 border-surface">
                 <Text className="text-[9px] font-bold text-white">
                   {unreadCount > 99 ? "99+" : unreadCount}
                 </Text>

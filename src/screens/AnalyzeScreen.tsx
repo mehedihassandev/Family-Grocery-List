@@ -47,7 +47,7 @@ const formatMonthLabel = (date: Date) => `${MONTH_NAMES[date.getMonth()]} ${date
  * Premium Analytics Screen
  * Why: To provide a consistent, high-fidelity experience for tracking grocery habits.
  * Fix: Re-implemented DonutChart using react-native-gifted-charts for stability and animation.
- * Note: Strictly Light Mode as per user request.
+ * Note: Enforces a single light theme.
  */
 const AnalyzeScreen = () => {
   const { user } = useAuthStore();
@@ -57,8 +57,6 @@ const AnalyzeScreen = () => {
     const now = new Date();
     return new Date(now.getFullYear(), now.getMonth(), 1);
   });
-
-  const isDark = false; // Forced to false for Light Mode only
 
   useEffect(() => {
     if (!user?.familyId) {

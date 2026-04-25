@@ -1,6 +1,5 @@
 import React, { useState } from "react";
 import { Modal, ScrollView, Text, TouchableOpacity, View } from "react-native";
-import { useColorScheme } from "nativewind";
 import { Bell, Check, ShoppingBag, X, AlertCircle, Inbox } from "lucide-react-native";
 import { useAuthStore } from "../store/useAuthStore";
 import { useNotificationStore } from "../store/useNotificationStore";
@@ -19,11 +18,9 @@ type NotificationModalProps = {
  */
 const NotificationModal = ({ visible, onClose }: NotificationModalProps) => {
   const { user } = useAuthStore();
-  const { colorScheme } = useColorScheme();
   const notifications = useNotificationStore((state) => state.notifications);
   const [filter, setFilter] = useState<"all" | "unread">("all");
 
-  const isDark = colorScheme === "dark";
   const myUid = user?.uid || "";
 
   // Filter out actions done by the current user
@@ -53,25 +50,25 @@ const NotificationModal = ({ visible, onClose }: NotificationModalProps) => {
         return {
           icon: ShoppingBag,
           color: "#3b82f6",
-          bg: isDark ? "bg-blue-900/20" : "bg-blue-50",
+          bg: "bg-blue-50",
         };
       case "item_completed":
         return {
           icon: Check,
           color: "#3DB87A",
-          bg: isDark ? "bg-primary-900/20" : "bg-primary-50",
+          bg: "bg-primary-50",
         };
       case "urgent_item":
         return {
           icon: AlertCircle,
           color: "#ef4444",
-          bg: isDark ? "bg-red-900/20" : "bg-red-50",
+          bg: "bg-red-50",
         };
       default:
         return {
           icon: Bell,
-          color: isDark ? "#cbd5cf" : "#748379",
-          bg: isDark ? "bg-surface-dark-muted" : "bg-surface-muted",
+          color: "#748379",
+          bg: "bg-surface-muted",
         };
     }
   };
@@ -86,7 +83,7 @@ const NotificationModal = ({ visible, onClose }: NotificationModalProps) => {
         />
 
         <View
-          className="max-h-[90%] min-h-[50%] rounded-t-4xl bg-background dark:bg-background-dark px-6 pb-12 pt-3"
+          className="max-h-[90%] min-h-[50%] rounded-t-4xl bg-background px-6 pb-12 pt-3"
           style={{
             shadowColor: "#000",
             shadowOffset: { width: 0, height: -10 },
@@ -102,31 +99,31 @@ const NotificationModal = ({ visible, onClose }: NotificationModalProps) => {
 
           <View className="mb-6 flex-row items-center justify-between">
             <View>
-              <Text className="text-[10px] font-bold uppercase tracking-[2px] text-primary-600 dark:text-primary-400">
+              <Text className="text-[10px] font-bold uppercase tracking-[2px] text-primary-600">
                 Activity Feed
               </Text>
-              <Text className="text-[32px] font-black tracking-tight text-text-primary dark:text-text-dark-primary">
+              <Text className="text-[32px] font-black tracking-tight text-text-primary">
                 Notifications
               </Text>
             </View>
             <TouchableOpacity
               onPress={onClose}
               activeOpacity={0.7}
-              className="h-11 w-11 items-center justify-center rounded-full bg-surface-muted dark:bg-surface-dark-muted border border-border-muted dark:border-border-dark"
+              className="h-11 w-11 items-center justify-center rounded-full bg-surface-muted border border-border-muted"
             >
-              <X stroke={isDark ? "#cbd5cf" : "#748379"} size={20} strokeWidth={3} />
+              <X stroke="#748379" size={20} strokeWidth={3} />
             </TouchableOpacity>
           </View>
 
-          <View className="mb-6 flex-row items-center justify-between border-b border-border-muted/40 dark:border-border-dark/40 pb-4">
-            <View className="flex-row items-center bg-surface-muted dark:bg-surface-dark-muted rounded-xl p-1 border border-border-muted dark:border-border-dark">
+          <View className="mb-6 flex-row items-center justify-between border-b border-border-muted/40 pb-4">
+            <View className="flex-row items-center bg-surface-muted rounded-xl p-1 border border-border-muted">
               <TouchableOpacity
                 activeOpacity={0.7}
                 onPress={() => setFilter("all")}
-                className={`rounded-lg px-4 py-1.5 ${filter === "all" ? "bg-surface dark:bg-surface-dark shadow-sm" : ""}`}
+                className={`rounded-lg px-4 py-1.5 ${filter === "all" ? "bg-surface shadow-sm" : ""}`}
               >
                 <Text
-                  className={`text-[12px] font-black uppercase tracking-wider ${filter === "all" ? "text-primary-600 dark:text-primary-400" : "text-text-muted dark:text-text-dark-muted"}`}
+                  className={`text-[12px] font-black uppercase tracking-wider ${filter === "all" ? "text-primary-600" : "text-text-muted"}`}
                 >
                   All
                 </Text>
@@ -134,11 +131,11 @@ const NotificationModal = ({ visible, onClose }: NotificationModalProps) => {
               <TouchableOpacity
                 activeOpacity={0.7}
                 onPress={() => setFilter("unread")}
-                className={`rounded-lg px-4 py-1.5 ${filter === "unread" ? "bg-surface dark:bg-surface-dark shadow-sm" : ""}`}
+                className={`rounded-lg px-4 py-1.5 ${filter === "unread" ? "bg-surface shadow-sm" : ""}`}
               >
                 <View className="flex-row items-center">
                   <Text
-                    className={`text-[12px] font-black uppercase tracking-wider ${filter === "unread" ? "text-primary-600 dark:text-primary-400" : "text-text-muted dark:text-text-dark-muted"}`}
+                    className={`text-[12px] font-black uppercase tracking-wider ${filter === "unread" ? "text-primary-600" : "text-text-muted"}`}
                   >
                     Unread
                   </Text>
@@ -156,7 +153,7 @@ const NotificationModal = ({ visible, onClose }: NotificationModalProps) => {
               className={`flex-row items-center ${unreadIds.length === 0 ? "opacity-30" : ""}`}
             >
               <Check stroke="#3DB87A" size={14} strokeWidth={3} />
-              <Text className="ml-1.5 text-[11px] font-black uppercase tracking-wider text-primary-600 dark:text-primary-400">
+              <Text className="ml-1.5 text-[11px] font-black uppercase tracking-wider text-primary-600">
                 Mark all read
               </Text>
             </TouchableOpacity>
@@ -165,13 +162,13 @@ const NotificationModal = ({ visible, onClose }: NotificationModalProps) => {
           <ScrollView showsVerticalScrollIndicator={false} className="flex-1">
             {displayList.length === 0 ? (
               <View className="py-20 items-center justify-center">
-                <View className="h-20 w-20 items-center justify-center rounded-full bg-surface-muted dark:bg-surface-dark-muted mb-6">
-                  <Inbox stroke={isDark ? "#4f5f56" : "#95a39a"} size={32} strokeWidth={2} />
+                <View className="h-20 w-20 items-center justify-center rounded-full bg-surface-muted mb-6">
+                  <Inbox stroke="#95a39a" size={32} strokeWidth={2} />
                 </View>
-                <Text className="text-[20px] font-black tracking-tight text-text-primary dark:text-text-dark-primary text-center">
+                <Text className="text-[20px] font-black tracking-tight text-text-primary text-center">
                   {filter === "unread" ? "No Unread Notifications" : "All Caught Up!"}
                 </Text>
-                <Text className="mt-2 text-[14px] leading-relaxed text-text-muted dark:text-text-dark-muted text-center px-10">
+                <Text className="mt-2 text-[14px] leading-relaxed text-text-muted text-center px-10">
                   {filter === "unread"
                     ? "You have read all your recent family updates."
                     : "Activity from your family members will appear here."}
@@ -192,7 +189,7 @@ const NotificationModal = ({ visible, onClose }: NotificationModalProps) => {
                     className="mb-3"
                   >
                     <Card
-                      className={`py-4 ${isUnread ? "border-primary-100 dark:border-primary-900/30 bg-primary-50/10 dark:bg-primary-900/10" : ""}`}
+                      className={`py-4 ${isUnread ? "border-primary-100 bg-primary-50/10" : ""}`}
                     >
                       <View className="flex-row items-start">
                         <View
@@ -203,16 +200,16 @@ const NotificationModal = ({ visible, onClose }: NotificationModalProps) => {
                         <View className="flex-1">
                           <View className="flex-row items-center justify-between">
                             <Text
-                              className={`text-[15px] tracking-tight ${isUnread ? "font-black text-text-primary dark:text-text-dark-primary" : "font-bold text-text-muted dark:text-text-dark-muted"}`}
+                              className={`text-[15px] tracking-tight ${isUnread ? "font-black text-text-primary" : "font-bold text-text-muted"}`}
                             >
                               {notif.title}
                             </Text>
-                            <Text className="text-[10px] font-bold text-text-muted dark:text-text-dark-muted uppercase tracking-wider">
+                            <Text className="text-[10px] font-bold text-text-muted uppercase tracking-wider">
                               {formatTime(notif.createdAt)}
                             </Text>
                           </View>
                           <Text
-                            className={`mt-1 text-[13px] leading-relaxed ${isUnread ? "text-text-primary dark:text-text-dark-primary font-medium" : "text-text-muted dark:text-text-dark-muted"}`}
+                            className={`mt-1 text-[13px] leading-relaxed ${isUnread ? "text-text-primary font-medium" : "text-text-muted"}`}
                           >
                             {notif.message}
                           </Text>

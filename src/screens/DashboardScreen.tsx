@@ -54,7 +54,7 @@ const toDate = (value: any): Date | null => {
  * Premium Dashboard Screen
  * Why: To provide a high-fidelity, visually stunning overview of the family's grocery status.
  * Fix: Re-implemented DonutChart using react-native-gifted-charts for stability and animation.
- * Note: Strictly Light Mode as per user request.
+ * Note: Enforces a single light theme.
  */
 const DashboardScreen = ({ navigation }: any) => {
   const { user } = useAuthStore();
@@ -77,8 +77,6 @@ const DashboardScreen = ({ navigation }: any) => {
     message: "",
     type: "success",
   });
-
-  const isDark = false; // Forced to false for Light Mode only
 
   useEffect(() => {
     if (!user?.familyId) return;
@@ -613,7 +611,7 @@ const DashboardScreen = ({ navigation }: any) => {
                       style={{
                         width: 5,
                         backgroundColor:
-                          item.priority === "Urgent"
+                           item.priority === "Urgent"
                             ? "#E55C5C"
                             : item.priority === "Medium"
                               ? "#F5A623"

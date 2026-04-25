@@ -9,7 +9,6 @@ import {
   StatusBar,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useColorScheme } from "nativewind";
 import { Share2, Crown, Trash2, LogOut } from "lucide-react-native";
 import { useAuthStore } from "../store/useAuthStore";
 import {
@@ -19,7 +18,7 @@ import {
   leaveFamily,
 } from "../services/family";
 import { User, Family } from "../types";
-import { AppHeader, Card, StatusModal, LoadingOverlay, PriorityBadge } from "../components/ui";
+import { AppHeader, Card, StatusModal, LoadingOverlay } from "../components/ui";
 import NotificationModal from "../components/NotificationModal";
 
 const getFamilyActionErrorMessage = (error: unknown, fallback: string) => {
@@ -39,7 +38,6 @@ const getFamilyActionErrorMessage = (error: unknown, fallback: string) => {
  */
 const MembersScreen = () => {
   const { user } = useAuthStore();
-  const { colorScheme } = useColorScheme();
   const [members, setMembers] = useState<User[]>([]);
   const [family, setFamily] = useState<Family | null>(null);
   const [loading, setLoading] = useState(true);
@@ -60,7 +58,6 @@ const MembersScreen = () => {
     type: "success",
   });
 
-  const isDark = colorScheme === "dark";
   const myMember = members.find((m) => m.uid === user?.uid);
   const myRole = myMember?.role ?? user?.role;
   const isOwner = myRole === "owner";
@@ -266,7 +263,6 @@ const MembersScreen = () => {
           )}
         />
         
-        {/* Leave Family Action */}
         <View className="py-4">
            <TouchableOpacity 
              onPress={handleLeaveFamily}

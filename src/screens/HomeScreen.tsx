@@ -91,8 +91,6 @@ const HomeScreen = () => {
   const [isCategoryFilterOpen, setCategoryFilterOpen] = useState(false);
   const categoryAnimation = useRef(new Animated.Value(0)).current;
 
-  const isDark = false;
-
   useEffect(() => {
     if (!user?.familyId) {
       setItems([]);
@@ -304,9 +302,9 @@ const HomeScreen = () => {
   return (
     <SafeAreaView
       edges={["top", "left", "right"]}
-      className="flex-1 bg-background dark:bg-background-dark"
+      className="flex-1 bg-background"
     >
-      <StatusBar barStyle={isDark ? "light-content" : "dark-content"} />
+      <StatusBar barStyle="dark-content" />
 
       <AppHeader
         title="Grocery List"
@@ -343,7 +341,7 @@ const HomeScreen = () => {
               onRefresh={handleRefresh}
               tintColor="#3DB87A"
               colors={["#3DB87A"]}
-              progressBackgroundColor={isDark ? "#1a241e" : "#f8faf8"}
+              progressBackgroundColor="#f8faf8"
             />
           }
           contentContainerStyle={{ paddingBottom: 140 }}
@@ -378,17 +376,15 @@ const HomeScreen = () => {
                   onPress={() => setCategoryFilterOpen((prev) => !prev)}
                   className={`rounded-full border p-2.5 ${
                     isCategoryFilterOpen || activeCategory !== ALL_CATEGORY
-                      ? "border-primary-300 bg-primary-50 dark:border-primary-700 dark:bg-primary-900/20"
-                      : "border-border-muted bg-surface dark:border-border-dark dark:bg-surface-dark"
+                      ? "border-primary-300 bg-primary-50"
+                      : "border-border-muted bg-surface"
                   }`}
                 >
                   <SlidersHorizontal
                     stroke={
                       isCategoryFilterOpen || activeCategory !== ALL_CATEGORY
                         ? "#3DB87A"
-                        : isDark
-                          ? "#94a399"
-                          : "#748379"
+                        : "#748379"
                     }
                     size={18}
                   />
@@ -415,15 +411,15 @@ const HomeScreen = () => {
               </Animated.View>
 
               <View className="flex-row items-center justify-between mt-4 mb-2">
-                <Text className="text-[11px] font-bold uppercase tracking-[1.5px] text-text-muted dark:text-text-dark-muted">
+                <Text className="text-[11px] font-bold uppercase tracking-[1.5px] text-text-muted">
                   Showing {visibleCount} item{visibleCount === 1 ? "" : "s"}
                 </Text>
               </View>
             </View>
           }
           renderSectionHeader={({ section }) => (
-            <View className="px-6 pb-2 pt-4 bg-background dark:bg-background-dark">
-              <Text className="text-[13px] font-bold tracking-widest uppercase text-primary-600 dark:text-primary-400">
+            <View className="px-6 pb-2 pt-4 bg-background">
+              <Text className="text-[13px] font-bold tracking-widest uppercase text-primary-600">
                 {section.title}
               </Text>
             </View>
@@ -440,13 +436,13 @@ const HomeScreen = () => {
           )}
           ListEmptyComponent={
             <View className="items-center px-10 pb-8 pt-16">
-              <View className="mb-6 h-20 w-20 items-center justify-center rounded-full bg-primary-50 dark:bg-primary-900/10">
+              <View className="mb-6 h-20 w-20 items-center justify-center rounded-full bg-primary-50">
                 <ShoppingBasket stroke="#3DB87A" size={32} strokeWidth={2.2} />
               </View>
-              <Text className="text-center text-[28px] font-black tracking-tight text-text-primary dark:text-text-dark-primary">
+              <Text className="text-center text-[28px] font-black tracking-tight text-text-primary">
                 No items found
               </Text>
-              <Text className="mt-3 text-center text-[16px] leading-6 text-text-muted dark:text-text-dark-muted">
+              <Text className="mt-3 text-center text-[16px] leading-6 text-text-muted">
                 {searchQuery || activeCategory !== ALL_CATEGORY
                   ? "Try a different search or category filter."
                   : "Tap '+' to add your first grocery item."}
@@ -459,18 +455,18 @@ const HomeScreen = () => {
                 <TouchableOpacity
                   onPress={() => setShowCompleted((prev) => !prev)}
                   activeOpacity={0.8}
-                  className="flex-row items-center justify-center py-4 bg-surface dark:bg-surface-dark rounded-2xl border border-border-muted dark:border-border-dark mt-4"
+                  className="flex-row items-center justify-center py-4 bg-surface rounded-2xl border border-border-muted mt-4"
                 >
-                  <Text className="mr-2 text-[14px] font-bold text-text-secondary dark:text-text-dark-secondary">
+                  <Text className="mr-2 text-[14px] font-bold text-text-secondary">
                     {showCompleted
                       ? "Hide completed items"
                       : `Show completed (${filteredCompletedCount})`}
                   </Text>
                   {showCompleted ? (
-                    <ChevronUp stroke={isDark ? "#cbd5cf" : "#637889"} size={16} strokeWidth={3} />
+                    <ChevronUp stroke="#637889" size={16} strokeWidth={3} />
                   ) : (
                     <ChevronDown
-                      stroke={isDark ? "#cbd5cf" : "#637889"}
+                      stroke="#637889"
                       size={16}
                       strokeWidth={3}
                     />

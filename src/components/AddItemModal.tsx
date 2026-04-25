@@ -9,7 +9,6 @@ import {
   Platform,
 } from "react-native";
 import { X, Check } from "lucide-react-native";
-import { useColorScheme } from "nativewind";
 import { Priority, Category } from "../types";
 import { addGroceryItem } from "../services/grocery";
 import { addCustomCategory, subscribeToCategories, CustomCategory } from "../services/categories";
@@ -31,9 +30,6 @@ interface AddItemModalProps {
  * Why: To provide a high-fidelity experience for adding groceries with elegant feedback.
  */
 const AddItemModal = ({ visible, onClose, familyId, user }: AddItemModalProps) => {
-  const { colorScheme } = useColorScheme();
-  const isDark = colorScheme === "dark";
-
   const [name, setName] = useState("");
   const [category, setCategory] = useState<string>("Other");
   const [priority, setPriority] = useState<Priority>("Medium");

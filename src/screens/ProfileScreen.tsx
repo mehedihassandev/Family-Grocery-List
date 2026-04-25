@@ -8,7 +8,6 @@ import {
   StatusBar,
   Alert,
   ActivityIndicator,
-  Switch,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import {
@@ -48,13 +47,11 @@ const getInitials = (name?: string | null) => {
 /**
  * User profile and settings screen
  * Why: To manage account details, app preferences, and family membership.
- * Note: Dark mode removed to ensure consistent Light Mode branding.
+ * Note: Theme functionality removed to enforce a single light theme.
  */
 const ProfileScreen = ({ navigation }: any) => {
   const { user, setUser } = useAuthStore();
   const [leavingFamily, setLeavingFamily] = useState(false);
-
-  const isDark = false;
 
   const handleLeaveFamily = () => {
     if (!user?.uid || !user.familyId || leavingFamily) return;

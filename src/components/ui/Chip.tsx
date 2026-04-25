@@ -9,7 +9,6 @@ type ChipProps = TouchableOpacityProps & {
 /**
  * Reusable Chip component for filters and categories
  * Why: To provide a consistent interactive element for selection.
- * Supports Dark Mode and different states.
  */
 const Chip = ({ label, selected = false, className, ...props }: ChipProps) => {
   return (
@@ -19,14 +18,14 @@ const Chip = ({ label, selected = false, className, ...props }: ChipProps) => {
       className={`rounded-sm border px-4 py-2 ${
         selected
           ? "border-primary-500 bg-primary-500 shadow-xs"
-          : "border-border-muted bg-surface-muted dark:border-border-dark dark:bg-surface-dark"
+          : "border-border-muted bg-surface-muted"
       } ${className ?? ""}`}
     >
       <Text
         className={`text-[13px] font-semibold ${
           selected
             ? "text-white"
-            : "text-text-500 dark:text-text-dark-secondary"
+            : "text-text-500"
         }`}
       >
         {label}
