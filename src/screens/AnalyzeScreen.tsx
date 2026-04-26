@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
+import { AnalyzeStackScreenProps } from "../types";
 import { ScrollView, StatusBar, Text, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import {
@@ -53,7 +54,7 @@ const formatMonthLabel = (date: Date) => `${MONTH_NAMES[date.getMonth()]} ${date
  * Fix: Re-implemented DonutChart using react-native-gifted-charts for stability and animation.
  * Note: Enforces a single light theme.
  */
-const AnalyzeScreen = () => {
+const AnalyzeScreen = ({ navigation }: AnalyzeStackScreenProps<"Analyze">) => {
   const { user } = useAuthStore();
   const [items, setItems] = useState<IGroceryItem[]>([]);
   const [isNotifOpen, setNotifOpen] = useState(false);

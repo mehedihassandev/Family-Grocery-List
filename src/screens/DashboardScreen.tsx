@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
+import { HomeStackScreenProps } from "../types";
 import {
   ScrollView,
   StatusBar,
@@ -51,13 +52,14 @@ const toDate = (value: any): Date | null => {
   return isNaN(d.getTime()) ? null : d;
 };
 
+
 /**
  * Premium Dashboard Screen
  * Why: To provide a high-fidelity, visually stunning overview of the family's grocery status.
  * Fix: Re-implemented DonutChart using react-native-gifted-charts for stability and animation.
  * Note: Enforces a single light theme.
  */
-const DashboardScreen = ({ navigation }: any) => {
+const DashboardScreen = ({ navigation }: HomeStackScreenProps<"Home">) => {
   const { user } = useAuthStore();
   const [familyName, setFamilyName] = useState("Our Family");
   const [members, setMembers] = useState<any[]>([]);

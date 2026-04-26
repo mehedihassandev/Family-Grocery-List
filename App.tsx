@@ -2,8 +2,7 @@ import "./src/styles/global.css";
 import React from "react";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SafeAreaProvider } from "react-native-safe-area-context";
-import RootNavigator from "./src/navigation/RootNavigator";
-import { NavigationContainer } from "@react-navigation/native";
+import Navigator from "./src/navigation";
 import { 
   useFonts, 
   DMSans_400Regular, 
@@ -22,8 +21,8 @@ SplashScreen.preventAutoHideAsync();
 
 /**
  * Main application component
- * Why: Orchestrates the root configuration including fonts and navigation.
- * Note: Theme-related logic (Dark/Light mode) has been completely removed to enforce a single light theme.
+ * Why: Orchestrates the root configuration including fonts and providers.
+ * Navigation logic is centralized in src/navigation/index.tsx.
  */
 export default function App() {
     const [fontsLoaded, fontError] = useFonts({
@@ -38,18 +37,10 @@ export default function App() {
         return null;
     }
 
-    const onLayoutRootView = async () => {
-        if (fontsLoaded || fontError) {
-            await SplashScreen.hideAsync();
-        }
-    };
-
     return (
-        <GestureHandlerRootView style={{ flex: 1 }} onLayout={onLayoutRootView}>
+        <GestureHandlerRootView style={{ flex: 1 }}>
             <SafeAreaProvider>
-                <NavigationContainer>
-                    <RootNavigator />
-                </NavigationContainer>
+                <Navigator />
             </SafeAreaProvider>
         </GestureHandlerRootView>
     );

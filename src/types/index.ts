@@ -3,7 +3,10 @@ import type {
   NativeStackScreenProps,
 } from "@react-navigation/native-stack";
 import type { BottomTabNavigationProp, BottomTabScreenProps } from "@react-navigation/bottom-tabs";
+import type { CompositeScreenProps } from "@react-navigation/native";
 import { ERootRoutes, ETabRoutes } from "../navigation/routes";
+
+export { ERootRoutes, ETabRoutes };
 
 export type Priority = "Urgent" | "Medium" | "Low";
 
@@ -69,14 +72,20 @@ export type NotificationType = "item_added" | "item_completed" | "urgent_item";
 // import from a single source of truth and type-check route params for free.
 // ---------------------------------------------------------------------------
 
-/** Root (modal) stack — unauthenticated + authenticated screens */
-export type RootStackParamList = {
+/** Root (modal) stack — handles the high-level Auth switch */
+export type RootNavigatorParamList = {
+  /** Unauthenticated shell — Login, Signup, etc. */
+  UnAuthenticatedStack: undefined;
+  /** Authenticated shell — Hosts the main app content */
+  AuthenticatedStack: undefined;
   /** Splash/loading gate while auth state resolves */
   [ERootRoutes.LOADING]: undefined;
-  /** Email / Google sign-in & sign-up */
-  [ERootRoutes.LOGIN]: undefined;
-  /** Authenticated shell — hosts the bottom tab navigator */
-  [ERootRoutes.MAIN]: undefined;
+};
+
+/** Authenticated Stack — Screens available after login */
+export type AuthenticatedStackNavigatorParamList = {
+  /** The main tab navigator */
+  Root: undefined;
   /** Prompt user to create or join a family after first login */
   [ERootRoutes.FAMILY_SETUP]: undefined;
   /** Dedicated screen to create a new family group */
@@ -89,30 +98,81 @@ export type RootStackParamList = {
   [ERootRoutes.PRIVACY_SECURITY]: undefined;
   /** Help & support FAQ */
   [ERootRoutes.HELP_SUPPORT]: undefined;
+  
+  // New screens that were previously Modals
+  ItemDetail: { itemId: string };
+  EditItem: { itemId: string };
 };
 
-/** Bottom tab navigator — each tab maps to its own screen */
-export type TabParamList = {
-  [ETabRoutes.HOME]: undefined;
-  [ETabRoutes.LIST]: undefined;
-  [ETabRoutes.MEMBERS]: undefined;
-  [ETabRoutes.ANALYZE]: undefined;
-  [ETabRoutes.PROFILE]: undefined;
+/** Unauthenticated Stack — Screens available before login */
+export type UnAuthenticatedStackNavigatorParamList = {
+  [ERootRoutes.LOGIN]: undefined;
 };
 
-// Convenience prop types — import these in screen components instead of
-// the verbose NativeStackNavigationProp<RootStackParamList, 'ScreenName'>
-export type RootStackNavigationProp = NativeStackNavigationProp<RootStackParamList>;
-export type TabNavigationProp = BottomTabNavigationProp<TabParamList>;
+/** Bottom tab navigator — each tab maps to its own stack */
+export type BottomTabNavigatorParamList = {
+  HomeStack: undefined;
+  ListStack: undefined;
+  MembersStack: undefined;
+  AnalyzeStack: undefined;
+  ProfileStack: undefined;
+};
 
-/** Screen-level props for a given root-stack route name */
-export type RootStackScreenProps<T extends keyof RootStackParamList> = NativeStackScreenProps<
-  RootStackParamList,
-  T
->;
+// Sub-stacks for Tabs
+export type HomeStackParamList = { Home: undefined };
+export type ListStackParamList = { List: undefined };
+export type MembersStackParamList = { Members: undefined };
+export type AnalyzeStackParamList = { Analyze: undefined };
+export type ProfileStackParamList = { Profile: undefined };
 
-/** Screen-level props for a given tab route name */
-export type TabScreenProps<T extends keyof TabParamList> = BottomTabScreenProps<TabParamList, T>;
+// ---------------------------------------------------------------------------
+// Convenience prop types
+// ---------------------------------------------------------------------------
+
+export type RootNavigatorScreenProps<T extends keyof RootNavigatorParamList> = 
+  NativeStackScreenProps<RootNavigatorParamList, T>;
+
+export type AuthenticatedStackNavigatorScreenProps<T extends keyof AuthenticatedStackNavigatorParamList> = 
+  NativeStackScreenProps<AuthenticatedStackNavigatorParamList, T>;
+
+export type UnAuthenticatedStackNavigatorScreenProps<T extends keyof UnAuthenticatedStackNavigatorParamList> = 
+  NativeStackScreenProps<UnAuthenticatedStackNavigatorParamList, T>;
+
+export type BottomTabNavigatorScreenProps<T extends keyof BottomTabNavigatorParamList> =
+  CompositeScreenProps<
+    BottomTabScreenProps<BottomTabNavigatorParamList, T>,
+    AuthenticatedStackNavigatorScreenProps<keyof AuthenticatedStackNavigatorParamList>
+  >;
+
+export type HomeStackScreenProps<T extends keyof HomeStackParamList> = 
+  CompositeScreenProps<
+    NativeStackScreenProps<HomeStackParamList, T>,
+    BottomTabNavigatorScreenProps<keyof BottomTabNavigatorParamList>
+  >;
+
+export type ListStackScreenProps<T extends keyof ListStackParamList> = 
+  CompositeScreenProps<
+    NativeStackScreenProps<ListStackParamList, T>,
+    BottomTabNavigatorScreenProps<keyof BottomTabNavigatorParamList>
+  >;
+
+export type MembersStackScreenProps<T extends keyof MembersStackParamList> = 
+  CompositeScreenProps<
+    NativeStackScreenProps<MembersStackParamList, T>,
+    BottomTabNavigatorScreenProps<keyof BottomTabNavigatorParamList>
+  >;
+
+export type AnalyzeStackScreenProps<T extends keyof AnalyzeStackParamList> = 
+  CompositeScreenProps<
+    NativeStackScreenProps<AnalyzeStackParamList, T>,
+    BottomTabNavigatorScreenProps<keyof BottomTabNavigatorParamList>
+  >;
+
+export type ProfileStackScreenProps<T extends keyof ProfileStackParamList> = 
+  CompositeScreenProps<
+    NativeStackScreenProps<ProfileStackParamList, T>,
+    BottomTabNavigatorScreenProps<keyof BottomTabNavigatorParamList>
+  >;
 
 export interface IAppNotification {
   id: string;

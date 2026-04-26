@@ -12,6 +12,25 @@ import {
 import { db } from "./firebaseConfig";
 import { IGroceryItem } from "../types";
 import { createNotification } from "./notification";
+import { getDoc } from "firebase/firestore";
+
+/**
+ * Fetches a single grocery item by its ID
+ * @param itemId - The ID of the item to fetch
+ */
+export const getGroceryItem = async (itemId: string): Promise<IGroceryItem | null> => {
+  try {
+    const itemRef = doc(db, "grocery_items", itemId);
+    const itemSnap = await getDoc(itemRef);
+    if (itemSnap.exists()) {
+      return itemSnap.data() as IGroceryItem;
+    }
+    return null;
+  } catch (error) {
+    console.error("Get Grocery Item Error:", error);
+    throw error;
+  }
+};
 
 /**
  * Adds a new grocery item to the family list

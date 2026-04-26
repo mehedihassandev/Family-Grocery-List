@@ -16,9 +16,9 @@ export enum ERootRoutes {
 }
 
 export enum ETabRoutes {
-  HOME = "Home",
-  LIST = "List",
-  MEMBERS = "Members",
-  ANALYZE = "Analyze",
-  PROFILE = "Profile",
+  HOME = "HomeStack",
+  LIST = "ListStack",
+  MEMBERS = "MembersStack",
+  ANALYZE = "AnalyzeStack",
+  PROFILE = "ProfileStack",
 }

@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { MembersStackScreenProps } from "../types";
 import { View, Text, FlatList, Image, TouchableOpacity, Share, StatusBar } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Share2, Crown, Trash2, LogOut } from "lucide-react-native";
@@ -29,11 +30,12 @@ const getFamilyActionErrorMessage = (error: unknown, fallback: string) => {
   return rawMessage.trim() || fallback;
 };
 
+
 /**
  * Premium Family Members Management Screen
  * Why: To provide a high-fidelity experience for managing family groups with elegant feedback.
  */
-const MembersScreen = () => {
+const MembersScreen = ({ navigation }: MembersStackScreenProps<"Members">) => {
   const { user } = useAuthStore();
   const [members, setMembers] = useState<IUser[]>([]);
   const [family, setFamily] = useState<IFamily | null>(null);

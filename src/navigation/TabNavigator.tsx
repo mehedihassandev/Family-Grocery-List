@@ -9,13 +9,54 @@ import AnalyzeScreen from "../screens/AnalyzeScreen";
 import ProfileScreen from "../screens/ProfileScreen";
 import { useAuthStore } from "../store/useAuthStore";
 import { useNotificationStore } from "../store/useNotificationStore";
-import type { TabParamList } from "../types";
+import { createNativeStackNavigator } from "@react-navigation/native-stack";
+import { 
+  BottomTabNavigatorParamList, 
+  HomeStackParamList,
+  ListStackParamList,
+  MembersStackParamList,
+  AnalyzeStackParamList,
+  ProfileStackParamList
+} from "../types";
 import { View } from "react-native";
 import { ETabRoutes } from "./routes";
 
-// Passing TabParamList ensures tab names match the declared param list;
-// mistyped screen names become TypeScript errors at compile time.
-const Tab = createBottomTabNavigator<TabParamList>();
+const Tab = createBottomTabNavigator<BottomTabNavigatorParamList>();
+const HomeStack = createNativeStackNavigator<HomeStackParamList>();
+const ListStack = createNativeStackNavigator<ListStackParamList>();
+const MembersStack = createNativeStackNavigator<MembersStackParamList>();
+const AnalyzeStack = createNativeStackNavigator<AnalyzeStackParamList>();
+const ProfileStack = createNativeStackNavigator<ProfileStackParamList>();
+
+const HomeStackScreen = () => (
+  <HomeStack.Navigator screenOptions={{ headerShown: false }}>
+    <HomeStack.Screen name="Home" component={DashboardScreen} />
+  </HomeStack.Navigator>
+);
+
+const ListStackScreen = () => (
+  <ListStack.Navigator screenOptions={{ headerShown: false }}>
+    <ListStack.Screen name="List" component={HomeScreen} />
+  </ListStack.Navigator>
+);
+
+const MembersStackScreen = () => (
+  <MembersStack.Navigator screenOptions={{ headerShown: false }}>
+    <MembersStack.Screen name="Members" component={MembersScreen} />
+  </MembersStack.Navigator>
+);
+
+const AnalyzeStackScreen = () => (
+  <AnalyzeStack.Navigator screenOptions={{ headerShown: false }}>
+    <AnalyzeStack.Screen name="Analyze" component={AnalyzeScreen} />
+  </AnalyzeStack.Navigator>
+);
+
+const ProfileStackScreen = () => (
+  <ProfileStack.Navigator screenOptions={{ headerShown: false }}>
+    <ProfileStack.Screen name="Profile" component={ProfileScreen} />
+  </ProfileStack.Navigator>
+);
 
 const TAB_ICON_SIZE = 20;
 const TAB_ICON_STROKE_WIDTH = 2.5;
@@ -76,9 +117,10 @@ const TabNavigator = () => {
       }}
     >
       <Tab.Screen
-        name={ETabRoutes.HOME}
-        component={DashboardScreen}
+        name="HomeStack"
+        component={HomeStackScreen}
         options={{
+          title: "Home",
           tabBarIcon: ({ color, focused }) => (
             <View className="items-center">
               {focused && (
@@ -93,9 +135,10 @@ const TabNavigator = () => {
       {user?.familyId ? (
         <>
           <Tab.Screen
-            name={ETabRoutes.LIST}
-            component={HomeScreen}
+            name="ListStack"
+            component={ListStackScreen}
             options={{
+              title: "List",
               tabBarIcon: ({ color, focused }) => (
                 <View className="items-center">
                   {focused && (
@@ -111,9 +154,10 @@ const TabNavigator = () => {
             }}
           />
           <Tab.Screen
-            name={ETabRoutes.MEMBERS}
-            component={MembersScreen}
+            name="MembersStack"
+            component={MembersStackScreen}
             options={{
+              title: "Members",
               tabBarIcon: ({ color, focused }) => (
                 <View className="items-center">
                   {focused && (
@@ -125,9 +169,10 @@ const TabNavigator = () => {
             }}
           />
           <Tab.Screen
-            name={ETabRoutes.ANALYZE}
-            component={AnalyzeScreen}
+            name="AnalyzeStack"
+            component={AnalyzeStackScreen}
             options={{
+              title: "Analyze",
               tabBarIcon: ({ color, focused }) => (
                 <View className="items-center">
                   {focused && (
@@ -146,9 +191,10 @@ const TabNavigator = () => {
       ) : null}
 
       <Tab.Screen
-        name={ETabRoutes.PROFILE}
-        component={ProfileScreen}
+        name="ProfileStack"
+        component={ProfileStackScreen}
         options={{
+          title: "Profile",
           tabBarIcon: ({ color, focused }) => (
             <View className="items-center">
               {focused && (

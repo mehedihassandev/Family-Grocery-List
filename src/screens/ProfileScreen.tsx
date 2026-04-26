@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { ProfileStackScreenProps } from "../types";
 import {
   View,
   Text,
@@ -46,12 +47,13 @@ const getInitials = (name?: string | null) => {
   return parts[0][0].toUpperCase();
 };
 
+
 /**
  * User profile and settings screen
  * Why: To manage account details, app preferences, and family membership.
  * Note: Theme functionality removed to enforce a single light theme.
  */
-const ProfileScreen = ({ navigation }: any) => {
+const ProfileScreen = ({ navigation }: ProfileStackScreenProps<"Profile">) => {
   const { user, setUser } = useAuthStore();
   const [leavingFamily, setLeavingFamily] = useState(false);
 

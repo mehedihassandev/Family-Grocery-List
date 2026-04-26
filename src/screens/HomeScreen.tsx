@@ -24,7 +24,7 @@ import {
 } from "lucide-react-native";
 import { useAuthStore } from "../store/useAuthStore";
 import { subscribeToGroceryList, toggleItemCompletion } from "../services/grocery";
-import { IFamily, IGroceryItem } from "../types";
+import { IFamily, IGroceryItem, ListStackScreenProps } from "../types";
 import ItemCard from "../components/ItemCard";
 import AddItemModal from "../components/AddItemModal";
 import EditItemModal from "../components/EditItemModal";
@@ -72,7 +72,7 @@ const getFirebaseErrorMessage = (error: Error) => {
  * Main grocery list screen
  * Why: To allow users to view, search, filter, and manage grocery items in their family list.
  */
-const HomeScreen = () => {
+const HomeScreen = ({ navigation }: ListStackScreenProps<"List">) => {
   const { user } = useAuthStore();
   const insets = useSafeAreaInsets();
   const [items, setItems] = useState<IGroceryItem[]>([]);
@@ -86,8 +86,6 @@ const HomeScreen = () => {
   const [refreshSeed, setRefreshSeed] = useState(0);
   const [memberCount, setMemberCount] = useState(0);
 
-  const [viewingItemId, setViewingItemId] = useState<string | null>(null);
-  const [editingItemId, setEditingItemId] = useState<string | null>(null);
   const [isNotifOpen, setNotifOpen] = useState(false);
 
   const [isRefreshing, setRefreshing] = useState(false);
@@ -169,15 +167,15 @@ const HomeScreen = () => {
 
   const sortedItems = useMemo(() => sortLegacyGroceryItemsForHome(items), [items]);
 
-  const viewingItem = useMemo(
-    () => (viewingItemId ? (items.find((item) => item.id === viewingItemId) ?? null) : null),
-    [items, viewingItemId],
-  );
+  // const viewingItem = useMemo(
+  //   () => (viewingItemId ? (items.find((item) => item.id === viewingItemId) ?? null) : null),
+  //   [items, viewingItemId],
+  // );
 
-  const editingItem = useMemo(
-    () => (editingItemId ? (items.find((item) => item.id === editingItemId) ?? null) : null),
-    [items, editingItemId],
-  );
+  // const editingItem = useMemo(
+  //   () => (editingItemId ? (items.find((item) => item.id === editingItemId) ?? null) : null),
+  //   [items, editingItemId],
+  // );
 
   const filteredItems = useMemo(() => {
     const query = searchQuery.trim().toLowerCase();
@@ -437,7 +435,9 @@ const HomeScreen = () => {
               <ItemCard
                 item={item}
                 onToggle={handleToggle}
-                onPress={(currentItem) => setViewingItemId(currentItem.id)}
+                onPress={(currentItem) =>
+                  navigation.navigate("ItemDetail", { itemId: currentItem.id })
+                }
                 currentUserId={user?.uid}
               />
             </View>
@@ -506,23 +506,6 @@ const HomeScreen = () => {
           uid: user?.uid || "",
           name: user?.displayName || "Anonymous",
         }}
-      />
-
-      <ItemDetailModal
-        visible={Boolean(viewingItemId)}
-        onClose={() => setViewingItemId(null)}
-        item={viewingItem}
-        onEdit={(item) => {
-          setViewingItemId(null);
-          setEditingItemId(item.id);
-        }}
-      />
-
-      <EditItemModal
-        visible={Boolean(editingItemId)}
-        onClose={() => setEditingItemId(null)}
-        item={editingItem}
-        familyId={user?.familyId || ""}
       />
 
       <NotificationModal visible={isNotifOpen} onClose={() => setNotifOpen(false)} />
