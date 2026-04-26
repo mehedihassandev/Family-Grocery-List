@@ -10,16 +10,15 @@ import ProfileScreen from "../screens/ProfileScreen";
 import { useAuthStore } from "../store/useAuthStore";
 import { useNotificationStore } from "../store/useNotificationStore";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
-import { 
-  BottomTabNavigatorParamList, 
+import {
+  BottomTabNavigatorParamList,
   HomeStackParamList,
   ListStackParamList,
   MembersStackParamList,
   AnalyzeStackParamList,
-  ProfileStackParamList
+  ProfileStackParamList,
 } from "../types";
 import { View } from "react-native";
-import { ETabRoutes } from "./routes";
 
 const Tab = createBottomTabNavigator<BottomTabNavigatorParamList>();
 const HomeStack = createNativeStackNavigator<HomeStackParamList>();

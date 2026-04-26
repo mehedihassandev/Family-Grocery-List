@@ -21,7 +21,7 @@ const LoadingOverlay = ({ visible }: ILoadingOverlayProps) => {
           duration: 1000,
           easing: Easing.linear,
           useNativeDriver: true,
-        })
+        }),
       ).start();
     } else {
       rotateAnim.setValue(0);

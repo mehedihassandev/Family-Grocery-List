@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { MembersStackScreenProps } from "../types";
+import { MembersStackScreenProps, IUser, IFamily } from "../types";
 import { View, Text, FlatList, Image, TouchableOpacity, Share, StatusBar } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Share2, Crown, Trash2, LogOut } from "lucide-react-native";
@@ -10,7 +10,6 @@ import {
   removeMemberAsOwner,
   leaveFamily,
 } from "../services/family";
-import { IUser, IFamily } from "../types";
 import { AppHeader, Card, StatusModal, LoadingOverlay } from "../components/ui";
 import NotificationModal from "../components/NotificationModal";
 
@@ -29,7 +28,6 @@ const getFamilyActionErrorMessage = (error: unknown, fallback: string) => {
 
   return rawMessage.trim() || fallback;
 };
-
 
 /**
  * Premium Family Members Management Screen

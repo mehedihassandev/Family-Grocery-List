@@ -1,15 +1,8 @@
 import React from "react";
-import {
-  useController,
-  Control,
-  FieldValues,
-  Path,
-  UseControllerProps,
-} from "react-hook-form";
+import { useController, Control, FieldValues, Path, UseControllerProps } from "react-hook-form";
 import InputField, { IInputFieldProps } from "./InputField";
 
-export interface IRhfTextfieldProps<T extends FieldValues>
-  extends Omit<IInputFieldProps, "value"> {
+export interface IRhfTextfieldProps<T extends FieldValues> extends Omit<IInputFieldProps, "value"> {
   name: Path<T>;
   control: Control<T>;
   rules?: UseControllerProps<T, Path<T>>["rules"];

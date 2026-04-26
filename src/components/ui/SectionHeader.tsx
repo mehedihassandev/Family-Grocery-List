@@ -20,13 +20,9 @@ const SectionHeader = ({ eyebrow, title, subtitle }: ISectionHeaderProps) => {
           {eyebrow}
         </Text>
       ) : null}
-      <Text className="text-3xl font-extrabold tracking-tight text-text-primary">
-        {title}
-      </Text>
+      <Text className="text-3xl font-extrabold tracking-tight text-text-primary">{title}</Text>
       {subtitle ? (
-        <Text className="mt-2 text-sm leading-6 text-text-secondary">
-          {subtitle}
-        </Text>
+        <Text className="mt-2 text-sm leading-6 text-text-secondary">{subtitle}</Text>
       ) : null}
     </View>
   );

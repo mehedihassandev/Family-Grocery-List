@@ -20,14 +20,9 @@ interface IDonutChartProps {
  * Note: Replaces the previous hand-written SVG version to ensure perfect rendering.
  * @param props - Component props including chart data, total value, and size configuration
  */
-const DonutChart = ({
-  data = [],
-  total = 0,
-  size = 120,
-  strokeWidth = 14,
-}: IDonutChartProps) => {
+const DonutChart = ({ data = [], total = 0, size = 120, strokeWidth = 14 }: IDonutChartProps) => {
   // Map our internal format to gifted-charts format
-  const chartData = data.map(item => ({
+  const chartData = data.map((item) => ({
     value: item.value || 0,
     color: item.color,
     // Add a slight shift to the first segment for better aesthetic

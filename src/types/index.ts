@@ -1,8 +1,5 @@
-import type {
-  NativeStackNavigationProp,
-  NativeStackScreenProps,
-} from "@react-navigation/native-stack";
-import type { BottomTabNavigationProp, BottomTabScreenProps } from "@react-navigation/bottom-tabs";
+import type { NativeStackScreenProps } from "@react-navigation/native-stack";
+import type { BottomTabScreenProps } from "@react-navigation/bottom-tabs";
 import type { CompositeScreenProps } from "@react-navigation/native";
 import { ERootRoutes, ETabRoutes } from "../navigation/routes";
 
@@ -98,7 +95,7 @@ export type AuthenticatedStackNavigatorParamList = {
   [ERootRoutes.PRIVACY_SECURITY]: undefined;
   /** Help & support FAQ */
   [ERootRoutes.HELP_SUPPORT]: undefined;
-  
+
   // New screens that were previously Modals
   ItemDetail: { itemId: string };
   EditItem: { itemId: string };
@@ -129,14 +126,16 @@ export type ProfileStackParamList = { Profile: undefined };
 // Convenience prop types
 // ---------------------------------------------------------------------------
 
-export type RootNavigatorScreenProps<T extends keyof RootNavigatorParamList> = 
+export type RootNavigatorScreenProps<T extends keyof RootNavigatorParamList> =
   NativeStackScreenProps<RootNavigatorParamList, T>;
 
-export type AuthenticatedStackNavigatorScreenProps<T extends keyof AuthenticatedStackNavigatorParamList> = 
-  NativeStackScreenProps<AuthenticatedStackNavigatorParamList, T>;
+export type AuthenticatedStackNavigatorScreenProps<
+  T extends keyof AuthenticatedStackNavigatorParamList,
+> = NativeStackScreenProps<AuthenticatedStackNavigatorParamList, T>;
 
-export type UnAuthenticatedStackNavigatorScreenProps<T extends keyof UnAuthenticatedStackNavigatorParamList> = 
-  NativeStackScreenProps<UnAuthenticatedStackNavigatorParamList, T>;
+export type UnAuthenticatedStackNavigatorScreenProps<
+  T extends keyof UnAuthenticatedStackNavigatorParamList,
+> = NativeStackScreenProps<UnAuthenticatedStackNavigatorParamList, T>;
 
 export type BottomTabNavigatorScreenProps<T extends keyof BottomTabNavigatorParamList> =
   CompositeScreenProps<
@@ -144,35 +143,30 @@ export type BottomTabNavigatorScreenProps<T extends keyof BottomTabNavigatorPara
     AuthenticatedStackNavigatorScreenProps<keyof AuthenticatedStackNavigatorParamList>
   >;
 
-export type HomeStackScreenProps<T extends keyof HomeStackParamList> = 
-  CompositeScreenProps<
-    NativeStackScreenProps<HomeStackParamList, T>,
-    BottomTabNavigatorScreenProps<keyof BottomTabNavigatorParamList>
-  >;
+export type HomeStackScreenProps<T extends keyof HomeStackParamList> = CompositeScreenProps<
+  NativeStackScreenProps<HomeStackParamList, T>,
+  BottomTabNavigatorScreenProps<keyof BottomTabNavigatorParamList>
+>;
 
-export type ListStackScreenProps<T extends keyof ListStackParamList> = 
-  CompositeScreenProps<
-    NativeStackScreenProps<ListStackParamList, T>,
-    BottomTabNavigatorScreenProps<keyof BottomTabNavigatorParamList>
-  >;
+export type ListStackScreenProps<T extends keyof ListStackParamList> = CompositeScreenProps<
+  NativeStackScreenProps<ListStackParamList, T>,
+  BottomTabNavigatorScreenProps<keyof BottomTabNavigatorParamList>
+>;
 
-export type MembersStackScreenProps<T extends keyof MembersStackParamList> = 
-  CompositeScreenProps<
-    NativeStackScreenProps<MembersStackParamList, T>,
-    BottomTabNavigatorScreenProps<keyof BottomTabNavigatorParamList>
-  >;
+export type MembersStackScreenProps<T extends keyof MembersStackParamList> = CompositeScreenProps<
+  NativeStackScreenProps<MembersStackParamList, T>,
+  BottomTabNavigatorScreenProps<keyof BottomTabNavigatorParamList>
+>;
 
-export type AnalyzeStackScreenProps<T extends keyof AnalyzeStackParamList> = 
-  CompositeScreenProps<
-    NativeStackScreenProps<AnalyzeStackParamList, T>,
-    BottomTabNavigatorScreenProps<keyof BottomTabNavigatorParamList>
-  >;
+export type AnalyzeStackScreenProps<T extends keyof AnalyzeStackParamList> = CompositeScreenProps<
+  NativeStackScreenProps<AnalyzeStackParamList, T>,
+  BottomTabNavigatorScreenProps<keyof BottomTabNavigatorParamList>
+>;
 
-export type ProfileStackScreenProps<T extends keyof ProfileStackParamList> = 
-  CompositeScreenProps<
-    NativeStackScreenProps<ProfileStackParamList, T>,
-    BottomTabNavigatorScreenProps<keyof BottomTabNavigatorParamList>
-  >;
+export type ProfileStackScreenProps<T extends keyof ProfileStackParamList> = CompositeScreenProps<
+  NativeStackScreenProps<ProfileStackParamList, T>,
+  BottomTabNavigatorScreenProps<keyof BottomTabNavigatorParamList>
+>;
 
 export interface IAppNotification {
   id: string;

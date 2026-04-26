@@ -47,7 +47,6 @@ const getInitials = (name?: string | null) => {
   return parts[0][0].toUpperCase();
 };
 
-
 /**
  * User profile and settings screen
  * Why: To manage account details, app preferences, and family membership.

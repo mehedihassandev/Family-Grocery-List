@@ -24,15 +24,12 @@ import {
 } from "lucide-react-native";
 import { useAuthStore } from "../store/useAuthStore";
 import { subscribeToGroceryList, toggleItemCompletion } from "../services/grocery";
-import { IFamily, IGroceryItem, ListStackScreenProps } from "../types";
+import { IGroceryItem, ListStackScreenProps } from "../types";
 import ItemCard from "../components/ItemCard";
 import AddItemModal from "../components/AddItemModal";
-import EditItemModal from "../components/EditItemModal";
 import EmptyState from "../components/EmptyState";
 import { GROCERY_CATEGORIES, sortLegacyGroceryItemsForHome } from "../features/grocery";
-import { getFamilyDetails, subscribeToFamilyMembers } from "../services/family";
 import { AppHeader, Chip } from "../components/ui";
-import ItemDetailModal from "../components/ItemDetailModal";
 import NotificationModal from "../components/NotificationModal";
 
 type TStatusFilter = "all" | "pending" | "completed";
@@ -81,10 +78,8 @@ const HomeScreen = ({ navigation }: ListStackScreenProps<"List">) => {
   const [statusFilter, setStatusFilter] = useState<TStatusFilter>("all");
   const [activeCategory, setActiveCategory] = useState<string>(ALL_CATEGORY);
   const [searchQuery, setSearchQuery] = useState("");
-  const [familyName, setFamilyName] = useState("Our Family");
   const [listError, setListError] = useState<string | null>(null);
   const [refreshSeed, setRefreshSeed] = useState(0);
-  const [memberCount, setMemberCount] = useState(0);
 
   const [isNotifOpen, setNotifOpen] = useState(false);
 
@@ -119,51 +114,6 @@ const HomeScreen = ({ navigation }: ListStackScreenProps<"List">) => {
 
     return () => unsubscribe();
   }, [user?.familyId, refreshSeed]);
-
-  useEffect(() => {
-    if (!user?.familyId) {
-      setFamilyName("Our Family");
-      return;
-    }
-
-    let isMounted = true;
-
-    void getFamilyDetails(user.familyId)
-      .then((family) => {
-        if (!isMounted) return;
-        const name = (family as IFamily | undefined)?.name?.trim();
-        setFamilyName(name || "Our Family");
-      })
-      .catch(() => {
-        if (isMounted) setFamilyName("Our Family");
-      });
-
-    return () => {
-      isMounted = false;
-    };
-  }, [user?.familyId]);
-
-  useEffect(() => {
-    if (!user?.familyId) {
-      setMemberCount(0);
-      return;
-    }
-
-    const unsubscribe = subscribeToFamilyMembers(
-      user.familyId,
-      (members) => {
-        setMemberCount(members.length);
-      },
-      (error) => {
-        if (__DEV__) {
-          console.warn("[HomeScreen] member subscription error:", error.message);
-        }
-        setMemberCount(0);
-      },
-    );
-
-    return () => unsubscribe();
-  }, [user?.familyId]);
 
   const sortedItems = useMemo(() => sortLegacyGroceryItemsForHome(items), [items]);
 

@@ -31,9 +31,7 @@ const ShortcutCard = ({
       >
         <Icon stroke={iconColor} size={26} strokeWidth={2.2} />
       </TouchableOpacity>
-      <Text className="text-[13px] font-bold text-text-secondary text-center">
-        {label}
-      </Text>
+      <Text className="text-[13px] font-bold text-text-secondary text-center">{label}</Text>
     </View>
   );
 };

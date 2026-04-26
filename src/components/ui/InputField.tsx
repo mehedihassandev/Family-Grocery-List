@@ -34,9 +34,7 @@ const InputField = ({
 
       <View
         className={`flex-row items-center rounded-md border bg-surface-alt px-4 ${
-          error 
-            ? "border-danger" 
-            : "border-border"
+          error ? "border-danger" : "border-border"
         }`}
       >
         {icon ? icon : null}

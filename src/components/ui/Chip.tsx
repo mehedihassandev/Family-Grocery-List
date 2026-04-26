@@ -22,13 +22,7 @@ const Chip = ({ label, selected = false, className, ...props }: IChipProps) => {
           : "border-border-muted bg-surface-muted"
       } ${className ?? ""}`}
     >
-      <Text
-        className={`text-[13px] font-semibold ${
-          selected
-            ? "text-white"
-            : "text-text-500"
-        }`}
-      >
+      <Text className={`text-[13px] font-semibold ${selected ? "text-white" : "text-text-500"}`}>
         {label}
       </Text>
     </TouchableOpacity>

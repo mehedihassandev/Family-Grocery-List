@@ -31,8 +31,8 @@ export const SubHeader = ({ title, onBackPress }: ISubHeaderProps) => {
 
   return (
     <View className="px-6 py-4 flex-row items-center border-b border-border bg-background">
-      <TouchableOpacity 
-        onPress={handleBack} 
+      <TouchableOpacity
+        onPress={handleBack}
         className="mr-4 h-10 w-10 items-center justify-center rounded-full bg-surface-alt border border-border"
         hitSlop={{ top: 10, right: 10, bottom: 10, left: 10 }}
       >

@@ -31,7 +31,7 @@ const ProgressBar = ({
       duration: 800,
       useNativeDriver: false,
     }).start();
-  }, [progress]);
+  }, [progress, animatedWidth]);
 
   const widthInterpolation = animatedWidth.interpolate({
     inputRange: [0, 100],
@@ -42,24 +42,13 @@ const ProgressBar = ({
     <View className="mb-4">
       {(label || showPercentage) && (
         <View className="flex-row justify-between items-center mb-2">
-          {label && (
-            <Text className="text-[13px] font-bold text-text-secondary">
-              {label}
-            </Text>
-          )}
+          {label && <Text className="text-[13px] font-bold text-text-secondary">{label}</Text>}
           {showPercentage && (
-            <Text className="text-[13px] font-bold text-primary-500">
-              {Math.round(progress)}%
-            </Text>
+            <Text className="text-[13px] font-bold text-primary-500">{Math.round(progress)}%</Text>
           )}
         </View>
       )}
-      <View
-        style={[
-          styles.container,
-          { backgroundColor, height, borderRadius: height / 2 },
-        ]}
-      >
+      <View style={[styles.container, { backgroundColor, height, borderRadius: height / 2 }]}>
         <Animated.View
           style={[
             styles.bar,

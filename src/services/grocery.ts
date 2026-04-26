@@ -8,11 +8,11 @@ import {
   where,
   onSnapshot,
   serverTimestamp,
+  getDoc,
 } from "firebase/firestore";
 import { db } from "./firebaseConfig";
 import { IGroceryItem } from "../types";
 import { createNotification } from "./notification";
-import { getDoc } from "firebase/firestore";
 
 /**
  * Fetches a single grocery item by its ID

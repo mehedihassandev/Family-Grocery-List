@@ -52,10 +52,14 @@ const StatusModal = ({
    */
   const getIconBg = () => {
     switch (type) {
-      case "success": return "bg-primary-50";
-      case "error": return "bg-danger-light";
-      case "warning": return "bg-warning-light";
-      case "confirm": return "bg-info-light";
+      case "success":
+        return "bg-primary-50";
+      case "error":
+        return "bg-danger-light";
+      case "warning":
+        return "bg-warning-light";
+      case "confirm":
+        return "bg-info-light";
     }
   };
 
@@ -63,29 +67,25 @@ const StatusModal = ({
     <Modal visible={visible} transparent animationType="fade">
       <View style={styles.overlay} className="bg-black/40">
         <View className="w-[85%] rounded-[32px] bg-white p-8 items-center shadow-2xl">
-          <View className={`h-24 w-24 rounded-[32px] items-center justify-center mb-6 ${getIconBg()}`}>
+          <View
+            className={`h-24 w-24 rounded-[32px] items-center justify-center mb-6 ${getIconBg()}`}
+          >
             {getIcon()}
           </View>
-          
+
           <Text className="text-2xl font-bold text-text-primary text-center mb-2 tracking-tight">
             {title}
           </Text>
-          
+
           <Text className="text-[15px] leading-6 text-text-secondary text-center mb-8 px-2">
             {message}
           </Text>
 
           <View className="w-full gap-3">
-            <PrimaryButton 
-              title={confirmLabel} 
-              onPress={onConfirm || onClose} 
-            />
-            
+            <PrimaryButton title={confirmLabel} onPress={onConfirm || onClose} />
+
             {type === "confirm" && (
-              <TouchableOpacity 
-                onPress={onClose}
-                className="py-3 items-center"
-              >
+              <TouchableOpacity onPress={onClose} className="py-3 items-center">
                 <Text className="text-text-muted font-bold text-[15px]">{cancelLabel}</Text>
               </TouchableOpacity>
             )}

@@ -81,10 +81,7 @@ const toTimestampMs = (value: unknown) => {
     }
 
     if (typeof maybeTimestamp.seconds === "number") {
-      const nanos =
-        typeof maybeTimestamp.nanoseconds === "number"
-          ? maybeTimestamp.nanoseconds
-          : 0;
+      const nanos = typeof maybeTimestamp.nanoseconds === "number" ? maybeTimestamp.nanoseconds : 0;
       return maybeTimestamp.seconds * 1000 + Math.floor(nanos / 1_000_000);
     }
   }
@@ -118,9 +115,7 @@ export const toGroceryItemModel = (item: IGroceryItem): IGroceryItemModel => ({
  * Maps a IGroceryItemModel back to a partial legacy IGroceryItem
  * @param item - The grocery item model
  */
-export const fromGroceryItemModel = (
-  item: IGroceryItemModel,
-): Partial<IGroceryItem> => ({
+export const fromGroceryItemModel = (item: IGroceryItemModel): Partial<IGroceryItem> => ({
   id: item.id,
   name: item.title,
   category: item.category,

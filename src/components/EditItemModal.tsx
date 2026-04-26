@@ -62,7 +62,7 @@ const EditItemModal = ({ visible, onClose, item, familyId }: IEditItemModalProps
     setPriority(item.priority || "Medium");
     setQuantity(item.quantity || "");
     setNotes(item.notes || "");
-  }, [item?.id, visible]);
+  }, [item, visible]);
 
   useEffect(() => {
     if (!familyId || !visible) return;
@@ -117,6 +117,7 @@ const EditItemModal = ({ visible, onClose, item, familyId }: IEditItemModalProps
         type: "success",
       });
     } catch (error) {
+      console.error("Update failed:", error);
       setStatusModal({
         visible: true,
         title: "Update Failed",
@@ -145,6 +146,7 @@ const EditItemModal = ({ visible, onClose, item, familyId }: IEditItemModalProps
           await deleteGroceryItem(item.id);
           onClose();
         } catch (error) {
+          console.error("Delete failed:", error);
           setStatusModal({
             visible: true,
             title: "Delete Failed",

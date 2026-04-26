@@ -34,9 +34,7 @@ export const PrimaryButton = ({
       activeOpacity={0.75}
       disabled={isDisabled}
       className={`w-full flex-row items-center justify-center rounded-full h-[52px] px-5 ${
-        isDisabled 
-          ? "bg-primary-100" 
-          : "bg-primary-500 shadow-green"
+        isDisabled ? "bg-primary-100" : "bg-primary-500 shadow-green"
       } ${className ?? ""}`}
     >
       {loading ? (
@@ -44,7 +42,9 @@ export const PrimaryButton = ({
       ) : (
         <>
           {icon && <View className="mr-2">{icon}</View>}
-          <Text className={`text-[15px] font-bold ${isDisabled ? "text-primary-300" : "text-white"}`}>
+          <Text
+            className={`text-[15px] font-bold ${isDisabled ? "text-primary-300" : "text-white"}`}
+          >
             {title}
           </Text>
         </>

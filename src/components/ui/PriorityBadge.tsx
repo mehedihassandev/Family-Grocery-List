@@ -18,7 +18,7 @@ const styleMap: Record<string, { bg: string; text: string; border: string }> = {
  */
 const PriorityBadge = ({ priority }: IPriorityBadgeProps) => {
   const styles = styleMap[priority] || styleMap.Low;
-  
+
   return (
     <View className={`px-2.5 py-1 rounded-lg border ${styles.bg} ${styles.border}`}>
       <Text className={`${styles.text} text-[10px] font-black uppercase tracking-widest`}>

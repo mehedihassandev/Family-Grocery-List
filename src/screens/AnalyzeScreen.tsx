@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { AnalyzeStackScreenProps } from "../types";
+import { AnalyzeStackScreenProps, IGroceryItem } from "../types";
 import { ScrollView, StatusBar, Text, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import {
@@ -11,7 +11,6 @@ import {
 } from "lucide-react-native";
 import { useAuthStore } from "../store/useAuthStore";
 import { subscribeToGroceryList } from "../services/grocery";
-import { IGroceryItem } from "../types";
 import { AppHeader, Card, DonutChart, ProgressBar } from "../components/ui";
 import NotificationModal from "../components/NotificationModal";
 

@@ -6,7 +6,6 @@ import {
   Text,
   TouchableOpacity,
   View,
-  SafeAreaView,
   ActivityIndicator,
 } from "react-native";
 import { X, Check, Trash2 } from "lucide-react-native";
@@ -17,16 +16,19 @@ import { GROCERY_CATEGORIES } from "../features/grocery";
 import { InputField, PrimaryButton, Chip, LoadingOverlay, StatusModal } from "../components/ui";
 import { useAuthStore } from "../store/useAuthStore";
 
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+
 const CATEGORIES: Category[] = [...GROCERY_CATEGORIES];
 const PRIORITIES: Priority[] = ["Low", "Medium", "Urgent"];
-
-import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 /**
  * Edit Item Screen
  * Why: To provide a robust editing experience that maintains correct navigation context.
  */
-const EditItemScreen = ({ route, navigation }: AuthenticatedStackNavigatorScreenProps<"EditItem">) => {
+const EditItemScreen = ({
+  route,
+  navigation,
+}: AuthenticatedStackNavigatorScreenProps<"EditItem">) => {
   const insets = useSafeAreaInsets();
   const { itemId } = route.params;
   const { user } = useAuthStore();
@@ -125,6 +127,7 @@ const EditItemScreen = ({ route, navigation }: AuthenticatedStackNavigatorScreen
         type: "success",
       });
     } catch (error) {
+      console.error("Update failed:", error);
       setStatusModal({
         visible: true,
         title: "Update Failed",
@@ -150,6 +153,7 @@ const EditItemScreen = ({ route, navigation }: AuthenticatedStackNavigatorScreen
           await deleteGroceryItem(item.id);
           navigation.navigate("Root");
         } catch (error) {
+          console.error("Delete failed:", error);
           setStatusModal({
             visible: true,
             title: "Delete Failed",
@@ -209,7 +213,10 @@ const EditItemScreen = ({ route, navigation }: AuthenticatedStackNavigatorScreen
           </TouchableOpacity>
         </View>
 
-        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 40 }}>
+        <ScrollView
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={{ paddingBottom: 40 }}
+        >
           <InputField
             label="ITEM NAME"
             placeholder="What needs to be bought?"

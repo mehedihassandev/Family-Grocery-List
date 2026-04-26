@@ -1,10 +1,12 @@
 import React, { useEffect, useState } from "react";
-import { ScrollView, Text, TouchableOpacity, View, ActivityIndicator, SafeAreaView } from "react-native";
+import { ScrollView, Text, TouchableOpacity, View, ActivityIndicator } from "react-native";
 import { X, Edit2, Calendar, User, ShoppingBasket, AlignLeft, Info } from "lucide-react-native";
 import { AuthenticatedStackNavigatorScreenProps, IGroceryItem } from "../types";
 import { GroceryPriority } from "../features/grocery";
 import { Card, Chip, PriorityBadge } from "../components/ui";
 import { getGroceryItem } from "../services/grocery";
+
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 /**
  * Formats a date value to a readable string
@@ -16,13 +18,14 @@ const formatDate = (dateValue: any) => {
   return dateStr !== "Invalid Date" ? dateStr : "Unknown";
 };
 
-import { useSafeAreaInsets } from "react-native-safe-area-context";
-
 /**
  * Item Detail Screen
  * Why: To provide a robust view of item details that maintains correct navigation context.
  */
-const ItemDetailScreen = ({ route, navigation }: AuthenticatedStackNavigatorScreenProps<"ItemDetail">) => {
+const ItemDetailScreen = ({
+  route,
+  navigation,
+}: AuthenticatedStackNavigatorScreenProps<"ItemDetail">) => {
   const insets = useSafeAreaInsets();
   const { itemId } = route.params;
   const [item, setItem] = useState<IGroceryItem | null>(null);
@@ -163,9 +166,7 @@ const ItemDetailScreen = ({ route, navigation }: AuthenticatedStackNavigatorScre
                 </Text>
               </View>
               <Card className="bg-surface-muted border-dashed">
-                <Text className="text-[15px] leading-relaxed text-text-primary">
-                  {item.notes}
-                </Text>
+                <Text className="text-[15px] leading-relaxed text-text-primary">{item.notes}</Text>
               </Card>
             </View>
           ) : null}
