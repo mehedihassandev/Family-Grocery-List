@@ -1,4 +1,4 @@
-import { GroceryItem, Priority } from "../../types";
+import { IGroceryItem, Priority } from "../../types";
 
 export const GROCERY_CATEGORIES = [
   "Beauty",
@@ -17,7 +17,7 @@ export type GroceryCategory = (typeof GROCERY_CATEGORIES)[number];
 export type GroceryStatus = "pending" | "completed";
 export type GroceryPriority = "urgent" | "medium" | "low";
 
-export interface GroceryItemModel {
+export interface IGroceryItemModel {
   id: string;
   title: string;
   category: GroceryCategory;
@@ -35,12 +35,16 @@ export interface GroceryItemModel {
   completed_at: unknown | null;
 }
 
-type FirestoreTimestampLike = {
+interface IFirestoreTimestampLike {
   seconds?: number;
   nanoseconds?: number;
   toMillis?: () => number;
-};
+}
 
+/**
+ * Checks if a string is a known grocery category
+ * @param value - The category string to check
+ */
 const isKnownCategory = (value: string): value is GroceryCategory =>
   (GROCERY_CATEGORIES as readonly string[]).includes(value);
 
@@ -56,6 +60,10 @@ const modelToLegacyPriority: Record<GroceryPriority, Priority> = {
   low: "Low",
 };
 
+/**
+ * Converts various date/timestamp types to milliseconds
+ * @param value - The value to convert
+ */
 const toTimestampMs = (value: unknown) => {
   if (value instanceof Date) {
     return value.getTime();
@@ -66,17 +74,14 @@ const toTimestampMs = (value: unknown) => {
   }
 
   if (value && typeof value === "object") {
-    const maybeTimestamp = value as FirestoreTimestampLike;
+    const maybeTimestamp = value as IFirestoreTimestampLike;
 
     if (typeof maybeTimestamp.toMillis === "function") {
       return maybeTimestamp.toMillis();
     }
 
     if (typeof maybeTimestamp.seconds === "number") {
-      const nanos =
-        typeof maybeTimestamp.nanoseconds === "number"
-          ? maybeTimestamp.nanoseconds
-          : 0;
+      const nanos = typeof maybeTimestamp.nanoseconds === "number" ? maybeTimestamp.nanoseconds : 0;
       return maybeTimestamp.seconds * 1000 + Math.floor(nanos / 1_000_000);
     }
   }
@@ -84,7 +89,11 @@ const toTimestampMs = (value: unknown) => {
   return 0;
 };
 
-export const toGroceryItemModel = (item: GroceryItem): GroceryItemModel => ({
+/**
+ * Maps a legacy IGroceryItem to the new IGroceryItemModel
+ * @param item - The legacy grocery item
+ */
+export const toGroceryItemModel = (item: IGroceryItem): IGroceryItemModel => ({
   id: item.id,
   title: item.name,
   category: isKnownCategory(item.category) ? item.category : "Other",
@@ -102,9 +111,11 @@ export const toGroceryItemModel = (item: GroceryItem): GroceryItemModel => ({
   completed_at: item.completedAt ?? null,
 });
 
-export const fromGroceryItemModel = (
-  item: GroceryItemModel,
-): Partial<GroceryItem> => ({
+/**
+ * Maps a IGroceryItemModel back to a partial legacy IGroceryItem
+ * @param item - The grocery item model
+ */
+export const fromGroceryItemModel = (item: IGroceryItemModel): Partial<IGroceryItem> => ({
   id: item.id,
   name: item.title,
   category: item.category,
@@ -128,7 +139,11 @@ export const fromGroceryItemModel = (
   completedAt: item.completed_at,
 });
 
-export const sortGroceryItemsForHome = (items: GroceryItemModel[]) => {
+/**
+ * Sorts grocery item models for the home screen
+ * @param items - The grocery item models to sort
+ */
+export const sortGroceryItemsForHome = (items: IGroceryItemModel[]) => {
   const priorityRank: Record<GroceryPriority, number> = {
     urgent: 0,
     medium: 1,
@@ -149,12 +164,16 @@ export const sortGroceryItemsForHome = (items: GroceryItemModel[]) => {
   });
 };
 
-export const sortLegacyGroceryItemsForHome = (items: GroceryItem[]) => {
+/**
+ * Sorts legacy grocery items for the home screen by converting to models first
+ * @param items - The legacy grocery items to sort
+ */
+export const sortLegacyGroceryItemsForHome = (items: IGroceryItem[]) => {
   const models = items.map(toGroceryItemModel);
   const sortedModels = sortGroceryItemsForHome(models);
 
   const byId = new Map(items.map((item) => [item.id, item]));
   return sortedModels
     .map((model) => byId.get(model.id))
-    .filter((item): item is GroceryItem => Boolean(item));
+    .filter((item): item is IGroceryItem => Boolean(item));
 };

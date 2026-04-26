@@ -1,13 +1,18 @@
 import React from "react";
 import { Text, View } from "react-native";
 
-type SectionHeaderProps = {
+interface ISectionHeaderProps {
   eyebrow?: string;
   title: string;
   subtitle?: string;
-};
+}
 
-const SectionHeader = ({ eyebrow, title, subtitle }: SectionHeaderProps) => {
+/**
+ * Clean, consistent section heading
+ * Why: To provide a standard way to title major sections or pages with optional secondary text.
+ * @param props - Component props including title, eyebrow, and subtitle
+ */
+const SectionHeader = ({ eyebrow, title, subtitle }: ISectionHeaderProps) => {
   return (
     <View>
       {eyebrow ? (
@@ -15,13 +20,9 @@ const SectionHeader = ({ eyebrow, title, subtitle }: SectionHeaderProps) => {
           {eyebrow}
         </Text>
       ) : null}
-      <Text className="text-3xl font-extrabold tracking-tight text-text-primary">
-        {title}
-      </Text>
+      <Text className="text-3xl font-extrabold tracking-tight text-text-primary">{title}</Text>
       {subtitle ? (
-        <Text className="mt-2 text-sm leading-6 text-text-secondary">
-          {subtitle}
-        </Text>
+        <Text className="mt-2 text-sm leading-6 text-text-secondary">{subtitle}</Text>
       ) : null}
     </View>
   );

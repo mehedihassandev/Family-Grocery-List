@@ -4,7 +4,36 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { HelpCircle, Bug, ExternalLink, Info } from "lucide-react-native";
 import { SubHeader, Card } from "../components/ui";
 
+interface IBulletListProps {
+  items: string[];
+}
+
+/**
+ * Renders a list of items with bullet points
+ * @param props - Component props containing the array of strings to display
+ */
+const BulletList = ({ items }: IBulletListProps) => {
+  return (
+    <View className="gap-3">
+      {items.map((item) => (
+        <View key={item} className="flex-row items-start">
+          <View className="mt-2 h-1.5 w-1.5 rounded-full bg-primary-500" />
+          <Text className="ml-3 flex-1 text-[13px] leading-5 text-text-secondary">{item}</Text>
+        </View>
+      ))}
+    </View>
+  );
+};
+
+/**
+ * Screen providing help resources and support links
+ * Why: To guide users through common troubleshooting steps and provide direct links to documentation and bug reporting.
+ */
 const HelpSupportScreen = () => {
+  /**
+   * Opens an external URL in the default browser
+   * @param url - The URL to open
+   */
   const openUrl = async (url: string) => {
     try {
       const canOpen = await Linking.canOpenURL(url);
@@ -27,7 +56,7 @@ const HelpSupportScreen = () => {
         <View className="p-6">
           <View className="items-center mb-6">
             <View className="h-16 w-16 items-center justify-center rounded-full bg-primary-50 mb-4">
-              <HelpCircle stroke="#59AC77" size={32} />
+              <HelpCircle stroke="#3DB87A" size={32} />
             </View>
             <Text className="text-[24px] font-black text-text-primary mb-2 text-center">
               Need help?
@@ -38,83 +67,80 @@ const HelpSupportScreen = () => {
           </View>
 
           <Card className="p-5 mb-4">
-            <Text className="text-[16px] font-bold text-text-primary mb-2">Common fixes</Text>
-            <Text className="text-[13px] leading-5 text-text-secondary">
-              • Invite code must be exactly 6 characters (letters/numbers).\n • If join fails,
-              verify Firestore is created and rules are published.\n • If you see permission-denied,
-              publish `firestore.rules`.\n • For Google sign-in issues, confirm all
-              `EXPO_PUBLIC_GOOGLE_*` IDs and rebuild the native app.
-            </Text>
+            <Text className="text-[16px] font-bold text-text-900 mb-2">Common Fixes</Text>
+            <BulletList
+              items={[
+                "Invite code must be exactly 6 characters (letters/numbers).",
+                "If join fails, verify Firestore is created and rules are published.",
+                "If you see permission-denied, publish `firestore.rules`.",
+                "For Google sign-in issues, confirm all `EXPO_PUBLIC_GOOGLE_*` IDs.",
+              ]}
+            />
           </Card>
 
           <Card className="p-5 mb-4">
-            <Text className="text-[16px] font-bold text-text-primary mb-2">Documentation</Text>
+            <Text className="text-[16px] font-bold text-text-900 mb-2">Documentation</Text>
 
             <TouchableOpacity
-              activeOpacity={0.8}
+              activeOpacity={0.7}
               onPress={() =>
                 openUrl(
                   "https://github.com/mehedihassandev/Family-Grocery-List/blob/main/FIRESTORE_RULES_SETUP.md",
                 )
               }
-              className="flex-row items-center justify-between rounded-2xl border border-border-muted bg-surface px-4 py-3"
+              className="flex-row items-center justify-between rounded-md bg-surface-alt border border-border px-4 py-3"
             >
-              <Text className="text-[14px] font-semibold text-text-primary">
-                Firestore rules setup
-              </Text>
-              <ExternalLink stroke="#637889" size={18} />
+              <Text className="text-[14px] font-bold text-text-900">Firestore Rules Setup</Text>
+              <ExternalLink stroke="#4A5568" size={18} />
             </TouchableOpacity>
 
             <View className="h-3" />
 
             <TouchableOpacity
-              activeOpacity={0.8}
+              activeOpacity={0.7}
               onPress={() =>
                 openUrl(
                   "https://github.com/mehedihassandev/Family-Grocery-List/blob/main/GOOGLE_SIGNIN_SETUP.md",
                 )
               }
-              className="flex-row items-center justify-between rounded-2xl border border-border-muted bg-surface px-4 py-3"
+              className="flex-row items-center justify-between rounded-md bg-surface-alt border border-border px-4 py-3"
             >
-              <Text className="text-[14px] font-semibold text-text-primary">
-                Google sign-in setup
-              </Text>
-              <ExternalLink stroke="#637889" size={18} />
+              <Text className="text-[14px] font-bold text-text-900">Google Sign-In Setup</Text>
+              <ExternalLink stroke="#4A5568" size={18} />
             </TouchableOpacity>
           </Card>
 
           <Card className="p-5 mb-4">
-            <Text className="text-[16px] font-bold text-text-primary mb-2">Contact support</Text>
-            <Text className="text-[13px] leading-5 text-text-secondary mb-3">
+            <Text className="text-[16px] font-bold text-text-900 mb-2">Contact Support</Text>
+            <Text className="text-[13px] leading-5 text-text-secondary mb-4">
               The fastest way to get help is to open a GitHub issue with screenshots and the exact
-              error message.
+              error message you are seeing.
             </Text>
 
             <TouchableOpacity
-              activeOpacity={0.8}
+              activeOpacity={0.7}
               onPress={() =>
                 openUrl(
                   "https://github.com/mehedihassandev/Family-Grocery-List/issues/new?template=bug_report.yml",
                 )
               }
-              className="flex-row items-center justify-between rounded-2xl bg-primary-600 px-4 py-3"
+              className="flex-row items-center justify-center rounded-full bg-primary-500 py-3 shadow-green"
             >
               <View className="flex-row items-center">
-                <Bug stroke="#f6fbf7" size={18} />
-                <Text className="ml-2 text-[14px] font-bold text-text-inverse">Report a bug</Text>
+                <Bug stroke="white" size={18} strokeWidth={2.5} />
+                <Text className="ml-2 text-[14px] font-bold text-white">Report a Bug</Text>
               </View>
-              <ExternalLink stroke="#f6fbf7" size={18} />
             </TouchableOpacity>
           </Card>
 
           <Card className="p-5">
             <View className="flex-row items-center mb-2">
-              <Info stroke="#637889" size={18} />
-              <Text className="ml-2 text-[16px] font-bold text-text-primary">App info</Text>
+              <Info stroke="#4A5568" size={18} strokeWidth={2.5} />
+              <Text className="ml-2 text-[16px] font-bold text-text-900">App Information</Text>
             </View>
             <Text className="text-[13px] leading-5 text-text-secondary">
-              Family Grocery List is built with Expo + React Native and uses Firebase Authentication
-              and Cloud Firestore for real-time sync.
+              Family Grocery List is built with Expo and React Native. It uses Firebase
+              Authentication and Cloud Firestore for real-time synchronization.
             </Text>
           </Card>
         </View>

@@ -1,28 +1,28 @@
 import React from "react";
 import { Text, View } from "react-native";
-import { GroceryPriority } from "../../features/grocery";
 
-type PriorityBadgeProps = {
-  priority: GroceryPriority;
+interface IPriorityBadgeProps {
+  priority: string;
+}
+
+const styleMap: Record<string, { bg: string; text: string; border: string }> = {
+  Urgent: { bg: "bg-danger-light", text: "text-danger-dark", border: "border-danger-light" },
+  Medium: { bg: "bg-warning-light", text: "text-warning-dark", border: "border-warning-light" },
+  Low: { bg: "bg-primary-100", text: "text-primary-600", border: "border-primary-100" },
 };
 
-const labelMap: Record<GroceryPriority, string> = {
-  urgent: "Urgent",
-  medium: "Medium",
-  low: "Low",
-};
+/**
+ * Premium PriorityBadge
+ * Why: To display item priority in a visually clean and consistent way across the app.
+ * @param props - Component props including the priority level string
+ */
+const PriorityBadge = ({ priority }: IPriorityBadgeProps) => {
+  const styles = styleMap[priority] || styleMap.Low;
 
-const styleMap: Record<GroceryPriority, string> = {
-  urgent: "bg-urgent/10 text-urgent border-urgent/20",
-  medium: "bg-medium/15 text-medium border-medium/30",
-  low: "bg-primary-50 text-primary-700 border-primary-100",
-};
-
-const PriorityBadge = ({ priority }: PriorityBadgeProps) => {
   return (
-    <View className={`rounded-full border px-2.5 py-0.5 ${styleMap[priority]}`}>
-      <Text className="text-[10px] font-bold uppercase tracking-widest">
-        {labelMap[priority]}
+    <View className={`px-2.5 py-1 rounded-lg border ${styles.bg} ${styles.border}`}>
+      <Text className={`${styles.text} text-[10px] font-black uppercase tracking-widest`}>
+        {priority}
       </Text>
     </View>
   );

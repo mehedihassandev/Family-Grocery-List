@@ -9,16 +9,61 @@ import AnalyzeScreen from "../screens/AnalyzeScreen";
 import ProfileScreen from "../screens/ProfileScreen";
 import { useAuthStore } from "../store/useAuthStore";
 import { useNotificationStore } from "../store/useNotificationStore";
-import type { TabParamList } from "../types";
+import { createNativeStackNavigator } from "@react-navigation/native-stack";
+import {
+  BottomTabNavigatorParamList,
+  HomeStackParamList,
+  ListStackParamList,
+  MembersStackParamList,
+  AnalyzeStackParamList,
+  ProfileStackParamList,
+} from "../types";
+import { View } from "react-native";
 
-// Passing TabParamList ensures tab names match the declared param list;
-// mistyped screen names become TypeScript errors at compile time.
-const Tab = createBottomTabNavigator<TabParamList>();
+const Tab = createBottomTabNavigator<BottomTabNavigatorParamList>();
+const HomeStack = createNativeStackNavigator<HomeStackParamList>();
+const ListStack = createNativeStackNavigator<ListStackParamList>();
+const MembersStack = createNativeStackNavigator<MembersStackParamList>();
+const AnalyzeStack = createNativeStackNavigator<AnalyzeStackParamList>();
+const ProfileStack = createNativeStackNavigator<ProfileStackParamList>();
+
+const HomeStackScreen = () => (
+  <HomeStack.Navigator screenOptions={{ headerShown: false }}>
+    <HomeStack.Screen name="Home" component={DashboardScreen} />
+  </HomeStack.Navigator>
+);
+
+const ListStackScreen = () => (
+  <ListStack.Navigator screenOptions={{ headerShown: false }}>
+    <ListStack.Screen name="List" component={HomeScreen} />
+  </ListStack.Navigator>
+);
+
+const MembersStackScreen = () => (
+  <MembersStack.Navigator screenOptions={{ headerShown: false }}>
+    <MembersStack.Screen name="Members" component={MembersScreen} />
+  </MembersStack.Navigator>
+);
+
+const AnalyzeStackScreen = () => (
+  <AnalyzeStack.Navigator screenOptions={{ headerShown: false }}>
+    <AnalyzeStack.Screen name="Analyze" component={AnalyzeScreen} />
+  </AnalyzeStack.Navigator>
+);
+
+const ProfileStackScreen = () => (
+  <ProfileStack.Navigator screenOptions={{ headerShown: false }}>
+    <ProfileStack.Screen name="Profile" component={ProfileScreen} />
+  </ProfileStack.Navigator>
+);
 
 const TAB_ICON_SIZE = 20;
 const TAB_ICON_STROKE_WIDTH = 2.5;
-const TAB_LABEL_FONT_SIZE = 11;
 
+/**
+ * Main bottom tab navigator
+ * Why: To provide easy access to the core features of the application.
+ */
 const TabNavigator = () => {
   const insets = useSafeAreaInsets();
   const tabBarPaddingBottom = Math.max(insets.bottom, 10);
@@ -34,6 +79,9 @@ const TabNavigator = () => {
     } else {
       clearNotifications();
     }
+
+    // Cleanup on unmount to prevent persistent listeners after logout
+    return () => clearNotifications();
   }, [clearNotifications, initNotifications, user?.familyId]);
 
   return (
@@ -43,44 +91,42 @@ const TabNavigator = () => {
       key={user?.familyId ? "family-tabs" : "no-family-tabs"}
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: "#59AC77",
-        tabBarInactiveTintColor: "#95a39a",
+        tabBarActiveTintColor: "#3DB87A",
+        tabBarInactiveTintColor: "#9AA3AF",
         tabBarStyle: {
           position: "absolute",
           bottom: 0,
           left: 0,
           right: 0,
-          backgroundColor: "rgba(255, 255, 255, 0.96)",
-          borderRadius: 0,
-          borderTopLeftRadius: 0,
-          borderTopRightRadius: 0,
-          height: 42 + tabBarPaddingBottom,
+          backgroundColor: "#FFFFFF",
+          height: 60 + tabBarPaddingBottom,
           paddingBottom: tabBarPaddingBottom,
-          paddingTop: 6,
+          paddingTop: 12,
           borderTopWidth: 1,
-          shadowColor: "#4f5f56",
-          shadowOffset: { width: 0, height: 8 },
-          shadowOpacity: 0.1,
-          shadowRadius: 16,
-          elevation: 5,
-          borderColor: "rgba(184, 198, 189, 0.35)",
+          borderTopColor: "#E8EBF0",
+          elevation: 0,
         },
         tabBarLabelStyle: {
-          fontSize: TAB_LABEL_FONT_SIZE,
-          fontWeight: "700",
-          marginTop: 2,
-        },
-        tabBarIconStyle: {
-          marginTop: 2,
+          fontSize: 10,
+          fontWeight: "600",
+          textTransform: "uppercase",
+          letterSpacing: 0.4,
+          marginTop: 4,
         },
       }}
     >
       <Tab.Screen
-        name="Home"
-        component={DashboardScreen}
+        name="HomeStack"
+        component={HomeStackScreen}
         options={{
-          tabBarIcon: ({ color }) => (
-            <Home stroke={color} size={TAB_ICON_SIZE} strokeWidth={TAB_ICON_STROKE_WIDTH} />
+          title: "Home",
+          tabBarIcon: ({ color, focused }) => (
+            <View className="items-center">
+              {focused && (
+                <View className="absolute -top-[12px] h-[3px] w-5 rounded-full bg-primary-500" />
+              )}
+              <Home stroke={color} size={TAB_ICON_SIZE} strokeWidth={TAB_ICON_STROKE_WIDTH} />
+            </View>
           ),
         }}
       />
@@ -88,37 +134,55 @@ const TabNavigator = () => {
       {user?.familyId ? (
         <>
           <Tab.Screen
-            name="List"
-            component={HomeScreen}
+            name="ListStack"
+            component={ListStackScreen}
             options={{
-              tabBarIcon: ({ color }) => (
-                <ShoppingBasket
-                  stroke={color}
-                  size={TAB_ICON_SIZE}
-                  strokeWidth={TAB_ICON_STROKE_WIDTH}
-                />
+              title: "List",
+              tabBarIcon: ({ color, focused }) => (
+                <View className="items-center">
+                  {focused && (
+                    <View className="absolute -top-[12px] h-[3px] w-5 rounded-full bg-primary-500" />
+                  )}
+                  <ShoppingBasket
+                    stroke={color}
+                    size={TAB_ICON_SIZE}
+                    strokeWidth={TAB_ICON_STROKE_WIDTH}
+                  />
+                </View>
               ),
             }}
           />
           <Tab.Screen
-            name="Members"
-            component={MembersScreen}
+            name="MembersStack"
+            component={MembersStackScreen}
             options={{
-              tabBarIcon: ({ color }) => (
-                <Users stroke={color} size={TAB_ICON_SIZE} strokeWidth={TAB_ICON_STROKE_WIDTH} />
+              title: "Members",
+              tabBarIcon: ({ color, focused }) => (
+                <View className="items-center">
+                  {focused && (
+                    <View className="absolute -top-[12px] h-[3px] w-5 rounded-full bg-primary-500" />
+                  )}
+                  <Users stroke={color} size={TAB_ICON_SIZE} strokeWidth={TAB_ICON_STROKE_WIDTH} />
+                </View>
               ),
             }}
           />
           <Tab.Screen
-            name="Analyze"
-            component={AnalyzeScreen}
+            name="AnalyzeStack"
+            component={AnalyzeStackScreen}
             options={{
-              tabBarIcon: ({ color }) => (
-                <BarChart3
-                  stroke={color}
-                  size={TAB_ICON_SIZE}
-                  strokeWidth={TAB_ICON_STROKE_WIDTH}
-                />
+              title: "Analyze",
+              tabBarIcon: ({ color, focused }) => (
+                <View className="items-center">
+                  {focused && (
+                    <View className="absolute -top-[12px] h-[3px] w-5 rounded-full bg-primary-500" />
+                  )}
+                  <BarChart3
+                    stroke={color}
+                    size={TAB_ICON_SIZE}
+                    strokeWidth={TAB_ICON_STROKE_WIDTH}
+                  />
+                </View>
               ),
             }}
           />
@@ -126,11 +190,17 @@ const TabNavigator = () => {
       ) : null}
 
       <Tab.Screen
-        name="Profile"
-        component={ProfileScreen}
+        name="ProfileStack"
+        component={ProfileStackScreen}
         options={{
-          tabBarIcon: ({ color }) => (
-            <UserIcon stroke={color} size={TAB_ICON_SIZE} strokeWidth={TAB_ICON_STROKE_WIDTH} />
+          title: "Profile",
+          tabBarIcon: ({ color, focused }) => (
+            <View className="items-center">
+              {focused && (
+                <View className="absolute -top-[12px] h-[3px] w-5 rounded-full bg-primary-500" />
+              )}
+              <UserIcon stroke={color} size={TAB_ICON_SIZE} strokeWidth={TAB_ICON_STROKE_WIDTH} />
+            </View>
           ),
         }}
       />

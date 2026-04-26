@@ -17,7 +17,6 @@ import {
   Plus,
   RefreshCw,
   Search,
-  Users,
   ShoppingBasket,
   SlidersHorizontal,
   ChevronDown,
@@ -25,26 +24,23 @@ import {
 } from "lucide-react-native";
 import { useAuthStore } from "../store/useAuthStore";
 import { subscribeToGroceryList, toggleItemCompletion } from "../services/grocery";
-import { Family, GroceryItem } from "../types";
+import { IGroceryItem, ListStackScreenProps } from "../types";
 import ItemCard from "../components/ItemCard";
 import AddItemModal from "../components/AddItemModal";
-import EditItemModal from "../components/EditItemModal";
 import EmptyState from "../components/EmptyState";
 import { GROCERY_CATEGORIES, sortLegacyGroceryItemsForHome } from "../features/grocery";
-import { getFamilyDetails, subscribeToFamilyMembers } from "../services/family";
-import { AppHeader } from "../components/ui";
-import ItemDetailModal from "../components/ItemDetailModal";
+import { AppHeader, Chip } from "../components/ui";
 import NotificationModal from "../components/NotificationModal";
 
-type StatusFilter = "all" | "pending" | "completed";
+type TStatusFilter = "all" | "pending" | "completed";
 
-type GrocerySection = {
+interface IGrocerySection {
   key: string;
   title: string;
-  data: GroceryItem[];
-};
+  data: IGroceryItem[];
+}
 
-const STATUS_FILTERS: Array<{ key: StatusFilter; label: string }> = [
+const STATUS_FILTERS: { key: TStatusFilter; label: string }[] = [
   { key: "all", label: "All" },
   { key: "pending", label: "Pending" },
   { key: "completed", label: "Completed" },
@@ -53,6 +49,11 @@ const STATUS_FILTERS: Array<{ key: StatusFilter; label: string }> = [
 const ALL_CATEGORY = "All";
 const SEARCH_PLACEHOLDER = "Search items, categories, notes";
 const PERMISSION_ERROR_LABEL = "Missing Firestore permission for this query.";
+
+/**
+ * Maps Firebase error messages to user-friendly strings
+ * @param error - The error object from Firestore
+ */
 const getFirebaseErrorMessage = (error: Error) => {
   const message = error.message || "";
   if (message.includes("permission-denied")) {
@@ -64,22 +65,22 @@ const getFirebaseErrorMessage = (error: Error) => {
   return "Could not load grocery items. Check internet and retry.";
 };
 
-const HomeScreen = () => {
+/**
+ * Main grocery list screen
+ * Why: To allow users to view, search, filter, and manage grocery items in their family list.
+ */
+const HomeScreen = ({ navigation }: ListStackScreenProps<"List">) => {
   const { user } = useAuthStore();
   const insets = useSafeAreaInsets();
-  const [items, setItems] = useState<GroceryItem[]>([]);
+  const [items, setItems] = useState<IGroceryItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [isModalVisible, setModalVisible] = useState(false);
-  const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
+  const [statusFilter, setStatusFilter] = useState<TStatusFilter>("all");
   const [activeCategory, setActiveCategory] = useState<string>(ALL_CATEGORY);
   const [searchQuery, setSearchQuery] = useState("");
-  const [familyName, setFamilyName] = useState("Our Family");
   const [listError, setListError] = useState<string | null>(null);
   const [refreshSeed, setRefreshSeed] = useState(0);
-  const [memberCount, setMemberCount] = useState(0);
 
-  const [viewingItemId, setViewingItemId] = useState<string | null>(null);
-  const [editingItemId, setEditingItemId] = useState<string | null>(null);
   const [isNotifOpen, setNotifOpen] = useState(false);
 
   const [isRefreshing, setRefreshing] = useState(false);
@@ -114,76 +115,17 @@ const HomeScreen = () => {
     return () => unsubscribe();
   }, [user?.familyId, refreshSeed]);
 
-  useEffect(() => {
-    if (!user?.familyId) {
-      setFamilyName("Our Family");
-      return;
-    }
-
-    let isMounted = true;
-
-    void getFamilyDetails(user.familyId)
-      .then((family) => {
-        if (!isMounted) return;
-        const name = (family as Family | undefined)?.name?.trim();
-        setFamilyName(name || "Our Family");
-      })
-      .catch(() => {
-        if (!isMounted) return;
-        setFamilyName("Our Family");
-      });
-
-    return () => {
-      isMounted = false;
-    };
-  }, [user?.familyId]);
-
-  useEffect(() => {
-    if (!user?.familyId) {
-      setMemberCount(0);
-      return;
-    }
-
-    const unsubscribe = subscribeToFamilyMembers(
-      user.familyId,
-      (members) => {
-        setMemberCount(members.length);
-      },
-      (error) => {
-        const message = error.message || "";
-        if (__DEV__) {
-          console.warn("[HomeScreen] member subscription error:", message);
-        }
-        setMemberCount(0);
-      },
-    );
-
-    return () => unsubscribe();
-  }, [user?.familyId]);
-
   const sortedItems = useMemo(() => sortLegacyGroceryItemsForHome(items), [items]);
 
-  const viewingItem = useMemo(
-    () => (viewingItemId ? (items.find((item) => item.id === viewingItemId) ?? null) : null),
-    [items, viewingItemId],
-  );
+  // const viewingItem = useMemo(
+  //   () => (viewingItemId ? (items.find((item) => item.id === viewingItemId) ?? null) : null),
+  //   [items, viewingItemId],
+  // );
 
-  const editingItem = useMemo(
-    () => (editingItemId ? (items.find((item) => item.id === editingItemId) ?? null) : null),
-    [items, editingItemId],
-  );
-
-  useEffect(() => {
-    if (editingItemId && !editingItem) {
-      setEditingItemId(null);
-    }
-  }, [editingItemId, editingItem]);
-
-  useEffect(() => {
-    if (viewingItemId && !viewingItem) {
-      setViewingItemId(null);
-    }
-  }, [viewingItemId, viewingItem]);
+  // const editingItem = useMemo(
+  //   () => (editingItemId ? (items.find((item) => item.id === editingItemId) ?? null) : null),
+  //   [items, editingItemId],
+  // );
 
   const filteredItems = useMemo(() => {
     const query = searchQuery.trim().toLowerCase();
@@ -215,13 +157,13 @@ const HomeScreen = () => {
     });
   }, [sortedItems, statusFilter, activeCategory, searchQuery]);
 
-  const sections = useMemo<GrocerySection[]>(() => {
+  const sections = useMemo<IGrocerySection[]>(() => {
     const pending = filteredItems.filter((item) => item.status === "pending");
     const completed = filteredItems.filter((item) => item.status === "completed");
-    const output: GrocerySection[] = [];
+    const output: IGrocerySection[] = [];
 
     if (statusFilter !== "completed" && pending.length > 0) {
-      const grouped = pending.reduce<Record<string, GroceryItem[]>>((acc, item) => {
+      const grouped = pending.reduce<Record<string, IGroceryItem[]>>((acc, item) => {
         const cat = item.category || "Uncategorized";
         if (!acc[cat]) acc[cat] = [];
         acc[cat].push(item);
@@ -254,7 +196,11 @@ const HomeScreen = () => {
     return output;
   }, [filteredItems, statusFilter, showCompleted]);
 
-  const handleToggle = async (item: GroceryItem) => {
+  /**
+   * Toggles the completion status of a grocery item
+   * @param item - The grocery item to toggle
+   */
+  const handleToggle = async (item: IGroceryItem) => {
     if (!user) return;
     await toggleItemCompletion(item, {
       uid: user.uid,
@@ -267,14 +213,15 @@ const HomeScreen = () => {
 
   const categoryOptions = useMemo(() => {
     const fromItems = Array.from(new Set(sortedItems.map((item) => item.category).filter(Boolean)));
-
     const merged = [...GROCERY_CATEGORIES, ...fromItems].filter(
       (category, index, self) => self.indexOf(category) === index,
     );
-
     return [ALL_CATEGORY, ...merged];
   }, [sortedItems]);
 
+  /**
+   * Manually refreshes the list data
+   */
   const handleRefresh = () => {
     setRefreshing(true);
     setRefreshSeed((prev) => prev + 1);
@@ -317,13 +264,13 @@ const HomeScreen = () => {
 
       <AppHeader
         title="Grocery List"
-        eyebrow="My Family"
+        eyebrow="Family Items"
         onNotificationPress={() => setNotifOpen(true)}
       />
 
       {loading ? (
         <View className="flex-1 items-center justify-center">
-          <ActivityIndicator color="#59AC77" size="large" />
+          <ActivityIndicator color="#3DB87A" size="large" />
         </View>
       ) : listError ? (
         <View className="flex-1 items-center justify-center px-8">
@@ -333,8 +280,8 @@ const HomeScreen = () => {
             activeOpacity={0.85}
             className="mt-4 flex-row items-center rounded-full bg-primary-600 px-5 py-3"
           >
-            <RefreshCw color="#f6fbf7" size={16} strokeWidth={2.4} />
-            <Text className="ml-2 text-sm font-semibold text-text-inverse">Retry</Text>
+            <RefreshCw color="white" size={16} strokeWidth={2.4} />
+            <Text className="ml-2 text-sm font-semibold text-white">Retry</Text>
           </TouchableOpacity>
         </View>
       ) : (
@@ -348,55 +295,35 @@ const HomeScreen = () => {
             <RefreshControl
               refreshing={isRefreshing}
               onRefresh={handleRefresh}
-              tintColor="#59AC77"
-              colors={["#59AC77"]}
+              tintColor="#3DB87A"
+              colors={["#3DB87A"]}
               progressBackgroundColor="#f8faf8"
             />
           }
           contentContainerStyle={{ paddingBottom: 140 }}
           ListHeaderComponent={
-            <View className="px-6 pt-4">
-              <View
-                className="mb-4 flex-row items-center rounded-2xl border border-border-muted bg-surface px-4"
-                style={{
-                  shadowColor: "#1f2a25",
-                  shadowOffset: { width: 0, height: 2 },
-                  shadowOpacity: 0.02,
-                  shadowRadius: 8,
-                  elevation: 1,
-                }}
-              >
-                <Search stroke="#748379" size={18} />
+            <View className="px-6 pt-6">
+              <View className="mb-6 flex-row items-center rounded-2xl border border-border/50 bg-white px-4 shadow-xs">
+                <Search stroke="#9AA3AF" size={20} />
                 <TextInput
                   value={searchQuery}
                   onChangeText={setSearchQuery}
                   placeholder={SEARCH_PLACEHOLDER}
-                  placeholderTextColor="#95a39a"
-                  className="ml-3 h-12 flex-1 text-[17px] font-medium text-text-primary"
+                  placeholderTextColor="#C0C8D2"
+                  className="ml-3 h-[56px] flex-1 text-[15px] font-bold text-text-primary"
                 />
               </View>
 
-              <View className="mb-1 flex-row items-center justify-between">
+              <View className="mb-2 flex-row items-center justify-between">
                 <View className="flex-row items-center">
                   {STATUS_FILTERS.map((option) => (
-                    <TouchableOpacity
+                    <Chip
                       key={option.key}
-                      activeOpacity={0.8}
+                      label={option.label}
+                      selected={statusFilter === option.key}
                       onPress={() => setStatusFilter(option.key)}
-                      className={`mr-2 rounded-full border px-4 py-2.5 ${
-                        statusFilter === option.key
-                          ? "border-primary-300 bg-primary-50"
-                          : "border-border-muted bg-surface"
-                      }`}
-                    >
-                      <Text
-                        className={`text-[15px] font-semibold ${
-                          statusFilter === option.key ? "text-primary-700" : "text-text-muted"
-                        }`}
-                      >
-                        {option.label}
-                      </Text>
-                    </TouchableOpacity>
+                      className="mr-2"
+                    />
                   ))}
                 </View>
 
@@ -412,7 +339,7 @@ const HomeScreen = () => {
                   <SlidersHorizontal
                     stroke={
                       isCategoryFilterOpen || activeCategory !== ALL_CATEGORY
-                        ? "#4a9a68"
+                        ? "#3DB87A"
                         : "#748379"
                     }
                     size={18}
@@ -428,37 +355,27 @@ const HomeScreen = () => {
                   contentContainerStyle={{ paddingRight: 12 }}
                 >
                   {categoryOptions.map((category) => (
-                    <TouchableOpacity
+                    <Chip
                       key={category}
-                      activeOpacity={0.8}
+                      label={category}
+                      selected={activeCategory === category}
                       onPress={() => setActiveCategory(category)}
-                      className={`mr-2 rounded-full border px-4 py-2.5 ${
-                        activeCategory === category
-                          ? "border-primary-300 bg-primary-50"
-                          : "border-border-muted bg-surface"
-                      }`}
-                    >
-                      <Text
-                        className={`text-[15px] font-semibold ${
-                          activeCategory === category ? "text-primary-700" : "text-text-muted"
-                        }`}
-                      >
-                        {category}
-                      </Text>
-                    </TouchableOpacity>
+                      className="mr-2"
+                    />
                   ))}
                 </ScrollView>
               </Animated.View>
 
-              <Text className="my-4 pt-1 text-[12px] font-semibold uppercase tracking-[1.3px] text-text-muted">
-                Showing {visibleCount} item
-                {visibleCount === 1 ? "" : "s"}
-              </Text>
+              <View className="flex-row items-center justify-between mt-4 mb-2">
+                <Text className="text-[11px] font-bold uppercase tracking-[1.5px] text-text-muted">
+                  Showing {visibleCount} item{visibleCount === 1 ? "" : "s"}
+                </Text>
+              </View>
             </View>
           }
           renderSectionHeader={({ section }) => (
-            <View className="px-6 pb-1 pt-2">
-              <Text className="text-[17px] font-semibold tracking-tight text-text-primary/90">
+            <View className="px-6 pb-2 pt-4 bg-background">
+              <Text className="text-[13px] font-bold tracking-widest uppercase text-primary-600">
                 {section.title}
               </Text>
             </View>
@@ -468,20 +385,22 @@ const HomeScreen = () => {
               <ItemCard
                 item={item}
                 onToggle={handleToggle}
-                onPress={(currentItem) => setViewingItemId(currentItem.id)}
+                onPress={(currentItem) =>
+                  navigation.navigate("ItemDetail", { itemId: currentItem.id })
+                }
                 currentUserId={user?.uid}
               />
             </View>
           )}
           ListEmptyComponent={
-            <View className="items-center px-6 pb-8 pt-14">
-              <View className="mb-4 h-16 w-16 items-center justify-center rounded-full bg-primary-50">
-                <ShoppingBasket stroke="#59AC77" size={28} strokeWidth={2.2} />
+            <View className="items-center px-10 pb-8 pt-16">
+              <View className="mb-6 h-20 w-20 items-center justify-center rounded-full bg-primary-50">
+                <ShoppingBasket stroke="#3DB87A" size={32} strokeWidth={2.2} />
               </View>
-              <Text className="text-center text-[32px] font-bold tracking-tight text-text-primary">
+              <Text className="text-center text-[28px] font-black tracking-tight text-text-primary">
                 No items found
               </Text>
-              <Text className="mt-2 text-center text-[16px] leading-6 text-text-muted">
+              <Text className="mt-3 text-center text-[16px] leading-6 text-text-muted">
                 {searchQuery || activeCategory !== ALL_CATEGORY
                   ? "Try a different search or category filter."
                   : "Tap '+' to add your first grocery item."}
@@ -494,17 +413,17 @@ const HomeScreen = () => {
                 <TouchableOpacity
                   onPress={() => setShowCompleted((prev) => !prev)}
                   activeOpacity={0.8}
-                  className="flex-row items-center justify-center py-3"
+                  className="flex-row items-center justify-center py-4 bg-surface rounded-2xl border border-border-muted mt-4"
                 >
-                  <Text className="mr-2 text-[14px] font-semibold text-text-secondary">
+                  <Text className="mr-2 text-[14px] font-bold text-text-secondary">
                     {showCompleted
                       ? "Hide completed items"
                       : `Show completed (${filteredCompletedCount})`}
                   </Text>
                   {showCompleted ? (
-                    <ChevronUp stroke="#637889" size={16} strokeWidth={2.5} />
+                    <ChevronUp stroke="#637889" size={16} strokeWidth={3} />
                   ) : (
-                    <ChevronDown stroke="#637889" size={16} strokeWidth={2.5} />
+                    <ChevronDown stroke="#637889" size={16} strokeWidth={3} />
                   )}
                 </TouchableOpacity>
               </View>
@@ -516,17 +435,17 @@ const HomeScreen = () => {
       <TouchableOpacity
         onPress={() => setModalVisible(true)}
         activeOpacity={0.85}
-        className="absolute right-6 h-14 w-14 items-center justify-center rounded-2xl bg-primary-600 shadow-xl shadow-primary-200"
+        className="absolute right-6 h-14 w-14 items-center justify-center rounded-2xl bg-primary-600 shadow-xl"
         style={{
           bottom: insets.bottom + 78,
           elevation: 8,
-          shadowColor: "#59AC77",
+          shadowColor: "#3DB87A",
           shadowOffset: { width: 0, height: 10 },
-          shadowOpacity: 0.28,
+          shadowOpacity: 0.3,
           shadowRadius: 15,
         }}
       >
-        <Plus color="white" size={28} strokeWidth={2.4} />
+        <Plus color="white" size={28} strokeWidth={3} />
       </TouchableOpacity>
 
       <AddItemModal
@@ -537,23 +456,6 @@ const HomeScreen = () => {
           uid: user?.uid || "",
           name: user?.displayName || "Anonymous",
         }}
-      />
-
-      <ItemDetailModal
-        visible={Boolean(viewingItemId)}
-        onClose={() => setViewingItemId(null)}
-        item={viewingItem}
-        onEdit={(item) => {
-          setViewingItemId(null);
-          setEditingItemId(item.id);
-        }}
-      />
-
-      <EditItemModal
-        visible={Boolean(editingItemId)}
-        onClose={() => setEditingItemId(null)}
-        item={editingItem}
-        familyId={user?.familyId || ""}
       />
 
       <NotificationModal visible={isNotifOpen} onClose={() => setNotifOpen(false)} />

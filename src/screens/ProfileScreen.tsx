@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { ProfileStackScreenProps } from "../types";
 import {
   View,
   Text,
@@ -10,21 +11,18 @@ import {
   ActivityIndicator,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useNavigation } from "@react-navigation/native";
-import {
-  LogOut,
-  Shield,
-  HelpCircle,
-  ChevronRight,
-  User as UserIcon,
-  Edit3,
-  Users,
-} from "lucide-react-native";
+import { LogOut, Shield, HelpCircle, ChevronRight, Edit3, Users } from "lucide-react-native";
 import { useAuthStore } from "../store/useAuthStore";
 import { signOut } from "../services/auth";
 import { leaveFamily } from "../services/family";
 import { AppHeader, Card } from "../components/ui";
+import { ERootRoutes, ETabRoutes } from "../navigation/routes";
 
+/**
+ * Maps family-related operation errors to user-friendly messages
+ * @param error - The error object
+ * @param fallback - The default message if error is unknown
+ */
 const getFamilyActionErrorMessage = (error: unknown, fallback: string) => {
   const rawMessage = error instanceof Error ? error.message : "";
   const normalized = rawMessage.toLowerCase();
@@ -33,13 +31,13 @@ const getFamilyActionErrorMessage = (error: unknown, fallback: string) => {
     return "Permission denied. Publish Firestore rules from FIRESTORE_RULES_SETUP.md";
   }
 
-  if (rawMessage.trim()) {
-    return rawMessage.trim();
-  }
-
-  return fallback;
+  return rawMessage.trim() || fallback;
 };
 
+/**
+ * Extracts initials from a user's display name
+ * @param name - The full name
+ */
 const getInitials = (name?: string | null) => {
   if (!name) return "U";
   const parts = name.trim().split(" ");
@@ -49,11 +47,18 @@ const getInitials = (name?: string | null) => {
   return parts[0][0].toUpperCase();
 };
 
-const ProfileScreen = () => {
+/**
+ * User profile and settings screen
+ * Why: To manage account details, app preferences, and family membership.
+ * Note: Theme functionality removed to enforce a single light theme.
+ */
+const ProfileScreen = ({ navigation }: ProfileStackScreenProps<"Profile">) => {
   const { user, setUser } = useAuthStore();
-  const navigation = useNavigation<any>();
   const [leavingFamily, setLeavingFamily] = useState(false);
 
+  /**
+   * Handles leaving the family group with confirmation alerts
+   */
   const handleLeaveFamily = () => {
     if (!user?.uid || !user.familyId || leavingFamily) return;
 
@@ -76,7 +81,7 @@ const ProfileScreen = () => {
               role: user.role,
             });
             setUser({ ...user, familyId: null, role: "member" });
-            navigation.navigate("Main");
+            navigation.navigate(ETabRoutes.HOME);
           } catch (error) {
             const message = getFamilyActionErrorMessage(error, "Could not leave family.");
             Alert.alert("Leave Failed", message);
@@ -88,118 +93,143 @@ const ProfileScreen = () => {
     ]);
   };
 
-  const menuItems = [
-    {
-      icon: Shield,
-      title: "Privacy & Security",
-      onPress: () => navigation.navigate("PrivacySecurity"),
-    },
-    {
-      icon: HelpCircle,
-      title: "Help & Support",
-      onPress: () => navigation.navigate("HelpSupport"),
-    },
-  ];
+  const SectionHeader = ({ title }: { title: string }) => (
+    <View className="mb-3 mt-6 px-1">
+      <Text className="text-[11px] font-bold uppercase tracking-[0.08em] text-primary-500">
+        {title}
+      </Text>
+    </View>
+  );
 
-  if (user?.familyId) {
-    menuItems.push({
-      icon: Users,
-      title: "Leave Family",
-      onPress: handleLeaveFamily,
-    });
-  }
-
-  menuItems.push({
-    icon: LogOut,
-    title: "Logout",
-    onPress: () => signOut(),
-  });
+  const MenuItem = ({
+    icon: Icon,
+    title,
+    onPress,
+    isDestructive = false,
+    showChevron = true,
+    rightElement,
+    loading = false,
+  }: any) => (
+    <TouchableOpacity
+      activeOpacity={0.7}
+      onPress={onPress}
+      disabled={loading}
+      className="flex-row items-center py-4 px-5 border-b border-border last:border-b-0"
+    >
+      <View
+        className={`mr-4 h-9 w-9 items-center justify-center rounded-md ${
+          isDestructive ? "bg-danger-light" : "bg-surface-alt"
+        } border border-border`}
+      >
+        {loading ? (
+          <ActivityIndicator size="small" color={isDestructive ? "#E55C5C" : "#3DB87A"} />
+        ) : (
+          <Icon stroke={isDestructive ? "#E55C5C" : "#4A5568"} size={18} strokeWidth={2.5} />
+        )}
+      </View>
+      <Text
+        className={`flex-1 text-[15px] font-bold ${
+          isDestructive ? "text-danger-dark" : "text-text-900"
+        }`}
+      >
+        {title}
+      </Text>
+      {rightElement}
+      {showChevron && !rightElement && (
+        <ChevronRight stroke="#9AA3AF" size={18} strokeWidth={2.5} />
+      )}
+    </TouchableOpacity>
+  );
 
   return (
     <SafeAreaView edges={["top", "left", "right"]} className="flex-1 bg-background">
       <StatusBar barStyle="dark-content" />
 
-      <AppHeader title="Profile" />
+      <AppHeader title="Profile" eyebrow="Settings" />
 
       <ScrollView
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: 60 }}
+        contentContainerStyle={{ paddingBottom: 100 }}
+        className="flex-1"
       >
-        <View className="px-5 pt-2">
-          {/* Top Profile Card */}
-          <View className="mb-6 flex-row items-center rounded-2xl bg-primary-50/80 p-5">
-            <View className="mr-4 h-16 w-16 items-center justify-center overflow-hidden rounded-full bg-surface shadow-sm">
-              {user?.photoURL ? (
-                <Image source={{ uri: user.photoURL }} className="h-full w-full" />
-              ) : (
-                <Text className="text-[22px] font-bold text-primary-700">
-                  {getInitials(user?.displayName)}
-                </Text>
-              )}
-            </View>
-            <View className="flex-1 justify-center">
-              <Text className="text-[18px] font-bold text-text-primary">
-                {user?.displayName || "User"}
-              </Text>
-              <View className="mt-1 flex-row items-center">
-                <Text className="text-[13px] font-medium text-text-muted mr-3">
-                  {user?.email || "No Email Associated"}
-                </Text>
-                <TouchableOpacity
-                  activeOpacity={0.7}
-                  onPress={() => navigation.navigate("EditProfile")}
-                  hitSlop={{ top: 10, right: 10, bottom: 10, left: 10 }}
-                  className="bg-primary-100 rounded-full p-1.5"
-                >
-                  <Edit3 stroke="#59AC77" size={12} strokeWidth={2.5} />
-                </TouchableOpacity>
-              </View>
-            </View>
-          </View>
-
-          {/* Unified Settings List Card */}
-          <Card className="py-2">
-            {menuItems.map((item, index) => {
-              const isLast = index === menuItems.length - 1;
-              const isLeaveFamily = item.title === "Leave Family";
-              const isDestructive = isLeaveFamily || item.title === "Logout";
-              const tintColor = isDestructive ? "#ef4444" : "#59AC77";
-              const bgColor = isDestructive ? "bg-urgent/10" : "bg-primary-50";
-
-              return (
-                <TouchableOpacity
-                  key={index}
-                  activeOpacity={0.6}
-                  onPress={item.onPress}
-                  disabled={isLeaveFamily && leavingFamily}
-                  className={`mx-5 flex-row items-center py-3.5 ${
-                    !isLast ? "border-b border-border-muted/60" : ""
-                  }`}
-                >
-                  <View
-                    className={`mr-4 items-center justify-center h-9 w-9 rounded-xl ${bgColor}`}
-                  >
-                    {isLeaveFamily && leavingFamily ? (
-                      <ActivityIndicator color={tintColor} size="small" />
-                    ) : (
-                      <item.icon stroke={tintColor} size={18} strokeWidth={2.2} />
-                    )}
-                  </View>
-                  <Text
-                    className={`flex-1 text-[15px] font-medium ${isDestructive ? "text-urgent" : "text-text-primary"}`}
-                  >
-                    {item.title}
+        <View className="px-6 pt-4">
+          {/* User Profile Header */}
+          <Card className="mb-6 p-5 border-primary-100 bg-primary-50/30">
+            <View className="flex-row items-center">
+              <View className="mr-4 h-16 w-16 items-center justify-center overflow-hidden rounded-md bg-white border border-border shadow-xs">
+                {user?.photoURL ? (
+                  <Image source={{ uri: user.photoURL }} className="h-full w-full" />
+                ) : (
+                  <Text className="text-[24px] font-bold text-primary-600">
+                    {getInitials(user?.displayName)}
                   </Text>
-                  <ChevronRight stroke="#95a39a" size={18} strokeWidth={2} />
-                </TouchableOpacity>
-              );
-            })}
+                )}
+              </View>
+              <View className="flex-1">
+                <Text className="text-[20px] font-bold tracking-tight text-text-900">
+                  {user?.displayName || "User"}
+                </Text>
+                <Text className="text-[13px] font-medium text-text-muted mt-0.5">
+                  {user?.email || "No email"}
+                </Text>
+              </View>
+              <TouchableOpacity
+                activeOpacity={0.7}
+                onPress={() => navigation.navigate(ERootRoutes.EDIT_PROFILE)}
+                className="h-10 w-10 items-center justify-center rounded-full bg-white border border-border"
+              >
+                <Edit3 stroke="#4A5568" size={18} strokeWidth={2.5} />
+              </TouchableOpacity>
+            </View>
+          </Card>
+
+          {/* Preferences Section */}
+          <SectionHeader title="Preferences" />
+          <Card padding={false} className="mb-2">
+            <MenuItem
+              icon={Shield}
+              title="Privacy & Security"
+              onPress={() => navigation.navigate(ERootRoutes.PRIVACY_SECURITY)}
+            />
+            <MenuItem
+              icon={HelpCircle}
+              title="Help & Support"
+              onPress={() => navigation.navigate(ERootRoutes.HELP_SUPPORT)}
+            />
+          </Card>
+
+          {/* Family Section */}
+          {user?.familyId && (
+            <>
+              <SectionHeader title="Family" />
+              <Card padding={false} className="mb-2">
+                <MenuItem
+                  icon={Users}
+                  title="Leave Family"
+                  onPress={handleLeaveFamily}
+                  isDestructive
+                  loading={leavingFamily}
+                />
+              </Card>
+            </>
+          )}
+
+          {/* Account Section */}
+          <SectionHeader title="Account" />
+          <Card padding={false} className="mb-2">
+            <MenuItem
+              icon={LogOut}
+              title="Logout"
+              onPress={() => signOut()}
+              isDestructive
+              showChevron={false}
+            />
           </Card>
 
           {/* Version Text */}
-          <View className="mt-8 items-center">
-            <Text className="text-[11px] font-medium tracking-wide text-text-muted/60">
-              Version 1.02
+          <View className="mt-12 items-center">
+            <Text className="text-[11px] font-bold tracking-widest text-text-muted uppercase opacity-40">
+              Family Grocery · v2.0.0
             </Text>
           </View>
         </View>

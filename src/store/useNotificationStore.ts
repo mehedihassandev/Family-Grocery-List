@@ -1,9 +1,9 @@
 import { create } from "zustand";
-import { AppNotification } from "../types";
+import { IAppNotification } from "../types";
 import { subscribeToNotifications } from "../services/notification";
 
-interface NotificationState {
-  notifications: AppNotification[];
+interface INotificationState {
+  notifications: IAppNotification[];
   loading: boolean;
   error: string | null;
   unsubscribe: (() => void) | null;
@@ -11,7 +11,11 @@ interface NotificationState {
   clear: () => void;
 }
 
-export const useNotificationStore = create<NotificationState>((set, get) => ({
+/**
+ * Notification state store
+ * Why: To manage real-time notification subscriptions and data.
+ */
+export const useNotificationStore = create<INotificationState>((set, get) => ({
   notifications: [],
   loading: false,
   error: null,

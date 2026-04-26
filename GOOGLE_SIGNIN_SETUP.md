@@ -33,6 +33,11 @@ For Android:
 
 - Package name: `com.mehedi.FamilyGroceryList`
 - SHA-1: use the signing certificate for the build you run
+- If Google says the package name and SHA-1 are already in use, do not create a
+  new client. Open the existing Android client in Google Cloud Console and copy
+  its Client ID into `EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID`.
+- `EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID` must not be the same value as
+  `EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID`.
 
 For iOS:
 
@@ -63,6 +68,12 @@ EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID=...
 ```
 
 If you use `.env`, restart Metro after saving the file.
+
+For the debug Android build signed by `android/app/google-oauth-debug.keystore`, the SHA-1 is:
+
+```text
+5E:77:BB:47:F7:3A:3C:02:27:7B:BA:AA:4D:D3:19:43:5A:38:7F:2B
+```
 
 ## 4. Install And Run
 

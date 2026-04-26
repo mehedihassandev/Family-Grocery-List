@@ -1,28 +1,40 @@
 import React, { ReactNode } from "react";
-import { View, StyleProp, ViewStyle } from "react-native";
+import { View, StyleProp, ViewStyle, StyleSheet } from "react-native";
 
-interface CardProps {
+interface ICardProps {
   children: ReactNode;
-  className?: string;
+  className?: string; // Kept for compatibility
   style?: StyleProp<ViewStyle>;
+  padding?: boolean;
 }
 
-export const Card = ({ children, className = "", style }: CardProps) => {
+/**
+ * Standard Card component
+ * Why: To maintain consistent layout, radius, and shadows across the app.
+ * Improved for a premium look with better radius and shadow.
+ * @param props - Component props including children and optional styles
+ */
+export const Card = ({ children, className, style, padding = true }: ICardProps) => {
   return (
-    <View
-      className={`rounded-3xl border border-border-muted bg-surface ${className}`}
-      style={[
-        {
-          shadowColor: "#000",
-          shadowOffset: { width: 0, height: 2 },
-          shadowOpacity: 0.02,
-          shadowRadius: 8,
-          elevation: 1,
-        },
-        style,
-      ]}
-    >
+    <View className={className} style={[styles.card, padding && styles.padding, style]}>
       {children}
     </View>
   );
 };
+
+const styles = StyleSheet.create({
+  card: {
+    borderRadius: 24,
+    borderWidth: 1,
+    borderColor: "#F0F2F5",
+    backgroundColor: "#ffffff",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.04,
+    shadowRadius: 12,
+    elevation: 2,
+  },
+  padding: {
+    padding: 20,
+  },
+});

@@ -12,16 +12,21 @@ import {
   serverTimestamp,
 } from "firebase/firestore";
 import { db } from "./firebaseConfig";
-import { Family, User } from "../types";
+import { IFamily, IUser } from "../types";
 
 const FIRESTORE_WRITE_TIMEOUT_MS = 15000;
 const FIRESTORE_PROBE_TIMEOUT_MS = 8000;
 
-// Simple 6-character unique code generator
+/**
+ * Simple 6-character unique code generator
+ */
 const generateInviteCode = () => {
   return Math.random().toString(36).substring(2, 8).toUpperCase();
 };
 
+/**
+ * Wraps a firestore write operation with a timeout
+ */
 async function withFirestoreWriteTimeout<T>(
   operation: Promise<T>,
   timeoutMessage: string,
@@ -44,6 +49,9 @@ async function withFirestoreWriteTimeout<T>(
   }
 }
 
+/**
+ * Wraps a firestore probe operation with a timeout
+ */
 async function withProbeTimeout<T>(operation: Promise<T>): Promise<T> {
   let timeoutId: ReturnType<typeof setTimeout> | undefined;
 
@@ -63,6 +71,9 @@ async function withProbeTimeout<T>(operation: Promise<T>): Promise<T> {
   }
 }
 
+/**
+ * Probes firestore to check for configuration issues
+ */
 async function getFirestoreConfigurationIssue(): Promise<string | null> {
   const projectId = process.env.EXPO_PUBLIC_FIREBASE_PROJECT_ID;
   const apiKey = process.env.EXPO_PUBLIC_FIREBASE_API_KEY;
@@ -84,13 +95,13 @@ async function getFirestoreConfigurationIssue(): Promise<string | null> {
         code?: number;
         message?: string;
         status?: string;
-        details?: Array<{
+        details?: {
           "@type"?: string;
           reason?: string;
           metadata?: {
             activationUrl?: string;
           };
-        }>;
+        }[];
       };
     };
 
@@ -124,12 +135,17 @@ async function getFirestoreConfigurationIssue(): Promise<string | null> {
   return null;
 }
 
-const upsertUserFamilyMembership = async (userId: string, familyId: string, role: User["role"]) => {
-  console.log("[FamilyService] membership:write:start", {
-    userId,
-    familyId,
-    role,
-  });
+/**
+ * Updates a user's family membership in Firestore
+ * @param userId - The user's UID
+ * @param familyId - The ID of the family to join
+ * @param role - The user's role in the family
+ */
+const upsertUserFamilyMembership = async (
+  userId: string,
+  familyId: string,
+  role: IUser["role"],
+) => {
   const userRef = doc(db, "users", userId);
   await withFirestoreWriteTimeout(
     setDoc(
@@ -144,13 +160,13 @@ const upsertUserFamilyMembership = async (userId: string, familyId: string, role
     ),
     "User membership write timed out.",
   );
-  console.log("[FamilyService] membership:write:success", {
-    userId,
-    familyId,
-    role,
-  });
 };
 
+/**
+ * Creates a new family group
+ * @param userId - The ID of the user creating the family (becomes owner)
+ * @param familyName - The name of the family group
+ */
 export const createFamily = async (userId: string, familyName: string) => {
   try {
     const normalizedFamilyName = familyName.trim();
@@ -161,7 +177,7 @@ export const createFamily = async (userId: string, familyName: string) => {
     const inviteCode = generateInviteCode();
     const familyRef = doc(collection(db, "families"));
 
-    const newFamily: Family = {
+    const newFamily: IFamily = {
       id: familyRef.id,
       name: normalizedFamilyName,
       inviteCode: inviteCode,
@@ -169,18 +185,10 @@ export const createFamily = async (userId: string, familyName: string) => {
       createdAt: serverTimestamp(),
     };
 
-    console.log("[FamilyService] createFamily:familyDoc:start", {
-      userId,
-      familyId: familyRef.id,
-    });
     await withFirestoreWriteTimeout(
       setDoc(familyRef, newFamily),
       "Family document write timed out.",
     );
-    console.log("[FamilyService] createFamily:familyDoc:success", {
-      userId,
-      familyId: familyRef.id,
-    });
 
     await upsertUserFamilyMembership(userId, familyRef.id, "owner");
 
@@ -198,6 +206,11 @@ export const createFamily = async (userId: string, familyName: string) => {
   }
 };
 
+/**
+ * Joins an existing family group via invite code
+ * @param userId - The ID of the user joining the family
+ * @param inviteCode - The 6-character invite code
+ */
 export const joinFamily = async (userId: string, inviteCode: string) => {
   try {
     const normalizedInviteCode = inviteCode.trim().toUpperCase();
@@ -206,24 +219,15 @@ export const joinFamily = async (userId: string, inviteCode: string) => {
     }
 
     const familiesRef = collection(db, "families");
-    console.log("[FamilyService] joinFamily:lookup:start", {
-      userId,
-      inviteCode: normalizedInviteCode,
-    });
     const q = query(familiesRef, where("inviteCode", "==", normalizedInviteCode));
     const querySnapshot = await getDocs(q);
-    console.log("[FamilyService] joinFamily:lookup:success", {
-      userId,
-      inviteCode: normalizedInviteCode,
-      count: querySnapshot.size,
-    });
 
     if (querySnapshot.empty) {
       throw new Error("Invalid invite code");
     }
 
     const familyDoc = querySnapshot.docs[0];
-    const familyData = familyDoc.data() as Family;
+    const familyData = familyDoc.data() as IFamily;
 
     await upsertUserFamilyMembership(userId, familyData.id, "member");
     return familyData;
@@ -240,9 +244,15 @@ export const joinFamily = async (userId: string, inviteCode: string) => {
   }
 };
 
+/**
+ * Subscribes to real-time updates for family members
+ * @param familyId - The ID of the family
+ * @param callback - Function to call with the updated member list
+ * @param onError - Optional error handler
+ */
 export const subscribeToFamilyMembers = (
   familyId: string,
-  callback: (members: User[]) => void,
+  callback: (members: IUser[]) => void,
   onError?: (error: Error) => void,
 ) => {
   const usersRef = collection(db, "users");
@@ -251,7 +261,7 @@ export const subscribeToFamilyMembers = (
   return onSnapshot(
     q,
     (snapshot) => {
-      const members = snapshot.docs.map((doc) => doc.data() as User);
+      const members = snapshot.docs.map((doc) => doc.data() as IUser);
       callback(members);
     },
     (error) => {
@@ -261,16 +271,20 @@ export const subscribeToFamilyMembers = (
   );
 };
 
+/**
+ * Fetches family details by ID
+ * @param familyId - The ID of the family
+ */
 export const getFamilyDetails = async (familyId: string) => {
   const familyRef = doc(db, "families", familyId);
   const familyDoc = await getDoc(familyRef);
-  return familyDoc.data() as Family;
+  return familyDoc.data() as IFamily;
 };
 
 type LeaveFamilyInput = {
   userId: string;
   familyId: string;
-  role?: User["role"];
+  role?: IUser["role"];
 };
 
 type LeaveFamilyResult = {
@@ -278,6 +292,11 @@ type LeaveFamilyResult = {
   familyDeleted: boolean;
 };
 
+/**
+ * Allows a user to leave their current family
+ * Handles owner transfer if the user is the owner
+ * @param input - The leave family input parameters
+ */
 export const leaveFamily = async ({
   userId,
   familyId,
@@ -302,7 +321,7 @@ export const leaveFamily = async ({
     ),
   ]);
 
-  const familyData = familySnapshot.data() as Family | undefined;
+  const familyData = familySnapshot.data() as IFamily | undefined;
   const isOwner = familyData?.ownerId === userId || role === "owner";
 
   const batch = writeBatch(db);
@@ -318,7 +337,7 @@ export const leaveFamily = async ({
   }
 
   const remainingMembers = membersSnapshot.docs
-    .map((memberDoc) => memberDoc.data() as User)
+    .map((memberDoc) => memberDoc.data() as IUser)
     .filter((member) => member.uid !== userId);
 
   if (remainingMembers.length === 0) {
@@ -353,6 +372,10 @@ type RemoveMemberAsOwnerInput = {
   targetUserId: string;
 };
 
+/**
+ * Allows a family owner to remove a member from the group
+ * @param input - The remove member input parameters
+ */
 export const removeMemberAsOwner = async ({
   ownerId,
   familyId,
@@ -381,7 +404,7 @@ export const removeMemberAsOwner = async ({
     throw new Error("Family not found.");
   }
 
-  const family = familySnapshot.data() as Family;
+  const family = familySnapshot.data() as IFamily;
   if (family.ownerId !== ownerId) {
     throw new Error("Only owner can remove members.");
   }
@@ -390,7 +413,7 @@ export const removeMemberAsOwner = async ({
     throw new Error("Member not found.");
   }
 
-  const targetUser = targetSnapshot.data() as User;
+  const targetUser = targetSnapshot.data() as IUser;
   if (targetUser.familyId !== familyId) {
     throw new Error("Selected user is not in your family.");
   }
