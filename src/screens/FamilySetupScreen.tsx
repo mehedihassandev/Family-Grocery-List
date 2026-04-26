@@ -12,11 +12,11 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Users, Plus, ArrowRight, LogOut } from "lucide-react-native";
 import { FirebaseError } from "firebase/app";
-import { createFamily, joinFamily } from "../services/family";
 import { signOut } from "../services/auth";
 import { useAuthStore } from "../store/useAuthStore";
+import { useCreateFamily, useJoinFamily } from "../hooks/queries/useFamilyQueries";
 
-const FAMILY_ACTION_TIMEOUT_MS = 15000;
+// const FAMILY_ACTION_TIMEOUT_MS = 15000;
 
 /**
  * Maps family operation errors to user-friendly messages
@@ -48,27 +48,27 @@ const getFamilyErrorMessage = (error: unknown) => {
  * @param operation - The promise to wrap
  * @param timeoutMessage - Message to display on timeout
  */
-async function withFamilyActionTimeout<T>(
-  operation: Promise<T>,
-  timeoutMessage: string,
-): Promise<T> {
-  let timeoutId: ReturnType<typeof setTimeout> | undefined;
+// async function withFamilyActionTimeout<T>(
+//   operation: Promise<T>,
+//   timeoutMessage: string,
+// ): Promise<T> {
+//   let timeoutId: ReturnType<typeof setTimeout> | undefined;
 
-  try {
-    return await Promise.race([
-      operation,
-      new Promise<T>((_, reject) => {
-        timeoutId = setTimeout(() => {
-          reject(new Error(timeoutMessage));
-        }, FAMILY_ACTION_TIMEOUT_MS);
-      }),
-    ]);
-  } finally {
-    if (timeoutId) {
-      clearTimeout(timeoutId);
-    }
-  }
-}
+//   try {
+//     return await Promise.race([
+//       operation,
+//       new Promise<T>((_, reject) => {
+//         timeoutId = setTimeout(() => {
+//           reject(new Error(timeoutMessage));
+//         }, FAMILY_ACTION_TIMEOUT_MS);
+//       }),
+//     ]);
+//   } finally {
+//     if (timeoutId) {
+//       clearTimeout(timeoutId);
+//     }
+//   }
+// }
 
 /**
  * Initial setup screen for users not yet in a family
@@ -79,11 +79,16 @@ const FamilySetupScreen = () => {
   const [mode, setMode] = useState<"selection" | "create" | "join">("selection");
   const [familyName, setFamilyName] = useState("");
   const [inviteCode, setInviteCode] = useState("");
-  const [loading, setLoading] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
   // Inline field-level errors guide the user without using an Alert dialog
   const [familyNameError, setFamilyNameError] = useState<string | null>(null);
   const [inviteCodeError, setInviteCodeError] = useState<string | null>(null);
+
+  // TanStack Query Mutations
+  const createMutation = useCreateFamily();
+  const joinMutation = useJoinFamily();
+
+  const loading = createMutation.isPending || joinMutation.isPending;
 
   /**
    * Handles creating a new family group
@@ -98,21 +103,20 @@ const FamilySetupScreen = () => {
     }
     if (!user) return;
 
-    try {
-      setLoading(true);
-      setActionError(null);
-      const family = await withFamilyActionTimeout(
-        createFamily(user.uid, normalizedFamilyName),
-        "Create family timed out after 15s. Check network/Firestore rules.",
-      );
-      setUser({ ...user, familyId: family.id, role: "owner" });
-    } catch (error) {
-      const errorMessage = getFamilyErrorMessage(error);
-      setActionError(errorMessage);
-      Alert.alert("Create Family Failed", errorMessage);
-    } finally {
-      setLoading(false);
-    }
+    setActionError(null);
+    createMutation.mutate(
+      { userId: user.uid, familyName: normalizedFamilyName },
+      {
+        onSuccess: (family) => {
+          setUser({ ...user, familyId: family.id, role: "owner" });
+        },
+        onError: (error) => {
+          const errorMessage = getFamilyErrorMessage(error);
+          setActionError(errorMessage);
+          Alert.alert("Create Family Failed", errorMessage);
+        },
+      },
+    );
   };
 
   /**
@@ -132,21 +136,20 @@ const FamilySetupScreen = () => {
     }
     if (!user) return;
 
-    try {
-      setLoading(true);
-      setActionError(null);
-      const family = await withFamilyActionTimeout(
-        joinFamily(user.uid, normalizedInviteCode),
-        "Join family timed out after 15s. Check network/Firestore rules.",
-      );
-      setUser({ ...user, familyId: family.id, role: "member" });
-    } catch (error) {
-      const errorMessage = getFamilyErrorMessage(error);
-      setActionError(errorMessage);
-      Alert.alert("Join Family Failed", errorMessage);
-    } finally {
-      setLoading(false);
-    }
+    setActionError(null);
+    joinMutation.mutate(
+      { userId: user.uid, inviteCode: normalizedInviteCode },
+      {
+        onSuccess: (family) => {
+          setUser({ ...user, familyId: family.id, role: "member" });
+        },
+        onError: (error) => {
+          const errorMessage = getFamilyErrorMessage(error);
+          setActionError(errorMessage);
+          Alert.alert("Join Family Failed", errorMessage);
+        },
+      },
+    );
   };
 
   if (mode === "selection") {

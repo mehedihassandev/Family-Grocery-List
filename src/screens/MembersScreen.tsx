@@ -1,15 +1,15 @@
-import React, { useEffect, useState } from "react";
-import { MembersStackScreenProps, IUser, IFamily } from "../types";
+import React, { useState } from "react";
+import { MembersStackScreenProps, IUser } from "../types";
 import { View, Text, FlatList, Image, TouchableOpacity, Share, StatusBar } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Share2, Crown, Trash2, LogOut } from "lucide-react-native";
 import { useAuthStore } from "../store/useAuthStore";
 import {
-  subscribeToFamilyMembers,
-  getFamilyDetails,
-  removeMemberAsOwner,
-  leaveFamily,
-} from "../services/family";
+  useFamilyDetails,
+  useFamilyMembers,
+  useRemoveMember,
+  useLeaveFamily,
+} from "../hooks/queries/useFamilyQueries";
 import { AppHeader, Card, StatusModal, LoadingOverlay } from "../components/ui";
 import NotificationModal from "../components/NotificationModal";
 
@@ -35,11 +35,13 @@ const getFamilyActionErrorMessage = (error: unknown, fallback: string) => {
  */
 const MembersScreen = ({ navigation }: MembersStackScreenProps<"Members">) => {
   const { user } = useAuthStore();
-  const [members, setMembers] = useState<IUser[]>([]);
-  const [family, setFamily] = useState<IFamily | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [actionLoading, setActionLoading] = useState(false);
   const [isNotifOpen, setNotifOpen] = useState(false);
+
+  // TanStack Query Hooks
+  const { data: family, isLoading: familyLoading } = useFamilyDetails(user?.familyId);
+  const { data: members = [], isLoading: membersLoading } = useFamilyMembers(user?.familyId);
+  const removeMemberMutation = useRemoveMember();
+  const leaveFamilyMutation = useLeaveFamily();
 
   // Modal states
   const [statusModal, setStatusModal] = useState<{
@@ -58,23 +60,6 @@ const MembersScreen = ({ navigation }: MembersStackScreenProps<"Members">) => {
   const myMember = members.find((m) => m.uid === user?.uid);
   const myRole = myMember?.role ?? user?.role;
   const isOwner = myRole === "owner";
-
-  useEffect(() => {
-    if (!user?.familyId) return;
-
-    getFamilyDetails(user.familyId).then(setFamily).catch(console.error);
-
-    const unsubscribe = subscribeToFamilyMembers(
-      user.familyId,
-      (newMembers) => {
-        setMembers(newMembers);
-        setLoading(false);
-      },
-      () => setLoading(false),
-    );
-
-    return () => unsubscribe();
-  }, [user?.familyId]);
 
   /**
    * Opens the system share sheet with the family invite code
@@ -104,23 +89,23 @@ const MembersScreen = ({ navigation }: MembersStackScreenProps<"Members">) => {
       type: "confirm",
       onConfirm: async () => {
         setStatusModal((prev) => ({ ...prev, visible: false }));
-        setActionLoading(true);
-        try {
-          await removeMemberAsOwner({
+        removeMemberMutation.mutate(
+          {
             ownerId: user.uid,
             familyId: user.familyId!,
             targetUserId: member.uid,
-          });
-        } catch (error) {
-          setStatusModal({
-            visible: true,
-            title: "Remove Failed",
-            message: getFamilyActionErrorMessage(error, "Could not remove member."),
-            type: "error",
-          });
-        } finally {
-          setActionLoading(false);
-        }
+          },
+          {
+            onError: (error) => {
+              setStatusModal({
+                visible: true,
+                title: "Remove Failed",
+                message: getFamilyActionErrorMessage(error, "Could not remove member."),
+                type: "error",
+              });
+            },
+          },
+        );
       },
     });
   };
@@ -140,23 +125,23 @@ const MembersScreen = ({ navigation }: MembersStackScreenProps<"Members">) => {
       type: "confirm",
       onConfirm: async () => {
         setStatusModal((prev) => ({ ...prev, visible: false }));
-        setActionLoading(true);
-        try {
-          await leaveFamily({
+        leaveFamilyMutation.mutate(
+          {
             userId: user.uid,
             familyId: user.familyId!,
             role: myRole,
-          });
-        } catch (error) {
-          setStatusModal({
-            visible: true,
-            title: "Leave Failed",
-            message: getFamilyActionErrorMessage(error, "Could not leave family."),
-            type: "error",
-          });
-        } finally {
-          setActionLoading(false);
-        }
+          },
+          {
+            onError: (error) => {
+              setStatusModal({
+                visible: true,
+                title: "Leave Failed",
+                message: getFamilyActionErrorMessage(error, "Could not leave family."),
+                type: "error",
+              });
+            },
+          },
+        );
       },
     });
   };
@@ -164,7 +149,13 @@ const MembersScreen = ({ navigation }: MembersStackScreenProps<"Members">) => {
   return (
     <SafeAreaView edges={["top", "left", "right"]} className="flex-1 bg-background">
       <StatusBar barStyle="dark-content" />
-      <LoadingOverlay visible={actionLoading || (loading && members.length === 0)} />
+      <LoadingOverlay
+        visible={
+          removeMemberMutation.isPending ||
+          leaveFamilyMutation.isPending ||
+          (familyLoading && membersLoading)
+        }
+      />
       <StatusModal
         visible={statusModal.visible}
         title={statusModal.title}

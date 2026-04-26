@@ -1,7 +1,6 @@
 import React, { useState } from "react";
 import { View, Text, TouchableOpacity, Image } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useNavigation } from "@react-navigation/native";
 import { Lock, Camera, Check } from "lucide-react-native";
 import { useForm } from "react-hook-form";
 import * as yup from "yup";
@@ -14,6 +13,7 @@ import {
   LoadingOverlay,
   StatusModal,
 } from "../components/ui";
+import { AuthenticatedStackNavigatorScreenProps, ERootRoutes } from "../types";
 import { useAuthStore } from "../store/useAuthStore";
 import { updateUserAccountProfile } from "../services/auth";
 
@@ -25,8 +25,9 @@ const schema = yup.object().shape({
  * Premium Edit Profile Screen
  * Why: To provide a high-fidelity experience for updating personal information with elegant feedback.
  */
-const EditProfileScreen = () => {
-  const navigation = useNavigation();
+const EditProfileScreen = ({
+  navigation,
+}: AuthenticatedStackNavigatorScreenProps<ERootRoutes.EDIT_PROFILE>) => {
   const { user } = useAuthStore();
   const [loading, setLoading] = useState(false);
   const [statusModal, setStatusModal] = useState<{
@@ -100,7 +101,7 @@ const EditProfileScreen = () => {
         onClose={handleModalClose}
       />
 
-      <SubHeader title="Edit Profile" />
+      <SubHeader title="Edit Profile" onBackPress={() => navigation.goBack()} />
 
       <View className="flex-1 p-6">
         <View className="items-center mb-8">

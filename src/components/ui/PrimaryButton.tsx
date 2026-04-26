@@ -1,6 +1,7 @@
 import React from "react";
 import {
   ActivityIndicator,
+  StyleSheet,
   Text,
   TouchableOpacity,
   TouchableOpacityProps,
@@ -34,8 +35,9 @@ export const PrimaryButton = ({
       activeOpacity={0.75}
       disabled={isDisabled}
       className={`w-full flex-row items-center justify-center rounded-full h-[52px] px-5 ${
-        isDisabled ? "bg-primary-100" : "bg-primary-500 shadow-green"
+        isDisabled ? "bg-primary-100" : "bg-primary-500"
       } ${className ?? ""}`}
+      style={isDisabled ? undefined : styles.enabledShadow}
     >
       {loading ? (
         <ActivityIndicator color="#FFFFFF" />
@@ -52,5 +54,15 @@ export const PrimaryButton = ({
     </TouchableOpacity>
   );
 };
+
+const styles = StyleSheet.create({
+  enabledShadow: {
+    shadowColor: "#3DB87A",
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.2,
+    shadowRadius: 16,
+    elevation: 4,
+  },
+});
 
 export default PrimaryButton;

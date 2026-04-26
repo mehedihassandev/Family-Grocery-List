@@ -98,10 +98,12 @@ export type AuthenticatedStackNavigatorParamList = {
   [ERootRoutes.PRIVACY_SECURITY]: undefined;
   /** Help & support FAQ */
   [ERootRoutes.HELP_SUPPORT]: undefined;
+  /** Add a new item */
+  [ERootRoutes.ADD_ITEM]: undefined;
 
   // New screens that were previously Modals
-  ItemDetail: { itemId: string };
-  EditItem: { itemId: string };
+  [ERootRoutes.ITEM_DETAIL]: { itemId: string };
+  [ERootRoutes.EDIT_ITEM]: { itemId: string };
 };
 
 /** Unauthenticated Stack — Screens available before login */

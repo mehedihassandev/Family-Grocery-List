@@ -1,10 +1,16 @@
-import React, { useEffect, useState } from "react";
-import { ScrollView, Text, TouchableOpacity, View, ActivityIndicator } from "react-native";
+import {
+  ScrollView,
+  Text,
+  TouchableOpacity,
+  View,
+  ActivityIndicator,
+  StyleSheet,
+} from "react-native";
 import { X, Edit2, Calendar, User, ShoppingBasket, AlignLeft, Info } from "lucide-react-native";
-import { AuthenticatedStackNavigatorScreenProps, IGroceryItem } from "../types";
+import { AuthenticatedStackNavigatorScreenProps, ERootRoutes } from "../types";
 import { GroceryPriority } from "../features/grocery";
 import { Card, Chip, PriorityBadge } from "../components/ui";
-import { getGroceryItem } from "../services/grocery";
+import { useGroceryItem } from "../hooks/queries/useGroceryQueries";
 
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
@@ -25,25 +31,12 @@ const formatDate = (dateValue: any) => {
 const ItemDetailScreen = ({
   route,
   navigation,
-}: AuthenticatedStackNavigatorScreenProps<"ItemDetail">) => {
+}: AuthenticatedStackNavigatorScreenProps<ERootRoutes.ITEM_DETAIL>) => {
   const insets = useSafeAreaInsets();
   const { itemId } = route.params;
-  const [item, setItem] = useState<IGroceryItem | null>(null);
-  const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    const fetchItem = async () => {
-      try {
-        const data = await getGroceryItem(itemId);
-        setItem(data);
-      } catch (error) {
-        console.error(error);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchItem();
-  }, [itemId]);
+  // TanStack Query Hook
+  const { data: item, isLoading: loading } = useGroceryItem(itemId);
 
   if (loading) {
     return (
@@ -88,9 +81,10 @@ const ItemDetailScreen = ({
           </View>
           <View className="flex-row items-center gap-3">
             <TouchableOpacity
-              onPress={() => navigation.navigate("EditItem", { itemId: item.id })}
+              onPress={() => navigation.navigate(ERootRoutes.EDIT_ITEM, { itemId: item.id })}
               activeOpacity={0.7}
-              className="h-11 w-11 items-center justify-center rounded-full bg-primary-600 shadow-sm"
+              className="h-11 w-11 items-center justify-center rounded-full bg-primary-600"
+              style={styles.actionShadow}
             >
               <Edit2 stroke="white" size={18} strokeWidth={3} />
             </TouchableOpacity>
@@ -184,5 +178,15 @@ const ItemDetailScreen = ({
     </View>
   );
 };
+
+const styles = StyleSheet.create({
+  actionShadow: {
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.12,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+});
 
 export default ItemDetailScreen;

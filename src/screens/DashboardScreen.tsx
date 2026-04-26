@@ -1,5 +1,5 @@
-import React, { useEffect, useMemo, useState } from "react";
-import { HomeStackScreenProps, IFamily, IGroceryItem } from "../types";
+import React, { useMemo, useState } from "react";
+import { HomeStackScreenProps } from "../types";
 import {
   ScrollView,
   StatusBar,
@@ -23,8 +23,12 @@ import {
   TrendingUp,
 } from "lucide-react-native";
 import { useAuthStore } from "../store/useAuthStore";
-import { getFamilyDetails, subscribeToFamilyMembers, joinFamily } from "../services/family";
-import { subscribeToGroceryList } from "../services/grocery";
+import {
+  useFamilyDetails,
+  useFamilyMembers,
+  useJoinFamily,
+} from "../hooks/queries/useFamilyQueries";
+import { useGroceryList } from "../hooks/queries/useGroceryQueries";
 import {
   Card,
   ShortcutCard,
@@ -54,14 +58,18 @@ const toDate = (value: any): Date | null => {
  */
 const DashboardScreen = ({ navigation }: HomeStackScreenProps<"Home">) => {
   const { user } = useAuthStore();
-  const [familyName, setFamilyName] = useState("Our Family");
-  const [members, setMembers] = useState<any[]>([]);
-  const [items, setItems] = useState<IGroceryItem[]>([]);
   const [isNotifOpen, setNotifOpen] = useState(false);
+
+  // TanStack Query Hooks
+  const { data: family } = useFamilyDetails(user?.familyId);
+  const { data: members = [] } = useFamilyMembers(user?.familyId);
+  const { data: items = [] } = useGroceryList(user?.familyId);
+  const joinFamilyMutation = useJoinFamily();
+
+  const familyName = family?.name || "Our Family";
 
   // UI State
   const [joinCode, setJoinCode] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
   const [statusModal, setStatusModal] = useState<{
     visible: boolean;
     title: string;
@@ -73,55 +81,6 @@ const DashboardScreen = ({ navigation }: HomeStackScreenProps<"Home">) => {
     message: "",
     type: "success",
   });
-
-  useEffect(() => {
-    if (!user?.familyId) return;
-
-    let mounted = true;
-    void getFamilyDetails(user.familyId)
-      .then((family) => {
-        if (!mounted) return;
-        const name = (family as IFamily | undefined)?.name?.trim();
-        setFamilyName(name || "Our Family");
-      })
-      .catch(() => {
-        if (mounted) setFamilyName("Our Family");
-      });
-
-    return () => {
-      mounted = false;
-    };
-  }, [user?.familyId]);
-
-  useEffect(() => {
-    if (!user?.familyId) {
-      setMembers([]);
-      return;
-    }
-
-    const unsubscribe = subscribeToFamilyMembers(
-      user.familyId,
-      (nextMembers) => setMembers(nextMembers),
-      () => setMembers([]),
-    );
-
-    return () => unsubscribe();
-  }, [user?.familyId]);
-
-  useEffect(() => {
-    if (!user?.familyId) {
-      setItems([]);
-      return;
-    }
-
-    const unsubscribe = subscribeToGroceryList(
-      user.familyId,
-      (nextItems) => setItems(nextItems),
-      () => setItems([]),
-    );
-
-    return () => unsubscribe();
-  }, [user?.familyId]);
 
   // Stats Calculations
   const pendingItems = useMemo(() => items.filter((item) => item.status === "pending"), [items]);
@@ -172,36 +131,39 @@ const DashboardScreen = ({ navigation }: HomeStackScreenProps<"Home">) => {
    */
   const handleJoinFamily = async () => {
     if (!user || !joinCode.trim()) return;
-    setIsLoading(true);
-    try {
-      const family = await joinFamily(user.uid, joinCode.trim());
-      // Update store immediately for instant UI response
-      const { setUser } = useAuthStore.getState();
-      setUser({ ...user, familyId: family.id, role: "member" });
 
-      setStatusModal({
-        visible: true,
-        title: "Welcome Home!",
-        message: `You have successfully joined ${family.name}.`,
-        type: "success",
-      });
-      setJoinCode("");
-    } catch (error: any) {
-      setStatusModal({
-        visible: true,
-        title: "Join Failed",
-        message: error.message || "Could not join family. Please check the code.",
-        type: "error",
-      });
-    } finally {
-      setIsLoading(false);
-    }
+    joinFamilyMutation.mutate(
+      { userId: user.uid, inviteCode: joinCode.trim() },
+      {
+        onSuccess: (family) => {
+          // Update store immediately for instant UI response
+          const { setUser } = useAuthStore.getState();
+          setUser({ ...user, familyId: family.id, role: "member" });
+
+          setStatusModal({
+            visible: true,
+            title: "Welcome Home!",
+            message: `You have successfully joined ${family.name}.`,
+            type: "success",
+          });
+          setJoinCode("");
+        },
+        onError: (error: any) => {
+          setStatusModal({
+            visible: true,
+            title: "Join Failed",
+            message: error.message || "Could not join family. Please check the code.",
+            type: "error",
+          });
+        },
+      },
+    );
   };
 
   return (
     <SafeAreaView edges={["top", "left", "right"]} className="flex-1 bg-background">
       <StatusBar barStyle="dark-content" />
-      <LoadingOverlay visible={isLoading} />
+      <LoadingOverlay visible={joinFamilyMutation.isPending} />
       <StatusModal
         visible={statusModal.visible}
         title={statusModal.title}

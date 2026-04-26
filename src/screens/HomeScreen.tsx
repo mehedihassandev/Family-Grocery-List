@@ -13,6 +13,7 @@ import {
   ScrollView,
 } from "react-native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
+import { ERootRoutes } from "../navigation/routes";
 import {
   Plus,
   RefreshCw,
@@ -23,10 +24,9 @@ import {
   ChevronUp,
 } from "lucide-react-native";
 import { useAuthStore } from "../store/useAuthStore";
-import { subscribeToGroceryList, toggleItemCompletion } from "../services/grocery";
+import { useGroceryList, useToggleItemCompletion } from "../hooks/queries/useGroceryQueries";
 import { IGroceryItem, ListStackScreenProps } from "../types";
 import ItemCard from "../components/ItemCard";
-import AddItemModal from "../components/AddItemModal";
 import EmptyState from "../components/EmptyState";
 import { GROCERY_CATEGORIES, sortLegacyGroceryItemsForHome } from "../features/grocery";
 import { AppHeader, Chip } from "../components/ui";
@@ -72,14 +72,9 @@ const getFirebaseErrorMessage = (error: Error) => {
 const HomeScreen = ({ navigation }: ListStackScreenProps<"List">) => {
   const { user } = useAuthStore();
   const insets = useSafeAreaInsets();
-  const [items, setItems] = useState<IGroceryItem[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [isModalVisible, setModalVisible] = useState(false);
   const [statusFilter, setStatusFilter] = useState<TStatusFilter>("all");
   const [activeCategory, setActiveCategory] = useState<string>(ALL_CATEGORY);
   const [searchQuery, setSearchQuery] = useState("");
-  const [listError, setListError] = useState<string | null>(null);
-  const [refreshSeed, setRefreshSeed] = useState(0);
 
   const [isNotifOpen, setNotifOpen] = useState(false);
 
@@ -88,32 +83,16 @@ const HomeScreen = ({ navigation }: ListStackScreenProps<"List">) => {
   const [isCategoryFilterOpen, setCategoryFilterOpen] = useState(false);
   const categoryAnimation = useRef(new Animated.Value(0)).current;
 
-  useEffect(() => {
-    if (!user?.familyId) {
-      setItems([]);
-      setLoading(false);
-      setListError(null);
-      return;
-    }
+  // TanStack Query Hooks
+  const {
+    data: items = [],
+    isLoading: loading,
+    error: queryError,
+    refetch,
+  } = useGroceryList(user?.familyId);
+  const toggleMutation = useToggleItemCompletion();
 
-    setLoading(true);
-    setListError(null);
-
-    const unsubscribe = subscribeToGroceryList(
-      user.familyId,
-      (newItems) => {
-        setItems(newItems);
-        setListError(null);
-        setLoading(false);
-      },
-      (error) => {
-        setListError(getFirebaseErrorMessage(error));
-        setLoading(false);
-      },
-    );
-
-    return () => unsubscribe();
-  }, [user?.familyId, refreshSeed]);
+  const listError = queryError ? getFirebaseErrorMessage(queryError as Error) : null;
 
   const sortedItems = useMemo(() => sortLegacyGroceryItemsForHome(items), [items]);
 
@@ -202,9 +181,17 @@ const HomeScreen = ({ navigation }: ListStackScreenProps<"List">) => {
    */
   const handleToggle = async (item: IGroceryItem) => {
     if (!user) return;
-    await toggleItemCompletion(item, {
-      uid: user.uid,
-      name: user.displayName,
+    toggleMutation.mutate({
+      item: {
+        id: item.id,
+        name: item.name,
+        status: item.status,
+        familyId: item.familyId,
+      },
+      user: {
+        uid: user.uid,
+        name: user.displayName,
+      },
     });
   };
 
@@ -222,12 +209,10 @@ const HomeScreen = ({ navigation }: ListStackScreenProps<"List">) => {
   /**
    * Manually refreshes the list data
    */
-  const handleRefresh = () => {
+  const handleRefresh = async () => {
     setRefreshing(true);
-    setRefreshSeed((prev) => prev + 1);
-    setTimeout(() => {
-      setRefreshing(false);
-    }, 650);
+    await refetch();
+    setRefreshing(false);
   };
 
   useEffect(() => {
@@ -276,7 +261,7 @@ const HomeScreen = ({ navigation }: ListStackScreenProps<"List">) => {
         <View className="flex-1 items-center justify-center px-8">
           <EmptyState title="Unable to load list" description={listError} />
           <TouchableOpacity
-            onPress={() => setRefreshSeed((prev) => prev + 1)}
+            onPress={() => refetch()}
             activeOpacity={0.85}
             className="mt-4 flex-row items-center rounded-full bg-primary-600 px-5 py-3"
           >
@@ -386,7 +371,7 @@ const HomeScreen = ({ navigation }: ListStackScreenProps<"List">) => {
                 item={item}
                 onToggle={handleToggle}
                 onPress={(currentItem) =>
-                  navigation.navigate("ItemDetail", { itemId: currentItem.id })
+                  navigation.navigate(ERootRoutes.ITEM_DETAIL as any, { itemId: currentItem.id })
                 }
                 currentUserId={user?.uid}
               />
@@ -433,9 +418,9 @@ const HomeScreen = ({ navigation }: ListStackScreenProps<"List">) => {
       )}
 
       <TouchableOpacity
-        onPress={() => setModalVisible(true)}
+        onPress={() => navigation.navigate(ERootRoutes.ADD_ITEM)}
         activeOpacity={0.85}
-        className="absolute right-6 h-14 w-14 items-center justify-center rounded-2xl bg-primary-600 shadow-xl"
+        className="absolute right-6 h-14 w-14 items-center justify-center rounded-2xl bg-primary-600"
         style={{
           bottom: insets.bottom + 78,
           elevation: 8,
@@ -447,16 +432,6 @@ const HomeScreen = ({ navigation }: ListStackScreenProps<"List">) => {
       >
         <Plus color="white" size={28} strokeWidth={3} />
       </TouchableOpacity>
-
-      <AddItemModal
-        visible={isModalVisible}
-        onClose={() => setModalVisible(false)}
-        familyId={user?.familyId || ""}
-        user={{
-          uid: user?.uid || "",
-          name: user?.displayName || "Anonymous",
-        }}
-      />
 
       <NotificationModal visible={isNotifOpen} onClose={() => setNotifOpen(false)} />
     </SafeAreaView>

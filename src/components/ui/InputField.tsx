@@ -1,5 +1,5 @@
 import React, { ReactNode } from "react";
-import { Text, TextInput, TextInputProps, View } from "react-native";
+import { Text, TextInput, TextInputProps, View, StyleSheet } from "react-native";
 
 export interface IInputFieldProps extends TextInputProps {
   label?: string;
@@ -22,6 +22,7 @@ const InputField = ({
   error,
   containerClassName,
   inputClassName,
+  style,
   ...props
 }: IInputFieldProps) => {
   return (
@@ -40,8 +41,9 @@ const InputField = ({
         {icon ? icon : null}
         <TextInput
           {...props}
+          className={inputClassName}
           placeholderTextColor={props.placeholderTextColor ?? "#C0C8D2"}
-          className={`h-[52px] flex-1 text-[15px] font-medium text-text-900 ${icon ? "ml-3" : ""} ${inputClassName ?? ""}`}
+          style={[styles.input, icon ? { marginLeft: 12 } : null, style]}
         />
         {rightIcon ? rightIcon : null}
       </View>
@@ -52,5 +54,15 @@ const InputField = ({
     </View>
   );
 };
+
+const styles = StyleSheet.create({
+  input: {
+    height: 52,
+    flex: 1,
+    fontSize: 15,
+    fontWeight: "500",
+    color: "#1A202C",
+  },
+});
 
 export default InputField;
