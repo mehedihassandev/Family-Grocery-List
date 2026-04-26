@@ -183,7 +183,7 @@ const DashboardScreen = ({ navigation }: any) => {
       // Update store immediately for instant UI response
       const { setUser } = useAuthStore.getState();
       setUser({ ...user, familyId: family.id, role: "member" });
-      
+
       setStatusModal({
         visible: true,
         title: "Welcome Home!",
@@ -410,7 +410,10 @@ const DashboardScreen = ({ navigation }: any) => {
 
               {/* Up Next Card */}
               {nextItem && (
-                <TouchableOpacity activeOpacity={0.9} onPress={() => navigation.navigate(ETabRoutes.LIST)}>
+                <TouchableOpacity
+                  activeOpacity={0.9}
+                  onPress={() => navigation.navigate(ETabRoutes.LIST)}
+                >
                   <Card className="mb-8 border-primary-100 bg-primary-50/20 p-4 border-2">
                     <View className="flex-row items-center">
                       <View className="h-12 w-12 rounded-xl bg-primary-100 items-center justify-center">
@@ -615,7 +618,7 @@ const DashboardScreen = ({ navigation }: any) => {
                       style={{
                         width: 5,
                         backgroundColor:
-                           item.priority === "Urgent"
+                          item.priority === "Urgent"
                             ? "#E55C5C"
                             : item.priority === "Medium"
                               ? "#F5A623"

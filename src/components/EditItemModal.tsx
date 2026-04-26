@@ -40,7 +40,7 @@ const EditItemModal = ({ visible, onClose, item, familyId }: IEditItemModalProps
   const [newCatInput, setNewCatInput] = useState("");
   const [showAddCat, setShowAddCat] = useState(false);
   const [loading, setLoading] = useState(false);
-  
+
   // Modal states
   const [statusModal, setStatusModal] = useState<{
     visible: boolean;
@@ -139,7 +139,7 @@ const EditItemModal = ({ visible, onClose, item, familyId }: IEditItemModalProps
       message: `Are you sure you want to delete "${item.name}"? This cannot be undone.`,
       type: "confirm",
       onConfirm: async () => {
-        setStatusModal(prev => ({ ...prev, visible: false }));
+        setStatusModal((prev) => ({ ...prev, visible: false }));
         setLoading(true);
         try {
           await deleteGroceryItem(item.id);
@@ -154,7 +154,7 @@ const EditItemModal = ({ visible, onClose, item, familyId }: IEditItemModalProps
         } finally {
           setLoading(false);
         }
-      }
+      },
     });
   };
 
@@ -164,7 +164,7 @@ const EditItemModal = ({ visible, onClose, item, familyId }: IEditItemModalProps
     <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
       <View className="flex-1 justify-end" style={{ backgroundColor: "rgba(0,0,0,0.5)" }}>
         <LoadingOverlay visible={loading} />
-        <StatusModal 
+        <StatusModal
           visible={statusModal.visible}
           title={statusModal.title}
           message={statusModal.message}
@@ -172,7 +172,7 @@ const EditItemModal = ({ visible, onClose, item, familyId }: IEditItemModalProps
           onConfirm={statusModal.onConfirm}
           onClose={() => {
             const isSuccess = statusModal.type === "success";
-            setStatusModal(prev => ({ ...prev, visible: false }));
+            setStatusModal((prev) => ({ ...prev, visible: false }));
             if (isSuccess) onClose();
           }}
         />
@@ -234,8 +234,13 @@ const EditItemModal = ({ visible, onClose, item, familyId }: IEditItemModalProps
                 <View className="h-14 flex-row rounded-2xl bg-surface-alt p-1.5 items-center border border-border">
                   {PRIORITIES.map((p) => {
                     const isActive = priority === p;
-                    const activeStyle = p === "Low" ? "bg-primary-500" : p === "Medium" ? "bg-warning-DEFAULT" : "bg-danger-DEFAULT";
-                    
+                    const activeStyle =
+                      p === "Low"
+                        ? "bg-primary-500"
+                        : p === "Medium"
+                          ? "bg-warning-DEFAULT"
+                          : "bg-danger-DEFAULT";
+
                     return (
                       <TouchableOpacity
                         key={p}

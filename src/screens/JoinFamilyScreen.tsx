@@ -6,7 +6,13 @@ import { Users, ArrowRight } from "lucide-react-native";
 import { useForm } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
 import { FirebaseError } from "firebase/app";
-import { SubHeader, RhfTextfield, LoadingOverlay, StatusModal, PrimaryButton } from "../components/ui";
+import {
+  SubHeader,
+  RhfTextfield,
+  LoadingOverlay,
+  StatusModal,
+  PrimaryButton,
+} from "../components/ui";
 import type { RootStackNavigationProp } from "../types";
 import { joinFamily } from "../services/family";
 import { useAuthStore } from "../store/useAuthStore";
@@ -129,7 +135,7 @@ const JoinFamilyScreen = () => {
    */
   const handleModalClose = () => {
     const isSuccess = statusModal.type === "success";
-    setStatusModal(prev => ({ ...prev, visible: false }));
+    setStatusModal((prev) => ({ ...prev, visible: false }));
     if (isSuccess) {
       navigation.goBack();
     }
@@ -138,14 +144,14 @@ const JoinFamilyScreen = () => {
   return (
     <SafeAreaView edges={["top", "left", "right"]} className="flex-1 bg-background">
       <LoadingOverlay visible={loading} />
-      <StatusModal 
+      <StatusModal
         visible={statusModal.visible}
         title={statusModal.title}
         message={statusModal.message}
         type={statusModal.type}
         onClose={handleModalClose}
       />
-      
+
       <SubHeader title="Join Family" />
 
       <View className="flex-1 p-6">

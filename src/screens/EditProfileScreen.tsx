@@ -6,7 +6,14 @@ import { Lock, Camera, Check } from "lucide-react-native";
 import { useForm } from "react-hook-form";
 import * as yup from "yup";
 import { yupResolver } from "@hookform/resolvers/yup";
-import { SubHeader, Card, PrimaryButton, RhfTextfield, LoadingOverlay, StatusModal } from "../components/ui";
+import {
+  SubHeader,
+  Card,
+  PrimaryButton,
+  RhfTextfield,
+  LoadingOverlay,
+  StatusModal,
+} from "../components/ui";
 import { useAuthStore } from "../store/useAuthStore";
 import { updateUserAccountProfile } from "../services/auth";
 
@@ -76,7 +83,7 @@ const EditProfileScreen = () => {
    */
   const handleModalClose = () => {
     const isSuccess = statusModal.type === "success";
-    setStatusModal(prev => ({ ...prev, visible: false }));
+    setStatusModal((prev) => ({ ...prev, visible: false }));
     if (isSuccess) {
       navigation.goBack();
     }
@@ -85,14 +92,14 @@ const EditProfileScreen = () => {
   return (
     <SafeAreaView edges={["top", "left", "right"]} className="flex-1 bg-background">
       <LoadingOverlay visible={loading} />
-      <StatusModal 
+      <StatusModal
         visible={statusModal.visible}
         title={statusModal.title}
         message={statusModal.message}
         type={statusModal.type}
         onClose={handleModalClose}
       />
-      
+
       <SubHeader title="Edit Profile" />
 
       <View className="flex-1 p-6">

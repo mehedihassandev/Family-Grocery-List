@@ -1,13 +1,5 @@
 import React, { useEffect, useState } from "react";
-import {
-  View,
-  Text,
-  FlatList,
-  Image,
-  TouchableOpacity,
-  Share,
-  StatusBar,
-} from "react-native";
+import { View, Text, FlatList, Image, TouchableOpacity, Share, StatusBar } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Share2, Crown, Trash2, LogOut } from "lucide-react-native";
 import { useAuthStore } from "../store/useAuthStore";
@@ -48,7 +40,7 @@ const MembersScreen = () => {
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
   const [isNotifOpen, setNotifOpen] = useState(false);
-  
+
   // Modal states
   const [statusModal, setStatusModal] = useState<{
     visible: boolean;
@@ -70,9 +62,7 @@ const MembersScreen = () => {
   useEffect(() => {
     if (!user?.familyId) return;
 
-    getFamilyDetails(user.familyId)
-      .then(setFamily)
-      .catch(console.error);
+    getFamilyDetails(user.familyId).then(setFamily).catch(console.error);
 
     const unsubscribe = subscribeToFamilyMembers(
       user.familyId,
@@ -80,7 +70,7 @@ const MembersScreen = () => {
         setMembers(newMembers);
         setLoading(false);
       },
-      () => setLoading(false)
+      () => setLoading(false),
     );
 
     return () => unsubscribe();
@@ -113,7 +103,7 @@ const MembersScreen = () => {
       message: `Are you sure you want to remove ${member.displayName} from the family?`,
       type: "confirm",
       onConfirm: async () => {
-        setStatusModal(prev => ({ ...prev, visible: false }));
+        setStatusModal((prev) => ({ ...prev, visible: false }));
         setActionLoading(true);
         try {
           await removeMemberAsOwner({
@@ -131,7 +121,7 @@ const MembersScreen = () => {
         } finally {
           setActionLoading(false);
         }
-      }
+      },
     });
   };
 
@@ -144,12 +134,12 @@ const MembersScreen = () => {
     setStatusModal({
       visible: true,
       title: "Leave Family",
-      message: isOwner 
+      message: isOwner
         ? "You are the owner. If you leave, ownership will be transferred to another member or the family will be deleted if you are the last one. Continue?"
         : "Are you sure you want to leave this family group?",
       type: "confirm",
       onConfirm: async () => {
-        setStatusModal(prev => ({ ...prev, visible: false }));
+        setStatusModal((prev) => ({ ...prev, visible: false }));
         setActionLoading(true);
         try {
           await leaveFamily({
@@ -167,7 +157,7 @@ const MembersScreen = () => {
         } finally {
           setActionLoading(false);
         }
-      }
+      },
     });
   };
 
@@ -175,13 +165,13 @@ const MembersScreen = () => {
     <SafeAreaView edges={["top", "left", "right"]} className="flex-1 bg-background">
       <StatusBar barStyle="dark-content" />
       <LoadingOverlay visible={actionLoading || (loading && members.length === 0)} />
-      <StatusModal 
+      <StatusModal
         visible={statusModal.visible}
         title={statusModal.title}
         message={statusModal.message}
         type={statusModal.type}
         onConfirm={statusModal.onConfirm}
-        onClose={() => setStatusModal(prev => ({ ...prev, visible: false }))}
+        onClose={() => setStatusModal((prev) => ({ ...prev, visible: false }))}
       />
 
       <AppHeader
@@ -219,9 +209,7 @@ const MembersScreen = () => {
             Group Members
           </Text>
           <View className="rounded-full bg-surface-alt px-3 py-1 border border-border">
-            <Text className="text-[11px] font-bold text-text-muted">
-              {members.length} Total
-            </Text>
+            <Text className="text-[11px] font-bold text-text-muted">{members.length} Total</Text>
           </View>
         </View>
 
@@ -277,16 +265,16 @@ const MembersScreen = () => {
             </Card>
           )}
         />
-        
+
         <View className="py-4">
-           <TouchableOpacity 
-             onPress={handleLeaveFamily}
-             activeOpacity={0.8}
-             className="flex-row items-center justify-center py-4 bg-white border border-danger-light rounded-2xl"
-           >
-             <LogOut stroke="#E55C5C" size={18} strokeWidth={2.5} />
-             <Text className="ml-2 text-danger-dark font-bold text-[15px]">Leave Family Group</Text>
-           </TouchableOpacity>
+          <TouchableOpacity
+            onPress={handleLeaveFamily}
+            activeOpacity={0.8}
+            className="flex-row items-center justify-center py-4 bg-white border border-danger-light rounded-2xl"
+          >
+            <LogOut stroke="#E55C5C" size={18} strokeWidth={2.5} />
+            <Text className="ml-2 text-danger-dark font-bold text-[15px]">Leave Family Group</Text>
+          </TouchableOpacity>
         </View>
       </View>
 

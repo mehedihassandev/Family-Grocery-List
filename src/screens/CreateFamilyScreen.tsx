@@ -6,7 +6,13 @@ import { PlusCircle, Check } from "lucide-react-native";
 import { useForm } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
 import { FirebaseError } from "firebase/app";
-import { SubHeader, RhfTextfield, LoadingOverlay, StatusModal, PrimaryButton } from "../components/ui";
+import {
+  SubHeader,
+  RhfTextfield,
+  LoadingOverlay,
+  StatusModal,
+  PrimaryButton,
+} from "../components/ui";
 import type { RootStackNavigationProp } from "../types";
 import { createFamily } from "../services/family";
 import { useAuthStore } from "../store/useAuthStore";
@@ -123,7 +129,7 @@ const CreateFamilyScreen = () => {
    */
   const handleModalClose = () => {
     const isSuccess = statusModal.type === "success";
-    setStatusModal(prev => ({ ...prev, visible: false }));
+    setStatusModal((prev) => ({ ...prev, visible: false }));
     if (isSuccess) {
       navigation.goBack();
     }
@@ -132,14 +138,14 @@ const CreateFamilyScreen = () => {
   return (
     <SafeAreaView edges={["top", "left", "right"]} className="flex-1 bg-background">
       <LoadingOverlay visible={loading} />
-      <StatusModal 
+      <StatusModal
         visible={statusModal.visible}
         title={statusModal.title}
         message={statusModal.message}
         type={statusModal.type}
         onClose={handleModalClose}
       />
-      
+
       <SubHeader title="Create Family" />
 
       <View className="flex-1 p-6">
@@ -151,7 +157,8 @@ const CreateFamilyScreen = () => {
             Start Your Group
           </Text>
           <Text className="text-[15px] leading-6 text-text-secondary text-center px-6">
-            Create a family and invite members to start collaborating on your grocery list in real-time.
+            Create a family and invite members to start collaborating on your grocery list in
+            real-time.
           </Text>
         </View>
 

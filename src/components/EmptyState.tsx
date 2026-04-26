@@ -21,9 +21,7 @@ const EmptyState = ({ title, description }: IEmptyStateProps) => {
       <Text className="mb-3 text-center text-[22px] font-bold text-text-primary tracking-tight">
         {title}
       </Text>
-      <Text className="text-center text-[15px] leading-6 text-text-muted px-4">
-        {description}
-      </Text>
+      <Text className="text-center text-[15px] leading-6 text-text-muted px-4">{description}</Text>
     </View>
   );
 };

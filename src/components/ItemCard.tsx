@@ -25,30 +25,26 @@ const ItemCard = ({ item, onToggle, onPress }: IItemCardProps) => {
     : "just now";
 
   return (
-    <TouchableOpacity
-      onPress={() => onPress(item)}
-      activeOpacity={0.8}
-      className="mb-4"
-    >
+    <TouchableOpacity onPress={() => onPress(item)} activeOpacity={0.8} className="mb-4">
       <Card padding={false} className="flex-row overflow-hidden min-h-[100px]">
         {/* Priority left border accent */}
-        <View 
-          style={{ 
-            width: 5, 
-            backgroundColor: isCompleted 
-              ? "#E8EBF0" 
-              : item.priority === "Urgent" 
-                ? "#E55C5C" 
-                : item.priority === "Medium" 
-                  ? "#F5A623" 
-                  : "#3DB87A" 
-          }} 
+        <View
+          style={{
+            width: 5,
+            backgroundColor: isCompleted
+              ? "#E8EBF0"
+              : item.priority === "Urgent"
+                ? "#E55C5C"
+                : item.priority === "Medium"
+                  ? "#F5A623"
+                  : "#3DB87A",
+          }}
         />
 
         <View className="flex-1 p-5">
           <View className="flex-row items-center justify-between mb-3">
-            <TouchableOpacity 
-              onPress={() => onToggle(item)} 
+            <TouchableOpacity
+              onPress={() => onToggle(item)}
               activeOpacity={0.6}
               className="flex-row items-center flex-1 mr-2"
             >
@@ -68,7 +64,7 @@ const ItemCard = ({ item, onToggle, onPress }: IItemCardProps) => {
                 {item.name}
               </Text>
             </TouchableOpacity>
-            
+
             {!isCompleted && <PriorityBadge priority={item.priority} />}
           </View>
 
@@ -79,9 +75,7 @@ const ItemCard = ({ item, onToggle, onPress }: IItemCardProps) => {
                   {item.category} {item.quantity ? `· ${item.quantity}` : ""}
                 </Text>
               </View>
-              <Text className="ml-3 text-[11px] font-medium text-text-muted">
-                {timeAgo}
-              </Text>
+              <Text className="ml-3 text-[11px] font-medium text-text-muted">{timeAgo}</Text>
             </View>
 
             <View className="h-7 w-7 rounded-full bg-primary-600 border-2 border-white items-center justify-center overflow-hidden shadow-sm">

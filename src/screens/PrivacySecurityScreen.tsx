@@ -18,9 +18,7 @@ const BulletList = ({ items }: IBulletListProps) => {
       {items.map((item) => (
         <View key={item} className="flex-row items-start">
           <View className="mt-2 h-1.5 w-1.5 rounded-full bg-primary-500" />
-          <Text className="ml-3 flex-1 text-[13px] leading-5 text-text-secondary">
-            {item}
-          </Text>
+          <Text className="ml-3 flex-1 text-[13px] leading-5 text-text-secondary">{item}</Text>
         </View>
       ))}
     </View>
@@ -89,18 +87,16 @@ const PrivacySecurityScreen = () => {
           <Card className="p-5 mb-4">
             <Text className="text-[16px] font-bold text-text-900 mb-2">Local storage</Text>
             <Text className="text-[13px] leading-5 text-text-secondary">
-              The app persists your session on your device using encrypted storage so you don’t
-              need to log in every time you open the app.
+              The app persists your session on your device using encrypted storage so you don’t need
+              to log in every time you open the app.
             </Text>
           </Card>
 
           <Card className="p-5 mb-4">
-            <Text className="text-[16px] font-bold text-text-900 mb-2">
-              Third-party services
-            </Text>
+            <Text className="text-[16px] font-bold text-text-900 mb-2">Third-party services</Text>
             <Text className="text-[13px] leading-5 text-text-secondary mb-4">
-              This app relies on Google Sign-In and Firebase (Auth + Firestore). Their
-              privacy policies also apply to your data.
+              This app relies on Google Sign-In and Firebase (Auth + Firestore). Their privacy
+              policies also apply to your data.
             </Text>
 
             <TouchableOpacity
@@ -127,8 +123,8 @@ const PrivacySecurityScreen = () => {
           <Card className="p-5">
             <Text className="text-[16px] font-bold text-text-900 mb-2">Important Note</Text>
             <Text className="text-[13px] leading-5 text-text-secondary">
-              We use industry-standard safeguards to protect your data. While no internet service can 
-              guarantee 100% security, we work hard to keep your information safe and private.
+              We use industry-standard safeguards to protect your data. While no internet service
+              can guarantee 100% security, we work hard to keep your information safe and private.
             </Text>
           </Card>
         </View>

@@ -316,12 +316,7 @@ export const hasGoogleSignInConfiguration = () => getGoogleSignInConfigurationSt
  * Returns a detailed message about Google Sign-In configuration issues
  */
 export const getGoogleSignInSetupMessage = () => {
-  const {
-    missingEnvVars,
-    invalidFormatEnvVars,
-    mismatchedProjectEnvVars,
-    duplicateClientEnvVars,
-  } =
+  const { missingEnvVars, invalidFormatEnvVars, mismatchedProjectEnvVars, duplicateClientEnvVars } =
     getGoogleSignInConfigurationStatus();
 
   if (
@@ -780,7 +775,10 @@ export const listenToAuthChanges = () => {
           userDocRef,
           (snapshot) => {
             // Avoid stale writes if auth state changed while waiting for snapshot
-            if (currentEventVersion !== authEventVersion || auth.currentUser?.uid !== firebaseUser.uid) {
+            if (
+              currentEventVersion !== authEventVersion ||
+              auth.currentUser?.uid !== firebaseUser.uid
+            ) {
               return;
             }
 

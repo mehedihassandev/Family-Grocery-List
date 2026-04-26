@@ -30,14 +30,14 @@ const createNativeAuth = () => {
   try {
     // Load from firebase/auth so React Native can resolve its RN auth
     // entrypoint and expose getReactNativePersistence at runtime.
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
+     
     const { getReactNativePersistence } = require("@firebase/auth") as {
       getReactNativePersistence?: (storage: unknown) => unknown;
     };
 
     // AsyncStorage is optional at runtime so Expo Go can still boot even
     // before the dependency is installed.
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
+     
     const AsyncStorage = require("@react-native-async-storage/async-storage").default;
 
     if (getReactNativePersistence) {

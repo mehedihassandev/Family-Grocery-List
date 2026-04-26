@@ -14,7 +14,10 @@ export interface ICustomCategory {
  * @param name - The name of the new category
  * @returns The newly created custom category object
  */
-export const addCustomCategory = async (familyId: string, name: string): Promise<ICustomCategory> => {
+export const addCustomCategory = async (
+  familyId: string,
+  name: string,
+): Promise<ICustomCategory> => {
   try {
     const catRef = doc(collection(db, "categories"));
     const newCat: ICustomCategory = {

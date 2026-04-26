@@ -95,13 +95,13 @@ async function getFirestoreConfigurationIssue(): Promise<string | null> {
         code?: number;
         message?: string;
         status?: string;
-        details?: Array<{
+        details?: {
           "@type"?: string;
           reason?: string;
           metadata?: {
             activationUrl?: string;
           };
-        }>;
+        }[];
       };
     };
 
@@ -141,7 +141,11 @@ async function getFirestoreConfigurationIssue(): Promise<string | null> {
  * @param familyId - The ID of the family to join
  * @param role - The user's role in the family
  */
-const upsertUserFamilyMembership = async (userId: string, familyId: string, role: IUser["role"]) => {
+const upsertUserFamilyMembership = async (
+  userId: string,
+  familyId: string,
+  role: IUser["role"],
+) => {
   const userRef = doc(db, "users", userId);
   await withFirestoreWriteTimeout(
     setDoc(

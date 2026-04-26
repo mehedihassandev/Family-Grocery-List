@@ -18,9 +18,7 @@ const BulletList = ({ items }: IBulletListProps) => {
       {items.map((item) => (
         <View key={item} className="flex-row items-start">
           <View className="mt-2 h-1.5 w-1.5 rounded-full bg-primary-500" />
-          <Text className="ml-3 flex-1 text-[13px] leading-5 text-text-secondary">
-            {item}
-          </Text>
+          <Text className="ml-3 flex-1 text-[13px] leading-5 text-text-secondary">{item}</Text>
         </View>
       ))}
     </View>
@@ -92,9 +90,7 @@ const HelpSupportScreen = () => {
               }
               className="flex-row items-center justify-between rounded-md bg-surface-alt border border-border px-4 py-3"
             >
-              <Text className="text-[14px] font-bold text-text-900">
-                Firestore Rules Setup
-              </Text>
+              <Text className="text-[14px] font-bold text-text-900">Firestore Rules Setup</Text>
               <ExternalLink stroke="#4A5568" size={18} />
             </TouchableOpacity>
 
@@ -109,9 +105,7 @@ const HelpSupportScreen = () => {
               }
               className="flex-row items-center justify-between rounded-md bg-surface-alt border border-border px-4 py-3"
             >
-              <Text className="text-[14px] font-bold text-text-900">
-                Google Sign-In Setup
-              </Text>
+              <Text className="text-[14px] font-bold text-text-900">Google Sign-In Setup</Text>
               <ExternalLink stroke="#4A5568" size={18} />
             </TouchableOpacity>
           </Card>
@@ -145,8 +139,8 @@ const HelpSupportScreen = () => {
               <Text className="ml-2 text-[16px] font-bold text-text-900">App Information</Text>
             </View>
             <Text className="text-[13px] leading-5 text-text-secondary">
-              Family Grocery List is built with Expo and React Native. It uses Firebase Authentication
-              and Cloud Firestore for real-time synchronization.
+              Family Grocery List is built with Expo and React Native. It uses Firebase
+              Authentication and Cloud Firestore for real-time synchronization.
             </Text>
           </Card>
         </View>

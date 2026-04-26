@@ -43,7 +43,7 @@ interface IGrocerySection {
   data: IGroceryItem[];
 }
 
-const STATUS_FILTERS: Array<{ key: TStatusFilter; label: string }> = [
+const STATUS_FILTERS: { key: TStatusFilter; label: string }[] = [
   { key: "all", label: "All" },
   { key: "pending", label: "Pending" },
   { key: "completed", label: "Completed" },
@@ -311,10 +311,7 @@ const HomeScreen = () => {
   };
 
   return (
-    <SafeAreaView
-      edges={["top", "left", "right"]}
-      className="flex-1 bg-background"
-    >
+    <SafeAreaView edges={["top", "left", "right"]} className="flex-1 bg-background">
       <StatusBar barStyle="dark-content" />
 
       <AppHeader
@@ -476,11 +473,7 @@ const HomeScreen = () => {
                   {showCompleted ? (
                     <ChevronUp stroke="#637889" size={16} strokeWidth={3} />
                   ) : (
-                    <ChevronDown
-                      stroke="#637889"
-                      size={16}
-                      strokeWidth={3}
-                    />
+                    <ChevronDown stroke="#637889" size={16} strokeWidth={3} />
                   )}
                 </TouchableOpacity>
               </View>

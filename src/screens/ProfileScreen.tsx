@@ -10,14 +10,7 @@ import {
   ActivityIndicator,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import {
-  LogOut,
-  Shield,
-  HelpCircle,
-  ChevronRight,
-  Edit3,
-  Users,
-} from "lucide-react-native";
+import { LogOut, Shield, HelpCircle, ChevronRight, Edit3, Users } from "lucide-react-native";
 import { useAuthStore } from "../store/useAuthStore";
 import { signOut } from "../services/auth";
 import { leaveFamily } from "../services/family";
@@ -135,9 +128,7 @@ const ProfileScreen = ({ navigation }: any) => {
       </View>
       <Text
         className={`flex-1 text-[15px] font-bold ${
-          isDestructive
-            ? "text-danger-dark"
-            : "text-text-900"
+          isDestructive ? "text-danger-dark" : "text-text-900"
         }`}
       >
         {title}
@@ -150,10 +141,7 @@ const ProfileScreen = ({ navigation }: any) => {
   );
 
   return (
-    <SafeAreaView
-      edges={["top", "left", "right"]}
-      className="flex-1 bg-background"
-    >
+    <SafeAreaView edges={["top", "left", "right"]} className="flex-1 bg-background">
       <StatusBar barStyle="dark-content" />
 
       <AppHeader title="Profile" eyebrow="Settings" />
