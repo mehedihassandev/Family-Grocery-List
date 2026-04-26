@@ -1,4 +1,7 @@
-import type { NativeStackScreenProps } from "@react-navigation/native-stack";
+import type {
+  NativeStackNavigationProp,
+  NativeStackScreenProps,
+} from "@react-navigation/native-stack";
 import type { BottomTabScreenProps } from "@react-navigation/bottom-tabs";
 import type { CompositeScreenProps } from "@react-navigation/native";
 import { ERootRoutes, ETabRoutes } from "../navigation/routes";
@@ -126,8 +129,13 @@ export type ProfileStackParamList = { Profile: undefined };
 // Convenience prop types
 // ---------------------------------------------------------------------------
 
+export type RootStackNavigationProp = NativeStackNavigationProp<RootNavigatorParamList>;
+
 export type RootNavigatorScreenProps<T extends keyof RootNavigatorParamList> =
   NativeStackScreenProps<RootNavigatorParamList, T>;
+
+export type AuthenticatedStackNavigationProp =
+  NativeStackNavigationProp<AuthenticatedStackNavigatorParamList>;
 
 export type AuthenticatedStackNavigatorScreenProps<
   T extends keyof AuthenticatedStackNavigatorParamList,
