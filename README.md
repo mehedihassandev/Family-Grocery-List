@@ -295,6 +295,7 @@ This project is fully open source and open to all contributors.
 - Anyone can fork, improve, and submit pull requests.
 - All feature work, fixes, docs, and cleanup contributions are welcome.
 - Contribution guide: [CONTRIBUTING.md](./CONTRIBUTING.md)
+- Code of Conduct: [CODE_OF_CONDUCT.md](./CODE_OF_CONDUCT.md)
 - Open-source license: [LICENSE](./LICENSE) (MIT)
 
 ## Commit Message Rules
@@ -403,7 +404,9 @@ Note: We use strong safeguards (Firebase Auth, encrypted transport, and Firestor
 ### GitHub templates and CI
 
 - This repo includes GitHub Issue/PR templates under `.github/` to keep reports and PRs consistent.
-- CI runs lint/format/typecheck on PRs to `main` via GitHub Actions.
+- **CI Pipeline**: Runs lint/format/typecheck on PRs to `main`.
+- **Stale Management**: Automatically manages inactive issues and PRs.
+- **Automated Releases**: Creates GitHub Releases on version tag pushes.
 
 ## License
 
