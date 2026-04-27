@@ -68,7 +68,7 @@
     "@types/react": "~19.2.10",
     "@types/react-native": "^0.72.8",
     "eslint": "^9.39.4",
-    "eslint-config-expo": "~10.0.0",
+    "eslint-config-expo": "~55.0.0",
     "eslint-config-prettier": "^10.1.8",
     "husky": "^9.1.7",
     "prettier": "^3.8.3",
