@@ -129,7 +129,9 @@ export const useToggleItemCompletion = () => {
       user: { uid: string; name: string };
     }) => toggleItemCompletion(item, user),
     onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.GROCERY_LIST, variables.item.familyId] });
+      queryClient.invalidateQueries({
+        queryKey: [QUERY_KEYS.GROCERY_LIST, variables.item.familyId],
+      });
       queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.GROCERY_ITEM, variables.item.id] });
     },
   });
