@@ -1,12 +1,11 @@
 import React, { useState } from "react";
-import { Modal, ScrollView, Text, TouchableOpacity, View, StyleSheet } from "react-native";
+import { ScrollView, Text, TouchableOpacity, View, StyleSheet } from "react-native";
 import { Bell, Check, ShoppingBag, X, AlertCircle, Inbox } from "lucide-react-native";
 import { useAuthStore } from "../store/useAuthStore";
 import { useNotificationStore } from "../store/useNotificationStore";
 import { markNotificationsAsRead } from "../services/notification";
 import { formatDistanceToNow } from "date-fns";
 import { Card } from "./ui";
-import { ERootRoutes } from "../navigation/routes";
 
 interface INotificationModalProps {
   visible: boolean;

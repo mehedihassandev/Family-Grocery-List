@@ -1,5 +1,5 @@
 import React from "react";
-import { Modal, Text, View, TouchableOpacity, StyleSheet } from "react-native";
+import { Text, View, TouchableOpacity, StyleSheet } from "react-native";
 import { CheckCircle2, XCircle, AlertTriangle, HelpCircle } from "lucide-react-native";
 import { PrimaryButton } from "./PrimaryButton";
 
