@@ -21,7 +21,8 @@
     "format": "prettier --check ./src/**/*.{ts,tsx}",
     "format:fix": "prettier --write ./src/**/*.{ts,tsx}",
     "prepare": "husky",
-    "commitlint": "commitlint --from HEAD~1 --to HEAD --verbose"
+    "commitlint": "commitlint --from HEAD~1 --to HEAD --verbose",
+    "type-check": "tsc --noEmit"
   },
   "dependencies": {
     "@expo-google-fonts/dm-mono": "^0.4.2",

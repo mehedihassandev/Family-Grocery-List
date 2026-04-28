@@ -202,9 +202,7 @@ const NotificationModal = ({ visible, onClose }: INotificationModalProps) => {
                   }}
                   className="mb-3"
                 >
-                  <Card
-                    className={`py-4 ${isUnread ? "border-primary-100 bg-primary-50/10" : ""}`}
-                  >
+                  <Card className={`py-4 ${isUnread ? "border-primary-100 bg-primary-50/10" : ""}`}>
                     <View className="flex-row items-start">
                       <View
                         className={`mr-4 h-11 w-11 items-center justify-center rounded-2xl ${bg}`}

@@ -47,10 +47,7 @@ const AuthenticatedNavigator = () => {
         component={EditItemScreen}
         options={{ presentation: "modal" }}
       />
-      <Stack.Screen
-        name={ERootRoutes.ADD_ITEM}
-        component={AddItemScreen}
-      />
+      <Stack.Screen name={ERootRoutes.ADD_ITEM} component={AddItemScreen} />
     </Stack.Navigator>
   );
 };
