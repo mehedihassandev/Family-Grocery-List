@@ -13,6 +13,9 @@ export enum ERootRoutes {
   EDIT_PROFILE = "EditProfile",
   PRIVACY_SECURITY = "PrivacySecurity",
   HELP_SUPPORT = "HelpSupport",
+  ADD_ITEM = "AddItem",
+  ITEM_DETAIL = "ItemDetail",
+  EDIT_ITEM = "EditItem",
 }
 
 export enum ETabRoutes {

@@ -1,0 +1,24 @@
+echo "🔍 Running pre-commit checks..."
+
+# Detect package manager
+if command -v yarn >/dev/null 2>&1; then
+  EXEC="yarn"
+else
+  EXEC="npm run"
+fi
+
+echo "Using $EXEC for checks..."
+
+# Run Lint
+echo "🧵 Linting..."
+$EXEC lint || exit 1
+
+# Run Format Check
+echo "✨ Checking formatting..."
+$EXEC format || exit 1
+
+# Run Type Check
+echo "🏗️ Checking types..."
+$EXEC type-check || exit 1
+
+echo "✅ All checks passed!"

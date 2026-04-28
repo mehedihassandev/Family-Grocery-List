@@ -16,6 +16,9 @@ import {
 
 import * as SplashScreen from 'expo-splash-screen';
 
+import { QueryClientProvider } from "@tanstack/react-query";
+import { queryClient } from "./src/lib/react-query";
+
 // Keep the splash screen visible while we fetch resources
 SplashScreen.preventAutoHideAsync();
 
@@ -39,9 +42,11 @@ export default function App() {
 
     return (
         <GestureHandlerRootView style={{ flex: 1 }}>
-            <SafeAreaProvider>
-                <Navigator />
-            </SafeAreaProvider>
+            <QueryClientProvider client={queryClient}>
+                <SafeAreaProvider>
+                    <Navigator />
+                </SafeAreaProvider>
+            </QueryClientProvider>
         </GestureHandlerRootView>
     );
 }

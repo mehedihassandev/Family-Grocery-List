@@ -3,6 +3,7 @@ import { View, Text, ScrollView, TouchableOpacity, Linking, Alert } from "react-
 import { SafeAreaView } from "react-native-safe-area-context";
 import { HelpCircle, Bug, ExternalLink, Info } from "lucide-react-native";
 import { SubHeader, Card } from "../components/ui";
+import { AuthenticatedStackNavigatorScreenProps, ERootRoutes } from "../types";
 
 interface IBulletListProps {
   items: string[];
@@ -29,7 +30,9 @@ const BulletList = ({ items }: IBulletListProps) => {
  * Screen providing help resources and support links
  * Why: To guide users through common troubleshooting steps and provide direct links to documentation and bug reporting.
  */
-const HelpSupportScreen = () => {
+const HelpSupportScreen = ({
+  navigation,
+}: AuthenticatedStackNavigatorScreenProps<ERootRoutes.HELP_SUPPORT>) => {
   /**
    * Opens an external URL in the default browser
    * @param url - The URL to open
@@ -50,7 +53,7 @@ const HelpSupportScreen = () => {
 
   return (
     <SafeAreaView edges={["top", "left", "right"]} className="flex-1 bg-background">
-      <SubHeader title="Help & Support" />
+      <SubHeader title="Help & Support" onBackPress={() => navigation.goBack()} />
 
       <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
         <View className="p-6">

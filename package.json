@@ -21,7 +21,8 @@
     "format": "prettier --check ./src/**/*.{ts,tsx}",
     "format:fix": "prettier --write ./src/**/*.{ts,tsx}",
     "prepare": "husky",
-    "commitlint": "commitlint --from HEAD~1 --to HEAD --verbose"
+    "commitlint": "commitlint --from HEAD~1 --to HEAD --verbose",
+    "type-check": "tsc --noEmit"
   },
   "dependencies": {
     "@expo-google-fonts/dm-mono": "^0.4.2",
@@ -32,6 +33,7 @@
     "@react-navigation/bottom-tabs": "^7.15.9",
     "@react-navigation/native": "^7.2.2",
     "@react-navigation/native-stack": "^7.14.11",
+    "@tanstack/react-query": "^5.100.5",
     "clsx": "^2.1.1",
     "date-fns": "^4.1.0",
     "expo": "~55.0.17",
@@ -67,6 +69,7 @@
     "@commitlint/config-conventional": "^19.8.1",
     "@types/react": "~19.2.10",
     "@types/react-native": "^0.72.8",
+    "babel-preset-expo": "~55.0.18",
     "eslint": "^9.39.4",
     "eslint-config-expo": "~10.0.0",
     "eslint-config-prettier": "^10.1.8",

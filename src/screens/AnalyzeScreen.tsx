@@ -1,5 +1,5 @@
-import React, { useEffect, useMemo, useState } from "react";
-import { AnalyzeStackScreenProps, IGroceryItem } from "../types";
+import React, { useMemo, useState } from "react";
+import { AnalyzeStackScreenProps } from "../types";
 import { ScrollView, StatusBar, Text, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import {
@@ -10,7 +10,7 @@ import {
   Calendar as CalendarIcon,
 } from "lucide-react-native";
 import { useAuthStore } from "../store/useAuthStore";
-import { subscribeToGroceryList } from "../services/grocery";
+import { useGroceryList } from "../hooks/queries/useGroceryQueries";
 import { AppHeader, Card, DonutChart, ProgressBar } from "../components/ui";
 import NotificationModal from "../components/NotificationModal";
 
@@ -55,27 +55,14 @@ const formatMonthLabel = (date: Date) => `${MONTH_NAMES[date.getMonth()]} ${date
  */
 const AnalyzeScreen = ({ navigation }: AnalyzeStackScreenProps<"Analyze">) => {
   const { user } = useAuthStore();
-  const [items, setItems] = useState<IGroceryItem[]>([]);
   const [isNotifOpen, setNotifOpen] = useState(false);
   const [selectedMonth, setSelectedMonth] = useState(() => {
     const now = new Date();
     return new Date(now.getFullYear(), now.getMonth(), 1);
   });
 
-  useEffect(() => {
-    if (!user?.familyId) {
-      setItems([]);
-      return;
-    }
-
-    const unsubscribe = subscribeToGroceryList(
-      user.familyId,
-      (nextItems) => setItems(nextItems),
-      () => setItems([]),
-    );
-
-    return () => unsubscribe();
-  }, [user?.familyId]);
+  // TanStack Query Hook
+  const { data: items = [] } = useGroceryList(user?.familyId);
 
   // Filtering items for the selected month
   const monthlyItems = useMemo(() => {

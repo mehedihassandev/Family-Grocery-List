@@ -1,7 +1,6 @@
 import React from "react";
 import { View, Text, TouchableOpacity } from "react-native";
 import { ArrowLeft } from "lucide-react-native";
-import { useNavigation } from "@react-navigation/native";
 
 interface ISubHeaderProps {
   title: string;
@@ -14,18 +13,12 @@ interface ISubHeaderProps {
  * @param props - Component props including screen title and optional back handler override
  */
 export const SubHeader = ({ title, onBackPress }: ISubHeaderProps) => {
-  const navigation = useNavigation();
-
   /**
    * Handles the back navigation action
    */
   const handleBack = () => {
     if (onBackPress) {
       onBackPress();
-    } else {
-      if (navigation.canGoBack()) {
-        navigation.goBack();
-      }
     }
   };
 

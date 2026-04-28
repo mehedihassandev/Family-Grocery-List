@@ -278,6 +278,10 @@ export const subscribeToFamilyMembers = (
 export const getFamilyDetails = async (familyId: string) => {
   const familyRef = doc(db, "families", familyId);
   const familyDoc = await getDoc(familyRef);
+  if (!familyDoc.exists()) {
+    return null;
+  }
+
   return familyDoc.data() as IFamily;
 };
 

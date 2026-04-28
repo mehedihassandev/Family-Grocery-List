@@ -1,7 +1,6 @@
 import React, { useState } from "react";
 import { View, Text } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useNavigation } from "@react-navigation/native";
 import { Users, ArrowRight } from "lucide-react-native";
 import { useForm } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
@@ -13,12 +12,12 @@ import {
   StatusModal,
   PrimaryButton,
 } from "../components/ui";
-import type { RootStackNavigationProp } from "../types";
-import { joinFamily } from "../services/family";
+import { AuthenticatedStackNavigatorScreenProps, ERootRoutes } from "../types";
 import { useAuthStore } from "../store/useAuthStore";
+import { useJoinFamily } from "../hooks/queries/useFamilyQueries";
 import { joinFamilySchema, type JoinFamilyFormValues } from "../utils/validationSchemas";
 
-const FAMILY_ACTION_TIMEOUT_MS = 15000;
+// const FAMILY_ACTION_TIMEOUT_MS = 15000;
 
 /**
  * Maps family operation errors to user-friendly messages
@@ -46,33 +45,35 @@ const getFamilyErrorMessage = (error: unknown) => {
  * @param operation - The promise to wrap
  * @param timeoutMessage - Message to display on timeout
  */
-async function withFamilyActionTimeout<T>(
-  operation: Promise<T>,
-  timeoutMessage: string,
-): Promise<T> {
-  let timeoutId: ReturnType<typeof setTimeout> | undefined;
-  try {
-    return await Promise.race([
-      operation,
-      new Promise<T>((_, reject) => {
-        timeoutId = setTimeout(() => {
-          reject(new Error(timeoutMessage));
-        }, FAMILY_ACTION_TIMEOUT_MS);
-      }),
-    ]);
-  } finally {
-    if (timeoutId) clearTimeout(timeoutId);
-  }
-}
+// async function withFamilyActionTimeout<T>(
+//   operation: Promise<T>,
+//   timeoutMessage: string,
+// ): Promise<T> {
+//   let timeoutId: ReturnType<typeof setTimeout> | undefined;
+//   try {
+//     return await Promise.race([
+//       operation,
+//       new Promise<T>((_, reject) => {
+//         timeoutId = setTimeout(() => {
+//           reject(new Error(timeoutMessage));
+//         }, FAMILY_ACTION_TIMEOUT_MS);
+//       }),
+//     ]);
+//   } finally {
+//     if (timeoutId) clearTimeout(timeoutId);
+//   }
+// }
 
 /**
  * Premium Join Family Screen
  * Why: To provide a clean, modern experience for entering invite codes with elegant feedback.
  */
-const JoinFamilyScreen = () => {
-  const navigation = useNavigation<RootStackNavigationProp>();
-  const [loading, setLoading] = useState(false);
+const JoinFamilyScreen = ({
+  navigation,
+}: AuthenticatedStackNavigatorScreenProps<ERootRoutes.JOIN_FAMILY>) => {
   const { user, setUser } = useAuthStore();
+  const joinMutation = useJoinFamily();
+
   const [statusModal, setStatusModal] = useState<{
     visible: boolean;
     title: string;
@@ -96,38 +97,36 @@ const JoinFamilyScreen = () => {
    * @param values - Validated form values containing the invite code
    */
   const handleJoin = async (values: JoinFamilyFormValues) => {
-    setLoading(true);
-    try {
-      clearErrors("code");
-      if (!user?.uid) throw new Error("Please sign in to join a family.");
+    if (!user?.uid) return;
+    clearErrors("code");
 
-      const family = await withFamilyActionTimeout(
-        joinFamily(user.uid, values.code),
-        "Join family timed out. Check network.",
-      );
-
-      setUser({ ...user, familyId: family.id, role: "member" });
-      setStatusModal({
-        visible: true,
-        title: "Welcome!",
-        message: `You've successfully joined ${family.name}.`,
-        type: "success",
-      });
-    } catch (error) {
-      const message = getFamilyErrorMessage(error);
-      if (message.toLowerCase().includes("invalid invite code")) {
-        setError("code", { type: "manual", message });
-        return;
-      }
-      setStatusModal({
-        visible: true,
-        title: "Join Failed",
-        message,
-        type: "error",
-      });
-    } finally {
-      setLoading(false);
-    }
+    joinMutation.mutate(
+      { userId: user.uid, inviteCode: values.code },
+      {
+        onSuccess: (family) => {
+          setUser({ ...user, familyId: family.id, role: "member" });
+          setStatusModal({
+            visible: true,
+            title: "Welcome!",
+            message: `You've successfully joined ${family.name}.`,
+            type: "success",
+          });
+        },
+        onError: (error) => {
+          const message = getFamilyErrorMessage(error);
+          if (message.toLowerCase().includes("invalid invite code")) {
+            setError("code", { type: "manual", message });
+            return;
+          }
+          setStatusModal({
+            visible: true,
+            title: "Join Failed",
+            message,
+            type: "error",
+          });
+        },
+      },
+    );
   };
 
   /**
@@ -143,7 +142,7 @@ const JoinFamilyScreen = () => {
 
   return (
     <SafeAreaView edges={["top", "left", "right"]} className="flex-1 bg-background">
-      <LoadingOverlay visible={loading} />
+      <LoadingOverlay visible={joinMutation.isPending} />
       <StatusModal
         visible={statusModal.visible}
         title={statusModal.title}
@@ -152,7 +151,7 @@ const JoinFamilyScreen = () => {
         onClose={handleModalClose}
       />
 
-      <SubHeader title="Join Family" />
+      <SubHeader title="Join Family" onBackPress={() => navigation.goBack()} />
 
       <View className="flex-1 p-6">
         <View className="items-center mb-10">

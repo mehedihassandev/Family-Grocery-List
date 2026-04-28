@@ -4,14 +4,17 @@ import { AuthenticatedStackNavigatorParamList } from "../types";
 import { ERootRoutes } from "./routes";
 
 import TabNavigator from "./TabNavigator";
-import FamilySetupScreen from "../screens/FamilySetupScreen";
-import CreateFamilyScreen from "../screens/CreateFamilyScreen";
-import JoinFamilyScreen from "../screens/JoinFamilyScreen";
-import EditProfileScreen from "../screens/EditProfileScreen";
-import PrivacySecurityScreen from "../screens/PrivacySecurityScreen";
-import HelpSupportScreen from "../screens/HelpSupportScreen";
-import ItemDetailScreen from "../screens/ItemDetailScreen";
-import EditItemScreen from "../screens/EditItemScreen";
+import {
+  FamilySetupScreen,
+  CreateFamilyScreen,
+  JoinFamilyScreen,
+  EditProfileScreen,
+  PrivacySecurityScreen,
+  HelpSupportScreen,
+  ItemDetailScreen,
+  EditItemScreen,
+  AddItemScreen,
+} from "../screens";
 
 const Stack = createNativeStackNavigator<AuthenticatedStackNavigatorParamList>();
 
@@ -35,15 +38,16 @@ const AuthenticatedNavigator = () => {
 
       {/* Screens that were previously Modals */}
       <Stack.Screen
-        name="ItemDetail"
+        name={ERootRoutes.ITEM_DETAIL}
         component={ItemDetailScreen}
         options={{ presentation: "modal" }}
       />
       <Stack.Screen
-        name="EditItem"
+        name={ERootRoutes.EDIT_ITEM}
         component={EditItemScreen}
         options={{ presentation: "modal" }}
       />
+      <Stack.Screen name={ERootRoutes.ADD_ITEM} component={AddItemScreen} />
     </Stack.Navigator>
   );
 };
