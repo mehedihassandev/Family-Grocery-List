@@ -1,14 +1,6 @@
 import React, { useMemo, useState } from "react";
 import { HomeStackScreenProps } from "../types";
-import {
-  ScrollView,
-  StatusBar,
-  Text,
-  View,
-  TouchableOpacity,
-  Image,
-  TextInput,
-} from "react-native";
+import { ScrollView, StatusBar, Text, View, TouchableOpacity, Image } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import {
   BarChart3,
@@ -23,23 +15,12 @@ import {
   TrendingUp,
 } from "lucide-react-native";
 import { useAuthStore } from "../store/useAuthStore";
-import {
-  useFamilyDetails,
-  useFamilyMembers,
-  useJoinFamily,
-} from "../hooks/queries/useFamilyQueries";
+import { useFamilyDetails, useFamilyMembers } from "../hooks/queries/useFamilyQueries";
 import { useGroceryList } from "../hooks/queries/useGroceryQueries";
 import { useDateFormatter, useTextFormatter } from "../hooks";
-import {
-  Card,
-  ShortcutCard,
-  ProgressBar,
-  DonutChart,
-  PriorityBadge,
-  LoadingOverlay,
-  StatusModal,
-} from "../components/ui";
+import { Card, ShortcutCard, ProgressBar, DonutChart, PriorityBadge } from "../components/ui";
 import NotificationModal from "../components/NotificationModal";
+import { useNotificationStore } from "../store/useNotificationStore";
 import { ERootRoutes, ETabRoutes } from "../navigation/routes";
 
 /**
@@ -51,30 +32,21 @@ import { ERootRoutes, ETabRoutes } from "../navigation/routes";
 const DashboardScreen = ({ navigation }: HomeStackScreenProps<"Home">) => {
   const { user } = useAuthStore();
   const { toDate, toRelativeTime, toMonthYear } = useDateFormatter();
-  const { toInitial, toTrimmed, toInviteCode } = useTextFormatter();
+  const { toInitial, toTrimmed } = useTextFormatter();
   const [isNotifOpen, setNotifOpen] = useState(false);
 
   // TanStack Query Hooks
   const { data: family } = useFamilyDetails(user?.familyId);
   const { data: members = [] } = useFamilyMembers(user?.familyId);
   const { data: items = [] } = useGroceryList(user?.familyId);
-  const joinFamilyMutation = useJoinFamily();
 
   const familyName = family?.name || "Our Family";
 
-  // UI State
-  const [joinCode, setJoinCode] = useState("");
-  const [statusModal, setStatusModal] = useState<{
-    visible: boolean;
-    title: string;
-    message: string;
-    type: "success" | "error";
-  }>({
-    visible: false,
-    title: "",
-    message: "",
-    type: "success",
-  });
+  const notifications = useNotificationStore((state) => state.notifications);
+  const unreadCount = notifications.filter(
+    (notification) =>
+      notification.actorId !== user?.uid && !notification.readBy.includes(user?.uid || ""),
+  ).length;
 
   // Stats Calculations
   const pendingItems = useMemo(() => items.filter((item) => item.status === "pending"), [items]);
@@ -125,52 +97,9 @@ const DashboardScreen = ({ navigation }: HomeStackScreenProps<"Home">) => {
     return normalized.split(/\s+/)[0];
   }, [toTrimmed, user?.displayName]);
 
-  /**
-   * Joins a family group using the entered invite code
-   */
-  const handleJoinFamily = async () => {
-    const normalizedInviteCode = toInviteCode(joinCode);
-    if (!user || !normalizedInviteCode) return;
-
-    joinFamilyMutation.mutate(
-      { userId: user.uid, inviteCode: normalizedInviteCode },
-      {
-        onSuccess: (family) => {
-          // Update store immediately for instant UI response
-          const { setUser } = useAuthStore.getState();
-          setUser({ ...user, familyId: family.id, role: "member" });
-
-          setStatusModal({
-            visible: true,
-            title: "Welcome Home!",
-            message: `You have successfully joined ${family.name}.`,
-            type: "success",
-          });
-          setJoinCode("");
-        },
-        onError: (error: any) => {
-          setStatusModal({
-            visible: true,
-            title: "Join Failed",
-            message: error.message || "Could not join family. Please check the code.",
-            type: "error",
-          });
-        },
-      },
-    );
-  };
-
   return (
     <SafeAreaView edges={["top", "left", "right"]} className="flex-1 bg-background">
       <StatusBar barStyle="dark-content" />
-      <LoadingOverlay visible={joinFamilyMutation.isPending} />
-      <StatusModal
-        visible={statusModal.visible}
-        title={statusModal.title}
-        message={statusModal.message}
-        type={statusModal.type}
-        onClose={() => setStatusModal((prev) => ({ ...prev, visible: false }))}
-      />
 
       {/* Modern Header with Avatar & Notification */}
       <View className="px-6 py-4 flex-row items-center justify-between">
@@ -194,7 +123,13 @@ const DashboardScreen = ({ navigation }: HomeStackScreenProps<"Home">) => {
           className="h-12 w-12 rounded-2xl bg-white items-center justify-center border border-border shadow-xs"
         >
           <Bell size={22} stroke="#4A5568" />
-          <View className="absolute top-3 right-3 h-2.5 w-2.5 rounded-full bg-danger-DEFAULT border-2 border-white" />
+          {unreadCount > 0 ? (
+            <View className="absolute -right-1 -top-1 h-5 min-w-[20px] items-center justify-center rounded-full border-2 border-surface bg-danger px-1">
+              <Text className="text-[9px] font-bold text-white">
+                {unreadCount > 99 ? "99+" : unreadCount}
+              </Text>
+            </View>
+          ) : null}
         </TouchableOpacity>
       </View>
 
@@ -400,52 +335,18 @@ const DashboardScreen = ({ navigation }: HomeStackScreenProps<"Home">) => {
                 <UsersRound size={40} stroke="#3DB87A" strokeWidth={1.5} />
               </View>
               <Text className="text-2xl font-bold text-text-primary text-center px-4 tracking-tight">
-                Join a Family Group
+                Set Up Your Family
               </Text>
               <Text className="text-text-secondary text-center mt-3 mb-8 px-6 leading-6">
-                Collaboration is better! Join your family to share grocery lists and see real-time
-                updates.
+                Use one setup flow to create or join family, then unlock list, members, analytics.
               </Text>
 
-              <View className="w-full px-4 mb-4">
-                <View className="flex-row items-center rounded-[20px] border border-border bg-white px-5 mb-4 shadow-xs">
-                  <Users size={18} stroke="#9AA3AF" />
-                  <TextInput
-                    value={joinCode}
-                    onChangeText={(text) => setJoinCode(toInviteCode(text))}
-                    placeholder="INVITE CODE"
-                    placeholderTextColor="#C0C8D2"
-                    className="h-14 flex-1 ml-3 text-[16px] font-black text-text-primary tracking-[3px] uppercase"
-                    autoCapitalize="characters"
-                    maxLength={6}
-                  />
-                </View>
-                <TouchableOpacity
-                  onPress={handleJoinFamily}
-                  activeOpacity={0.8}
-                  className="bg-primary-500 w-full py-3 rounded-[20px] items-center shadow-lg shadow-primary-500/25"
-                >
-                  <View className="flex-row items-center">
-                    <Text className="text-white font-bold text-[17px] mr-2">Join Family Group</Text>
-                    <ArrowRight size={18} stroke="white" strokeWidth={3} />
-                  </View>
-                </TouchableOpacity>
-              </View>
-
-              <View className="flex-row items-center my-6 w-full px-10">
-                <View className="h-[1px] flex-1 bg-border/40" />
-                <Text className="mx-4 text-text-muted font-black text-[10px] tracking-widest uppercase">
-                  OR
-                </Text>
-                <View className="h-[1px] flex-1 bg-border/40" />
-              </View>
-
               <TouchableOpacity
-                onPress={() => navigation.navigate(ERootRoutes.CREATE_FAMILY)}
-                activeOpacity={0.7}
-                className="w-[90%] py-3 rounded-2xl items-center border border-primary-500/20 bg-primary-50/20"
+                onPress={() => navigation.navigate(ERootRoutes.FAMILY_SETUP)}
+                activeOpacity={0.8}
+                className="w-[90%] rounded-2xl bg-primary-500 py-3 items-center"
               >
-                <Text className="text-primary-600 font-bold text-[15px]">Create New Family</Text>
+                <Text className="text-white font-bold text-[15px]">Continue Setup</Text>
               </TouchableOpacity>
             </Card>
           )}

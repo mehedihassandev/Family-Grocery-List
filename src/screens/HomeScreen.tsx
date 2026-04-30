@@ -24,13 +24,18 @@ import {
   ChevronUp,
 } from "lucide-react-native";
 import { useAuthStore } from "../store/useAuthStore";
-import { useGroceryList, useToggleItemCompletion } from "../hooks/queries/useGroceryQueries";
+import {
+  useAddGroceryItem,
+  useGroceryList,
+  useToggleItemCompletion,
+} from "../hooks/queries/useGroceryQueries";
 import { IGroceryItem, ListStackScreenProps } from "../types";
 import ItemCard from "../components/ItemCard";
 import EmptyState from "../components/EmptyState";
 import { GROCERY_CATEGORIES, sortLegacyGroceryItemsForHome } from "../features/grocery";
 import { AppHeader, Chip } from "../components/ui";
 import NotificationModal from "../components/NotificationModal";
+import { useTextFormatter } from "../hooks";
 
 type TStatusFilter = "all" | "pending" | "completed";
 
@@ -49,6 +54,14 @@ const STATUS_FILTERS: { key: TStatusFilter; label: string }[] = [
 const ALL_CATEGORY = "All";
 const SEARCH_PLACEHOLDER = "Search items, categories, notes";
 const PERMISSION_ERROR_LABEL = "Missing Firestore permission for this query.";
+const DEFAULT_QUICK_ADD_CATEGORY = "Other";
+const UNDO_DURATION_MS = 5000;
+
+interface IUndoState {
+  itemId: string;
+  itemName: string;
+  familyId: string;
+}
 
 /**
  * Maps Firebase error messages to user-friendly strings
@@ -71,10 +84,16 @@ const getFirebaseErrorMessage = (error: Error) => {
  */
 const HomeScreen = ({ navigation }: ListStackScreenProps<"List">) => {
   const { user } = useAuthStore();
+  const { toTrimmed } = useTextFormatter();
   const insets = useSafeAreaInsets();
-  const [statusFilter, setStatusFilter] = useState<TStatusFilter>("all");
+  const [statusFilter, setStatusFilter] = useState<TStatusFilter>("pending");
   const [activeCategory, setActiveCategory] = useState<string>(ALL_CATEGORY);
   const [searchQuery, setSearchQuery] = useState("");
+  const [quickAddName, setQuickAddName] = useState("");
+  const [quickAddQty, setQuickAddQty] = useState("");
+  const [quickAddCategory, setQuickAddCategory] = useState(DEFAULT_QUICK_ADD_CATEGORY);
+  const [quickAddError, setQuickAddError] = useState<string | null>(null);
+  const [undoState, setUndoState] = useState<IUndoState | null>(null);
 
   const [isNotifOpen, setNotifOpen] = useState(false);
 
@@ -82,6 +101,7 @@ const HomeScreen = ({ navigation }: ListStackScreenProps<"List">) => {
   const [showCompleted, setShowCompleted] = useState(false);
   const [isCategoryFilterOpen, setCategoryFilterOpen] = useState(false);
   const categoryAnimation = useRef(new Animated.Value(0)).current;
+  const undoTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // TanStack Query Hooks
   const {
@@ -90,6 +110,7 @@ const HomeScreen = ({ navigation }: ListStackScreenProps<"List">) => {
     error: queryError,
     refetch,
   } = useGroceryList(user?.familyId);
+  const addMutation = useAddGroceryItem();
   const toggleMutation = useToggleItemCompletion();
 
   const listError = queryError ? getFirebaseErrorMessage(queryError as Error) : null;
@@ -181,6 +202,8 @@ const HomeScreen = ({ navigation }: ListStackScreenProps<"List">) => {
    */
   const handleToggle = async (item: IGroceryItem) => {
     if (!user) return;
+    const isCompleting = item.status === "pending";
+
     toggleMutation.mutate({
       item: {
         id: item.id,
@@ -193,6 +216,29 @@ const HomeScreen = ({ navigation }: ListStackScreenProps<"List">) => {
         name: user.displayName,
       },
     });
+
+    if (isCompleting) {
+      if (undoTimerRef.current) {
+        clearTimeout(undoTimerRef.current);
+      }
+
+      setUndoState({
+        itemId: item.id,
+        itemName: item.name,
+        familyId: item.familyId,
+      });
+
+      undoTimerRef.current = setTimeout(() => {
+        setUndoState(null);
+        undoTimerRef.current = null;
+      }, UNDO_DURATION_MS);
+    } else {
+      setUndoState(null);
+      if (undoTimerRef.current) {
+        clearTimeout(undoTimerRef.current);
+        undoTimerRef.current = null;
+      }
+    }
   };
 
   const filteredCompletedCount = filteredItems.filter((item) => item.status === "completed").length;
@@ -215,6 +261,66 @@ const HomeScreen = ({ navigation }: ListStackScreenProps<"List">) => {
     setRefreshing(false);
   };
 
+  const handleQuickAdd = () => {
+    if (!user?.familyId || !user?.uid) return;
+
+    const normalizedName = toTrimmed(quickAddName);
+    if (!normalizedName) {
+      setQuickAddError("Item name required.");
+      return;
+    }
+
+    setQuickAddError(null);
+    addMutation.mutate(
+      {
+        familyId: user.familyId,
+        item: {
+          name: normalizedName,
+          quantity: toTrimmed(quickAddQty),
+          category: toTrimmed(quickAddCategory) || DEFAULT_QUICK_ADD_CATEGORY,
+          priority: "Medium",
+        },
+        user: {
+          uid: user.uid,
+          name: user.displayName,
+        },
+      },
+      {
+        onSuccess: () => {
+          setQuickAddName("");
+          setQuickAddQty("");
+          setQuickAddError(null);
+        },
+        onError: (error) => {
+          setQuickAddError(error instanceof Error ? error.message : "Could not add item.");
+        },
+      },
+    );
+  };
+
+  const handleUndoComplete = () => {
+    if (!user || !undoState) return;
+
+    if (undoTimerRef.current) {
+      clearTimeout(undoTimerRef.current);
+      undoTimerRef.current = null;
+    }
+
+    toggleMutation.mutate({
+      item: {
+        id: undoState.itemId,
+        name: undoState.itemName,
+        status: "completed",
+        familyId: undoState.familyId,
+      },
+      user: {
+        uid: user.uid,
+        name: user.displayName,
+      },
+    });
+    setUndoState(null);
+  };
+
   useEffect(() => {
     Animated.timing(categoryAnimation, {
       toValue: isCategoryFilterOpen ? 1 : 0,
@@ -223,6 +329,14 @@ const HomeScreen = ({ navigation }: ListStackScreenProps<"List">) => {
       useNativeDriver: false,
     }).start();
   }, [isCategoryFilterOpen, categoryAnimation]);
+
+  useEffect(() => {
+    return () => {
+      if (undoTimerRef.current) {
+        clearTimeout(undoTimerRef.current);
+      }
+    };
+  }, []);
 
   const categoryPanelStyle = {
     maxHeight: categoryAnimation.interpolate({
@@ -297,6 +411,54 @@ const HomeScreen = ({ navigation }: ListStackScreenProps<"List">) => {
                   placeholderTextColor="#C0C8D2"
                   className="ml-3 h-[56px] flex-1 text-[15px] font-bold text-text-primary"
                 />
+              </View>
+
+              <View className="mb-2 rounded-2xl border border-border/50 bg-white p-2 shadow-xs">
+                <View className="flex-row items-center">
+                  <TextInput
+                    value={quickAddName}
+                    onChangeText={(text) => {
+                      setQuickAddName(text);
+                      if (quickAddError) setQuickAddError(null);
+                    }}
+                    onSubmitEditing={handleQuickAdd}
+                    placeholder="Quick add item"
+                    placeholderTextColor="#C0C8D2"
+                    className="h-[44px] flex-1 rounded-xl bg-surface px-3 text-[14px] font-semibold text-text-primary"
+                    returnKeyType="done"
+                  />
+                  <TextInput
+                    value={quickAddQty}
+                    onChangeText={setQuickAddQty}
+                    placeholder="Qty"
+                    placeholderTextColor="#C0C8D2"
+                    className="ml-2 h-[44px] w-16 rounded-xl bg-surface px-2 text-center text-[13px] font-semibold text-text-primary"
+                  />
+                  <TextInput
+                    value={quickAddCategory}
+                    onChangeText={setQuickAddCategory}
+                    placeholder="Category"
+                    placeholderTextColor="#C0C8D2"
+                    className="ml-2 h-[44px] w-24 rounded-xl bg-surface px-2 text-[12px] font-semibold text-text-primary"
+                  />
+                  <TouchableOpacity
+                    activeOpacity={0.85}
+                    onPress={handleQuickAdd}
+                    disabled={addMutation.isPending}
+                    className="ml-2 h-[44px] w-[44px] items-center justify-center rounded-xl bg-primary-600"
+                  >
+                    {addMutation.isPending ? (
+                      <ActivityIndicator color="#FFFFFF" size="small" />
+                    ) : (
+                      <Plus color="white" size={18} strokeWidth={2.8} />
+                    )}
+                  </TouchableOpacity>
+                </View>
+                {quickAddError ? (
+                  <Text className="px-1 pt-2 text-[12px] font-medium text-urgent">
+                    {quickAddError}
+                  </Text>
+                ) : null}
               </View>
 
               <View className="mb-2 flex-row items-center justify-between">
@@ -434,6 +596,27 @@ const HomeScreen = ({ navigation }: ListStackScreenProps<"List">) => {
       </TouchableOpacity>
 
       <NotificationModal visible={isNotifOpen} onClose={() => setNotifOpen(false)} />
+
+      {undoState ? (
+        <View
+          className="absolute left-6 right-6 flex-row items-center justify-between rounded-2xl border border-primary-100 bg-white px-4 py-3 shadow-lg"
+          style={{
+            bottom: insets.bottom + 14,
+          }}
+        >
+          <Text
+            className="mr-3 flex-1 text-[13px] font-semibold text-text-primary"
+            numberOfLines={1}
+          >
+            {`Marked "${undoState.itemName}" complete`}
+          </Text>
+          <TouchableOpacity onPress={handleUndoComplete} activeOpacity={0.8}>
+            <Text className="text-[13px] font-bold uppercase tracking-wide text-primary-600">
+              Undo
+            </Text>
+          </TouchableOpacity>
+        </View>
+      ) : null}
     </SafeAreaView>
   );
 };
