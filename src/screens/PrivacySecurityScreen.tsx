@@ -3,6 +3,7 @@ import { View, Text, ScrollView, Linking, TouchableOpacity } from "react-native"
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Shield, ExternalLink } from "lucide-react-native";
 import { SubHeader, Card } from "../components/ui";
+import { AuthenticatedStackNavigatorScreenProps, ERootRoutes } from "../types";
 
 interface IBulletListProps {
   items: string[];
@@ -29,7 +30,9 @@ const BulletList = ({ items }: IBulletListProps) => {
  * Screen displaying privacy policy and security information
  * Why: To provide transparency to users about how their data is handled and secured within the Firebase ecosystem.
  */
-const PrivacySecurityScreen = () => {
+const PrivacySecurityScreen = ({
+  navigation,
+}: AuthenticatedStackNavigatorScreenProps<ERootRoutes.PRIVACY_SECURITY>) => {
   /**
    * Opens an external URL in the default browser
    * @param url - The URL to open
@@ -43,7 +46,7 @@ const PrivacySecurityScreen = () => {
 
   return (
     <SafeAreaView edges={["top", "left", "right"]} className="flex-1 bg-background">
-      <SubHeader title="Privacy & Security" />
+      <SubHeader title="Privacy & Security" onBackPress={() => navigation.goBack()} />
 
       <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
         <View className="p-6">

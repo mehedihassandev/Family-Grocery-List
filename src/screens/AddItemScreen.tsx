@@ -1,40 +1,31 @@
 import React, { useEffect, useMemo, useState } from "react";
 import {
-  KeyboardAvoidingView,
-  Platform,
-  ScrollView,
+  View,
   Text,
   TouchableOpacity,
-  View,
-  ActivityIndicator,
+  ScrollView,
+  KeyboardAvoidingView,
+  Platform,
 } from "react-native";
-import { X, Check, Trash2 } from "lucide-react-native";
-import { AuthenticatedStackNavigatorScreenProps, Category, Priority, ERootRoutes } from "../types";
-import {
-  useGroceryItem,
-  useUpdateGroceryItem,
-  useDeleteGroceryItem,
-} from "../hooks/queries/useGroceryQueries";
-import { addCustomCategory, ICustomCategory, subscribeToCategories } from "../services/categories";
+import { X, Check } from "lucide-react-native";
+import { Priority, Category, AuthenticatedStackNavigatorScreenProps, ERootRoutes } from "../types";
+import { useAddGroceryItem } from "../hooks/queries/useGroceryQueries";
+import { addCustomCategory, subscribeToCategories, ICustomCategory } from "../services/categories";
 import { GROCERY_CATEGORIES } from "../features/grocery";
-import { InputField, PrimaryButton, Chip, LoadingOverlay, StatusModal } from "../components/ui";
+import { InputField, PrimaryButton, Chip, StatusModal, LoadingOverlay } from "../components/ui";
 import { useAuthStore } from "../store/useAuthStore";
-
-import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 const CATEGORIES: Category[] = [...GROCERY_CATEGORIES];
 const PRIORITIES: Priority[] = ["Low", "Medium", "Urgent"];
 
 /**
- * Edit Item Screen
- * Why: To provide a robust editing experience that maintains correct navigation context.
+ * Add Item Screen
+ * Why: To provide a robust screen for adding groceries that maintains correct navigation context.
  */
-const EditItemScreen = ({
-  route,
+const AddItemScreen = ({
   navigation,
-}: AuthenticatedStackNavigatorScreenProps<ERootRoutes.EDIT_ITEM>) => {
-  const insets = useSafeAreaInsets();
-  const { itemId } = route.params;
+}: AuthenticatedStackNavigatorScreenProps<ERootRoutes.ADD_ITEM>) => {
   const { user } = useAuthStore();
   const familyId = user?.familyId || "";
 
@@ -47,33 +38,10 @@ const EditItemScreen = ({
   const [newCatInput, setNewCatInput] = useState("");
   const [showAddCat, setShowAddCat] = useState(false);
 
-  // TanStack Query Hooks
-  const { data: item, isLoading: initialLoading } = useGroceryItem(itemId);
-  const updateMutation = useUpdateGroceryItem();
-  const deleteMutation = useDeleteGroceryItem();
+  // TanStack Query Hook
+  const addMutation = useAddGroceryItem();
 
-  const [statusModal, setStatusModal] = useState<{
-    visible: boolean;
-    title: string;
-    message: string;
-    type: "success" | "error" | "confirm";
-    onConfirm?: () => void;
-  }>({
-    visible: false,
-    title: "",
-    message: "",
-    type: "success",
-  });
-
-  useEffect(() => {
-    if (item) {
-      setName(item.name);
-      setCategory(item.category || "Other");
-      setPriority(item.priority || "Medium");
-      setQuantity(item.quantity || "");
-      setNotes(item.notes || "");
-    }
-  }, [item]);
+  const [showSuccess, setShowSuccess] = useState(false);
 
   useEffect(() => {
     if (!familyId) return;
@@ -92,8 +60,11 @@ const EditItemScreen = ({
     );
   }, [customCategories]);
 
+  /**
+   * Adds a new custom category to the family list
+   */
   const handleAddCategory = async () => {
-    if (!newCatInput.trim() || !familyId) return;
+    if (!newCatInput.trim()) return;
     try {
       await addCustomCategory(familyId, newCatInput.trim());
       setCategory(newCatInput.trim());
@@ -104,127 +75,66 @@ const EditItemScreen = ({
     }
   };
 
+  /**
+   * Saves the new grocery item to the family list
+   */
   const handleSave = async () => {
-    if (!item || !name.trim()) return;
+    if (!name.trim()) return;
 
-    updateMutation.mutate(
+    addMutation.mutate(
       {
-        itemId: item.id,
-        updates: {
+        familyId,
+        item: {
           name: name.trim(),
           category,
           priority,
           quantity: quantity.trim(),
           notes: notes.trim(),
         },
+        user: {
+          uid: user?.uid || "",
+          name: user?.displayName || "Anonymous",
+        },
       },
       {
         onSuccess: () => {
-          setStatusModal({
-            visible: true,
-            title: "Item Updated",
-            message: "Your changes have been saved successfully.",
-            type: "success",
-          });
+          setShowSuccess(true);
         },
         onError: (error) => {
-          console.error("Update failed:", error);
-          setStatusModal({
-            visible: true,
-            title: "Update Failed",
-            message: "Could not save changes. Please try again.",
-            type: "error",
-          });
+          console.error(error);
         },
       },
     );
   };
 
-  const handleDelete = () => {
-    if (!item) return;
-    setStatusModal({
-      visible: true,
-      title: "Delete Item",
-      message: `Are you sure you want to delete "${item.name}"? This cannot be undone.`,
-      type: "confirm",
-      onConfirm: async () => {
-        setStatusModal((prev) => ({ ...prev, visible: false }));
-        deleteMutation.mutate(item.id, {
-          onSuccess: () => {
-            navigation.navigate("Root");
-          },
-          onError: (error) => {
-            console.error("Delete failed:", error);
-            setStatusModal({
-              visible: true,
-              title: "Delete Failed",
-              message: "Could not delete item. Please try again.",
-              type: "error",
-            });
-          },
-        });
-      },
-    });
+  /**
+   * Closes the success feedback and goes back
+   */
+  const handleSuccessClose = () => {
+    setShowSuccess(false);
+    navigation.goBack();
   };
 
-  if (!itemId) {
-    return (
-      <View className="flex-1 items-center justify-center bg-background">
-        <Text className="text-text-muted">No item ID provided</Text>
-        <TouchableOpacity onPress={() => navigation.goBack()} className="mt-4">
-          <Text className="text-primary-600 font-bold">Go Back</Text>
-        </TouchableOpacity>
-      </View>
-    );
-  }
-
-  if (initialLoading) {
-    return (
-      <View className="flex-1 items-center justify-center bg-background">
-        <ActivityIndicator color="#3DB87A" size="large" />
-      </View>
-    );
-  }
-
-  if (!item) {
-    return (
-      <View className="flex-1 items-center justify-center bg-background">
-        <Text className="text-text-muted">Item not found</Text>
-        <TouchableOpacity onPress={() => navigation.goBack()} className="mt-4">
-          <Text className="text-primary-600 font-bold">Go Back</Text>
-        </TouchableOpacity>
-      </View>
-    );
-  }
-
   return (
-    <View className="flex-1 bg-white" style={{ paddingTop: Math.max(insets.top, 20) }}>
-      <LoadingOverlay visible={updateMutation.isPending || deleteMutation.isPending} />
+    <SafeAreaView className="flex-1 bg-white">
+      <LoadingOverlay visible={addMutation.isPending} />
       <StatusModal
-        visible={statusModal.visible}
-        title={statusModal.title}
-        message={statusModal.message}
-        type={statusModal.type}
-        onConfirm={statusModal.onConfirm}
-        onClose={() => {
-          const isSuccess = statusModal.type === "success";
-          setStatusModal((prev) => ({ ...prev, visible: false }));
-          if (isSuccess) navigation.goBack();
-        }}
+        visible={showSuccess}
+        title="Item Added"
+        message={`"${name}" has been added to your family list.`}
+        onClose={handleSuccessClose}
       />
 
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : undefined}
         className="flex-1 px-6"
       >
-        <View className="mb-8 flex-row items-center justify-between">
+        <View className="mb-8 mt-4 flex-row items-center justify-between">
           <View>
             <Text className="mb-1 text-[11px] font-black uppercase tracking-[2px] text-primary-500">
-              Update Entry
+              New Grocery
             </Text>
-            <Text className="text-[28px] font-bold tracking-tight text-text-primary">
-              Edit Item
-            </Text>
+            <Text className="text-[28px] font-bold tracking-tight text-text-primary">Add Item</Text>
           </View>
           <TouchableOpacity
             onPress={() => navigation.goBack()}
@@ -242,7 +152,7 @@ const EditItemScreen = ({
         >
           <InputField
             label="ITEM NAME"
-            placeholder="What needs to be bought?"
+            placeholder="E.g. Fresh Milk, Organic Eggs"
             value={name}
             onChangeText={setName}
             containerClassName="mb-6"
@@ -252,7 +162,7 @@ const EditItemScreen = ({
           <View className="flex-row gap-4 mb-6">
             <InputField
               label="QUANTITY"
-              placeholder="e.g. 2L, 5pcs"
+              placeholder="E.g. 2L, 1 Dozen"
               value={quantity}
               onChangeText={setQuantity}
               containerClassName="flex-1"
@@ -314,10 +224,11 @@ const EditItemScreen = ({
             {showAddCat && (
               <View className="mb-6 flex-row gap-2">
                 <InputField
-                  placeholder="New Category"
+                  placeholder="Category Name"
                   value={newCatInput}
                   onChangeText={setNewCatInput}
                   containerClassName="flex-1"
+                  inputClassName="h-12"
                 />
                 <TouchableOpacity
                   onPress={handleAddCategory}
@@ -348,8 +259,8 @@ const EditItemScreen = ({
           </View>
 
           <InputField
-            label="NOTES"
-            placeholder="Any specific brand or detail?"
+            label="ADDITIONAL NOTES"
+            placeholder="Brand, size, or specific store..."
             value={notes}
             onChangeText={setNotes}
             multiline
@@ -359,27 +270,16 @@ const EditItemScreen = ({
             textAlignVertical="top"
           />
 
-          <View className="flex-row gap-4">
-            <TouchableOpacity
-              onPress={handleDelete}
-              activeOpacity={0.8}
-              className="h-16 w-16 items-center justify-center rounded-2xl bg-danger-light border border-danger/20"
-            >
-              <Trash2 stroke="#E55C5C" size={24} strokeWidth={2.5} />
-            </TouchableOpacity>
-            <View className="flex-1">
-              <PrimaryButton
-                title="Save Changes"
-                onPress={handleSave}
-                disabled={!name.trim() || updateMutation.isPending}
-                icon={<Check size={20} stroke="#FFF" strokeWidth={2.5} />}
-              />
-            </View>
-          </View>
+          <PrimaryButton
+            title="Add to List"
+            onPress={handleSave}
+            disabled={!name.trim() || addMutation.isPending}
+            icon={<Check size={20} stroke="#FFF" strokeWidth={2.5} />}
+          />
         </ScrollView>
       </KeyboardAvoidingView>
-    </View>
+    </SafeAreaView>
   );
 };
 
-export default EditItemScreen;
+export default AddItemScreen;

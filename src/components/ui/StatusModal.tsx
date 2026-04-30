@@ -1,5 +1,5 @@
 import React from "react";
-import { Modal, Text, View, TouchableOpacity, StyleSheet } from "react-native";
+import { Text, View, TouchableOpacity, StyleSheet } from "react-native";
 import { CheckCircle2, XCircle, AlertTriangle, HelpCircle } from "lucide-react-native";
 import { PrimaryButton } from "./PrimaryButton";
 
@@ -63,44 +63,47 @@ const StatusModal = ({
     }
   };
 
+  if (!visible) return null;
+
   return (
-    <Modal visible={visible} transparent animationType="fade">
-      <View style={styles.overlay} className="bg-black/40">
-        <View className="w-[85%] rounded-[32px] bg-white p-8 items-center shadow-2xl">
-          <View
-            className={`h-24 w-24 rounded-[32px] items-center justify-center mb-6 ${getIconBg()}`}
-          >
-            {getIcon()}
-          </View>
+    <View style={styles.overlay}>
+      <View className="w-[85%] rounded-[32px] bg-white p-8 items-center shadow-2xl">
+        <View
+          className={`h-24 w-24 rounded-[32px] items-center justify-center mb-6 ${getIconBg()}`}
+        >
+          {getIcon()}
+        </View>
 
-          <Text className="text-2xl font-bold text-text-primary text-center mb-2 tracking-tight">
-            {title}
-          </Text>
+        <Text className="text-2xl font-bold text-text-primary text-center mb-2 tracking-tight">
+          {title}
+        </Text>
 
-          <Text className="text-[15px] leading-6 text-text-secondary text-center mb-8 px-2">
-            {message}
-          </Text>
+        <Text className="text-[15px] leading-6 text-text-secondary text-center mb-8 px-2">
+          {message}
+        </Text>
 
-          <View className="w-full gap-3">
-            <PrimaryButton title={confirmLabel} onPress={onConfirm || onClose} />
+        <View className="w-full gap-3">
+          <PrimaryButton title={confirmLabel} onPress={onConfirm || onClose} />
 
-            {type === "confirm" && (
-              <TouchableOpacity onPress={onClose} className="py-3 items-center">
-                <Text className="text-text-muted font-bold text-[15px]">{cancelLabel}</Text>
-              </TouchableOpacity>
-            )}
-          </View>
+          {type === "confirm" && (
+            <TouchableOpacity onPress={onClose} className="py-3 items-center">
+              <Text className="text-text-muted font-bold text-[15px]">{cancelLabel}</Text>
+            </TouchableOpacity>
+          )}
         </View>
       </View>
-    </Modal>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
   overlay: {
-    flex: 1,
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "rgba(0,0,0,0.6)",
+    zIndex: 10000,
     alignItems: "center",
     justifyContent: "center",
+    elevation: 10,
   },
 });
 

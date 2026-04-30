@@ -36,7 +36,7 @@ const LoadingOverlay = ({ visible }: ILoadingOverlayProps) => {
   });
 
   return (
-    <View style={styles.overlay} className="bg-black/10">
+    <View style={styles.overlay}>
       <View className="h-20 w-20 items-center justify-center rounded-3xl bg-white shadow-lg">
         <Animated.View
           style={{ transform: [{ rotate }] }}
@@ -50,6 +50,7 @@ const LoadingOverlay = ({ visible }: ILoadingOverlayProps) => {
 const styles = StyleSheet.create({
   overlay: {
     ...StyleSheet.absoluteFillObject,
+    backgroundColor: "rgba(0,0,0,0.1)",
     zIndex: 9999,
     alignItems: "center",
     justifyContent: "center",
