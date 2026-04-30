@@ -29,6 +29,7 @@ import {
   useJoinFamily,
 } from "../hooks/queries/useFamilyQueries";
 import { useGroceryList } from "../hooks/queries/useGroceryQueries";
+import { useDateFormatter, useTextFormatter } from "../hooks";
 import {
   Card,
   ShortcutCard,
@@ -41,15 +42,6 @@ import {
 import NotificationModal from "../components/NotificationModal";
 import { ERootRoutes, ETabRoutes } from "../navigation/routes";
 
-// Helper to convert Firebase Timestamp or Date string to Date object
-const toDate = (value: any): Date | null => {
-  if (!value) return null;
-  if (value instanceof Date) return value;
-  if (typeof value === "object" && value.toDate) return value.toDate();
-  const d = new Date(value);
-  return isNaN(d.getTime()) ? null : d;
-};
-
 /**
  * Premium Dashboard Screen
  * Why: To provide a high-fidelity, visually stunning overview of the family's grocery status.
@@ -58,6 +50,8 @@ const toDate = (value: any): Date | null => {
  */
 const DashboardScreen = ({ navigation }: HomeStackScreenProps<"Home">) => {
   const { user } = useAuthStore();
+  const { toDate, toRelativeTime, toMonthYear } = useDateFormatter();
+  const { toInitial, toTrimmed, toInviteCode } = useTextFormatter();
   const [isNotifOpen, setNotifOpen] = useState(false);
 
   // TanStack Query Hooks
@@ -113,9 +107,10 @@ const DashboardScreen = ({ navigation }: HomeStackScreenProps<"Home">) => {
         return bDate - aDate;
       })
       .slice(0, 3);
-  }, [pendingItems]);
+  }, [pendingItems, toDate]);
 
   const nextItem = recentPending[0];
+  const currentMonthLabel = useMemo(() => toMonthYear(new Date()), [toMonthYear]);
 
   const getGreeting = () => {
     const hour = new Date().getHours();
@@ -124,16 +119,21 @@ const DashboardScreen = ({ navigation }: HomeStackScreenProps<"Home">) => {
     return "Good evening";
   };
 
-  const firstName = user?.displayName?.split(" ")[0] || "Friend";
+  const firstName = useMemo(() => {
+    const normalized = toTrimmed(user?.displayName);
+    if (!normalized) return "Friend";
+    return normalized.split(/\s+/)[0];
+  }, [toTrimmed, user?.displayName]);
 
   /**
    * Joins a family group using the entered invite code
    */
   const handleJoinFamily = async () => {
-    if (!user || !joinCode.trim()) return;
+    const normalizedInviteCode = toInviteCode(joinCode);
+    if (!user || !normalizedInviteCode) return;
 
     joinFamilyMutation.mutate(
-      { userId: user.uid, inviteCode: joinCode.trim() },
+      { userId: user.uid, inviteCode: normalizedInviteCode },
       {
         onSuccess: (family) => {
           // Update store immediately for instant UI response
@@ -179,9 +179,7 @@ const DashboardScreen = ({ navigation }: HomeStackScreenProps<"Home">) => {
             {user?.photoURL ? (
               <Image source={{ uri: user.photoURL }} className="h-full w-full" />
             ) : (
-              <Text className="text-white font-bold text-xl">
-                {firstName.charAt(0).toUpperCase()}
-              </Text>
+              <Text className="text-white font-bold text-xl">{toInitial(firstName)}</Text>
             )}
           </View>
           <View className="ml-3">
@@ -240,7 +238,7 @@ const DashboardScreen = ({ navigation }: HomeStackScreenProps<"Home">) => {
                           }}
                         >
                           <Text className="text-white text-[10px] font-bold">
-                            {m.displayName?.charAt(0).toUpperCase()}
+                            {toInitial(m.displayName)}
                           </Text>
                         </View>
                       ))}
@@ -414,7 +412,7 @@ const DashboardScreen = ({ navigation }: HomeStackScreenProps<"Home">) => {
                   <Users size={18} stroke="#9AA3AF" />
                   <TextInput
                     value={joinCode}
-                    onChangeText={setJoinCode}
+                    onChangeText={(text) => setJoinCode(toInviteCode(text))}
                     placeholder="INVITE CODE"
                     placeholderTextColor="#C0C8D2"
                     className="h-14 flex-1 ml-3 text-[16px] font-black text-text-primary tracking-[3px] uppercase"
@@ -501,7 +499,9 @@ const DashboardScreen = ({ navigation }: HomeStackScreenProps<"Home">) => {
 
               <Card className="bg-surface-alt/50 border-border/30">
                 <View className="flex-row items-center justify-between mb-6">
-                  <Text className="text-text-primary text-[17px] font-bold">April 2026</Text>
+                  <Text className="text-text-primary text-[17px] font-bold">
+                    {currentMonthLabel}
+                  </Text>
                   <View className="bg-white px-3 py-1.5 rounded-lg border border-border shadow-xs flex-row items-center">
                     <Text className="text-text-secondary text-[12px] font-bold">This month</Text>
                   </View>
@@ -604,11 +604,11 @@ const DashboardScreen = ({ navigation }: HomeStackScreenProps<"Home">) => {
                       <View className="flex-row items-center mt-4">
                         <View className="h-6 w-6 rounded-full bg-primary-600 items-center justify-center mr-2">
                           <Text className="text-white text-[10px] font-bold">
-                            {item.addedBy.name.charAt(0).toUpperCase()}
+                            {toInitial(item.addedBy.name)}
                           </Text>
                         </View>
                         <Text className="text-text-muted text-[12px] font-medium">
-                          {item.addedBy.name} · 1 day ago
+                          {item.addedBy.name} · {toRelativeTime(item.createdAt)}
                         </Text>
                       </View>
                     </View>

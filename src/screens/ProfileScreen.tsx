@@ -15,6 +15,7 @@ import { LogOut, Shield, HelpCircle, ChevronRight, Edit3, Users } from "lucide-r
 import { useAuthStore } from "../store/useAuthStore";
 import { signOut } from "../services/auth";
 import { leaveFamily } from "../services/family";
+import { useTextFormatter } from "../hooks";
 import { AppHeader, Card } from "../components/ui";
 import { ERootRoutes, ETabRoutes } from "../navigation/routes";
 
@@ -35,25 +36,13 @@ const getFamilyActionErrorMessage = (error: unknown, fallback: string) => {
 };
 
 /**
- * Extracts initials from a user's display name
- * @param name - The full name
- */
-const getInitials = (name?: string | null) => {
-  if (!name) return "U";
-  const parts = name.trim().split(" ");
-  if (parts.length > 1) {
-    return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
-  }
-  return parts[0][0].toUpperCase();
-};
-
-/**
  * User profile and settings screen
  * Why: To manage account details, app preferences, and family membership.
  * Note: Theme functionality removed to enforce a single light theme.
  */
 const ProfileScreen = ({ navigation }: ProfileStackScreenProps<"Profile">) => {
   const { user, setUser } = useAuthStore();
+  const { toInitials } = useTextFormatter();
   const [leavingFamily, setLeavingFamily] = useState(false);
 
   /**
@@ -161,7 +150,7 @@ const ProfileScreen = ({ navigation }: ProfileStackScreenProps<"Profile">) => {
                   <Image source={{ uri: user.photoURL }} className="h-full w-full" />
                 ) : (
                   <Text className="text-[24px] font-bold text-primary-600">
-                    {getInitials(user?.displayName)}
+                    {toInitials(user?.displayName)}
                   </Text>
                 )}
               </View>

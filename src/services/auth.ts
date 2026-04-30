@@ -18,6 +18,7 @@ import { doc, getDoc, setDoc, updateDoc, onSnapshot } from "firebase/firestore";
 import { auth, db } from "./firebaseConfig";
 import { useAuthStore } from "../store/useAuthStore";
 import { IUser } from "../types";
+import { trimLowercaseText, trimText } from "../utils";
 
 WebBrowser.maybeCompleteAuthSession();
 
@@ -127,7 +128,7 @@ const isFirestoreProfileTimeoutError = (error: unknown) =>
  * Normalizes an email address for consistent storage/comparison
  * @param email - The email to normalize
  */
-const normalizeEmail = (email: string) => email.trim().toLowerCase();
+const normalizeEmail = (email: string) => trimLowercaseText(email);
 
 let activeSignOut: Promise<void> | null = null;
 let nativeGoogleSignInConfigured = false;
@@ -234,7 +235,7 @@ const getRequiredGoogleClientIdKeysForPlatform = (): TGoogleClientIdKey[] => {
  * @param clientId - The client ID to parse
  */
 const getProjectNumberFromGoogleClientId = (clientId: string) => {
-  const match = clientId.trim().match(/^(\d+)-[A-Za-z0-9_-]+\.apps\.googleusercontent\.com$/);
+  const match = trimText(clientId).match(/^(\d+)-[A-Za-z0-9_-]+\.apps\.googleusercontent\.com$/);
   return match?.[1] ?? null;
 };
 

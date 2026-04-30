@@ -2,7 +2,7 @@ import React from "react";
 import { View, Text, TouchableOpacity, Image } from "react-native";
 import { CheckCircle2 } from "lucide-react-native";
 import { IGroceryItem } from "../types";
-import { formatDistanceToNow } from "date-fns";
+import { useDateFormatter, useTextFormatter } from "../hooks";
 import { Card, PriorityBadge } from "./ui";
 
 interface IItemCardProps {
@@ -18,11 +18,10 @@ interface IItemCardProps {
  * @param props - Component props including item data and interaction handlers
  */
 const ItemCard = ({ item, onToggle, onPress }: IItemCardProps) => {
+  const { toRelativeTime } = useDateFormatter();
+  const { toInitial } = useTextFormatter();
   const isCompleted = item.status === "completed";
-
-  const timeAgo = item.createdAt
-    ? formatDistanceToNow(item.createdAt.toDate(), { addSuffix: true })
-    : "just now";
+  const timeAgo = toRelativeTime(item.createdAt);
 
   return (
     <TouchableOpacity onPress={() => onPress(item)} activeOpacity={0.8} className="mb-4">
@@ -83,7 +82,7 @@ const ItemCard = ({ item, onToggle, onPress }: IItemCardProps) => {
                 <Image source={{ uri: item.addedBy.photoURL }} className="h-full w-full" />
               ) : (
                 <Text className="text-white text-[10px] font-bold">
-                  {item.addedBy.name.charAt(0).toUpperCase()}
+                  {toInitial(item.addedBy.name)}
                 </Text>
               )}
             </View>

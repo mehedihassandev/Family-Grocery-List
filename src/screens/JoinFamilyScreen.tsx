@@ -15,6 +15,7 @@ import {
 import { AuthenticatedStackNavigatorScreenProps, ERootRoutes } from "../types";
 import { useAuthStore } from "../store/useAuthStore";
 import { useJoinFamily } from "../hooks/queries/useFamilyQueries";
+import { useTextFormatter } from "../hooks";
 import { joinFamilySchema, type JoinFamilyFormValues } from "../utils/validationSchemas";
 
 // const FAMILY_ACTION_TIMEOUT_MS = 15000;
@@ -72,6 +73,7 @@ const JoinFamilyScreen = ({
   navigation,
 }: AuthenticatedStackNavigatorScreenProps<ERootRoutes.JOIN_FAMILY>) => {
   const { user, setUser } = useAuthStore();
+  const { toInviteCode } = useTextFormatter();
   const joinMutation = useJoinFamily();
 
   const [statusModal, setStatusModal] = useState<{
@@ -174,7 +176,7 @@ const JoinFamilyScreen = ({
             placeholder="E.G. AB12CD"
             autoCapitalize="characters"
             maxLength={6}
-            transform={(text) => text.replace(/\s+/g, "").toUpperCase()}
+            transform={(text) => toInviteCode(text)}
             inputClassName="text-[20px] font-black tracking-[4px] text-center h-16"
           />
 

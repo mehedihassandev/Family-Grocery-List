@@ -4,7 +4,7 @@ import { Bell, Check, ShoppingBag, X, AlertCircle, Inbox } from "lucide-react-na
 import { useAuthStore } from "../store/useAuthStore";
 import { useNotificationStore } from "../store/useNotificationStore";
 import { markNotificationsAsRead } from "../services/notification";
-import { formatDistanceToNow } from "date-fns";
+import { useDateFormatter } from "../hooks";
 import { Card } from "./ui";
 
 interface INotificationModalProps {
@@ -19,6 +19,7 @@ interface INotificationModalProps {
  */
 const NotificationModal = ({ visible, onClose }: INotificationModalProps) => {
   const { user } = useAuthStore();
+  const { toRelativeTime } = useDateFormatter();
   const notifications = useNotificationStore((state) => state.notifications);
   const [filter, setFilter] = useState<"all" | "unread">("all");
 
@@ -35,20 +36,6 @@ const NotificationModal = ({ visible, onClose }: INotificationModalProps) => {
   const handleMarkAllRead = async () => {
     if (unreadIds.length > 0) {
       await markNotificationsAsRead(unreadIds, myUid);
-    }
-  };
-
-  /**
-   * Formats a timestamp into a "time ago" string
-   * @param timestamp - The timestamp to format
-   */
-  const formatTime = (timestamp: any) => {
-    if (!timestamp) return "Just now";
-    try {
-      const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
-      return formatDistanceToNow(date, { addSuffix: true });
-    } catch {
-      return "Just now";
     }
   };
 
@@ -216,7 +203,7 @@ const NotificationModal = ({ visible, onClose }: INotificationModalProps) => {
                             {notif.title}
                           </Text>
                           <Text className="text-[10px] font-bold text-text-muted uppercase tracking-wider">
-                            {formatTime(notif.createdAt)}
+                            {toRelativeTime(notif.createdAt, "Just now")}
                           </Text>
                         </View>
                         <Text

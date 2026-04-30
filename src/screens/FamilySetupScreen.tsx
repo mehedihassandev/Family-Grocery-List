@@ -15,6 +15,7 @@ import { FirebaseError } from "firebase/app";
 import { signOut } from "../services/auth";
 import { useAuthStore } from "../store/useAuthStore";
 import { useCreateFamily, useJoinFamily } from "../hooks/queries/useFamilyQueries";
+import { useTextFormatter } from "../hooks";
 
 // const FAMILY_ACTION_TIMEOUT_MS = 15000;
 
@@ -76,6 +77,7 @@ const getFamilyErrorMessage = (error: unknown) => {
  */
 const FamilySetupScreen = () => {
   const { user, setUser } = useAuthStore();
+  const { toTrimmed, toInviteCode } = useTextFormatter();
   const [mode, setMode] = useState<"selection" | "create" | "join">("selection");
   const [familyName, setFamilyName] = useState("");
   const [inviteCode, setInviteCode] = useState("");
@@ -94,7 +96,7 @@ const FamilySetupScreen = () => {
    * Handles creating a new family group
    */
   const handleCreateFamily = async () => {
-    const normalizedFamilyName = familyName.trim();
+    const normalizedFamilyName = toTrimmed(familyName);
 
     // Show inline error instead of silently ignoring the tap
     if (!normalizedFamilyName) {
@@ -123,7 +125,7 @@ const FamilySetupScreen = () => {
    * Handles joining an existing family group
    */
   const handleJoinFamily = async () => {
-    const normalizedInviteCode = inviteCode.trim().toUpperCase();
+    const normalizedInviteCode = toInviteCode(inviteCode);
 
     // Show inline error instead of silently ignoring the tap
     if (!normalizedInviteCode) {
@@ -263,7 +265,7 @@ const FamilySetupScreen = () => {
                 placeholder="Invite Code (e.g. AB1234)"
                 value={inviteCode}
                 onChangeText={(text) => {
-                  setInviteCode(text.replace(/\s+/g, "").toUpperCase());
+                  setInviteCode(toInviteCode(text));
                   // Clear errors as soon as the user starts typing
                   if (actionError) setActionError(null);
                   if (inviteCodeError) setInviteCodeError(null);
@@ -280,8 +282,8 @@ const FamilySetupScreen = () => {
               )}
               <TouchableOpacity
                 onPress={handleJoinFamily}
-                disabled={loading || inviteCode.trim().length < 6}
-                className={`w-full py-4 rounded-2xl flex-row items-center justify-center ${inviteCode.trim().length < 6 ? "bg-surface-subtle" : "bg-primary-600"}`}
+                disabled={loading || toInviteCode(inviteCode).length < 6}
+                className={`w-full py-4 rounded-2xl flex-row items-center justify-center ${toInviteCode(inviteCode).length < 6 ? "bg-surface-subtle" : "bg-primary-600"}`}
               >
                 {loading ? (
                   <ActivityIndicator color="#f6fbf7" />

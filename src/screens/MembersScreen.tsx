@@ -12,6 +12,7 @@ import {
 } from "../hooks/queries/useFamilyQueries";
 import { AppHeader, Card, StatusModal, LoadingOverlay } from "../components/ui";
 import NotificationModal from "../components/NotificationModal";
+import { useTextFormatter } from "../hooks";
 
 /**
  * Maps family-related operation errors to user-friendly messages
@@ -35,6 +36,7 @@ const getFamilyActionErrorMessage = (error: unknown, fallback: string) => {
  */
 const MembersScreen = ({ navigation }: MembersStackScreenProps<"Members">) => {
   const { user } = useAuthStore();
+  const { toInitial } = useTextFormatter();
   const [isNotifOpen, setNotifOpen] = useState(false);
 
   // TanStack Query Hooks
@@ -217,7 +219,7 @@ const MembersScreen = ({ navigation }: MembersStackScreenProps<"Members">) => {
                     <Image source={{ uri: item.photoURL }} className="h-full w-full" />
                   ) : (
                     <Text className="text-primary-600 text-lg font-black">
-                      {item.displayName?.charAt(0).toUpperCase() || "?"}
+                      {toInitial(item.displayName)}
                     </Text>
                   )}
                 </View>

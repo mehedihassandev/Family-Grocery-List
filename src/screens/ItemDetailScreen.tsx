@@ -9,20 +9,11 @@ import {
 import { X, Edit2, Calendar, User, ShoppingBasket, AlignLeft, Info } from "lucide-react-native";
 import { AuthenticatedStackNavigatorScreenProps, ERootRoutes } from "../types";
 import { GroceryPriority } from "../features/grocery";
+import { useDateFormatter } from "../hooks";
 import { Card, Chip, PriorityBadge } from "../components/ui";
 import { useGroceryItem } from "../hooks/queries/useGroceryQueries";
 
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-
-/**
- * Formats a date value to a readable string
- */
-const formatDate = (dateValue: any) => {
-  if (!dateValue) return "Unknown";
-  const dateStr =
-    dateValue?.toDate?.()?.toLocaleDateString() || new Date(dateValue).toLocaleDateString();
-  return dateStr !== "Invalid Date" ? dateStr : "Unknown";
-};
 
 /**
  * Item Detail Screen
@@ -33,6 +24,7 @@ const ItemDetailScreen = ({
   navigation,
 }: AuthenticatedStackNavigatorScreenProps<ERootRoutes.ITEM_DETAIL>) => {
   const insets = useSafeAreaInsets();
+  const { toDateLabel } = useDateFormatter();
   const { itemId } = route.params;
 
   // TanStack Query Hook
@@ -145,7 +137,7 @@ const ItemDetailScreen = ({
                   Created At
                 </Text>
                 <Text className="text-[16px] font-bold text-text-primary mt-0.5">
-                  {formatDate(item.createdAt)}
+                  {toDateLabel(item.createdAt)}
                 </Text>
               </View>
             </View>

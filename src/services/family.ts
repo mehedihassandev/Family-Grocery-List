@@ -13,6 +13,7 @@ import {
 } from "firebase/firestore";
 import { db } from "./firebaseConfig";
 import { IFamily, IUser } from "../types";
+import { normalizeInviteCode, trimText } from "../utils";
 
 const FIRESTORE_WRITE_TIMEOUT_MS = 15000;
 const FIRESTORE_PROBE_TIMEOUT_MS = 8000;
@@ -169,7 +170,7 @@ const upsertUserFamilyMembership = async (
  */
 export const createFamily = async (userId: string, familyName: string) => {
   try {
-    const normalizedFamilyName = familyName.trim();
+    const normalizedFamilyName = trimText(familyName);
     if (!normalizedFamilyName) {
       throw new Error("Family name is required");
     }
@@ -213,7 +214,7 @@ export const createFamily = async (userId: string, familyName: string) => {
  */
 export const joinFamily = async (userId: string, inviteCode: string) => {
   try {
-    const normalizedInviteCode = inviteCode.trim().toUpperCase();
+    const normalizedInviteCode = normalizeInviteCode(inviteCode);
     if (!normalizedInviteCode) {
       throw new Error("Invite code is required");
     }

@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { View, Text, TouchableOpacity, Image } from "react-native";
+import { View, Text, TouchableOpacity, Image, Alert } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Lock, Camera, Check } from "lucide-react-native";
 import { useForm } from "react-hook-form";
@@ -16,6 +16,7 @@ import {
 import { AuthenticatedStackNavigatorScreenProps, ERootRoutes } from "../types";
 import { useAuthStore } from "../store/useAuthStore";
 import { updateUserAccountProfile } from "../services/auth";
+import { useTextFormatter } from "../hooks";
 
 const schema = yup.object().shape({
   displayName: yup.string().required("Name is required").min(2, "Name is too short"),
@@ -29,6 +30,7 @@ const EditProfileScreen = ({
   navigation,
 }: AuthenticatedStackNavigatorScreenProps<ERootRoutes.EDIT_PROFILE>) => {
   const { user } = useAuthStore();
+  const { toInitial } = useTextFormatter();
   const [loading, setLoading] = useState(false);
   const [statusModal, setStatusModal] = useState<{
     visible: boolean;
@@ -90,6 +92,13 @@ const EditProfileScreen = ({
     }
   };
 
+  /**
+   * Handles avatar tap until upload flow is implemented
+   */
+  const handleAvatarPress = () => {
+    Alert.alert("Coming soon", "Photo upload will be added in a future update.");
+  };
+
   return (
     <SafeAreaView edges={["top", "left", "right"]} className="flex-1 bg-background">
       <LoadingOverlay visible={loading} />
@@ -107,6 +116,7 @@ const EditProfileScreen = ({
         <View className="items-center mb-8">
           <TouchableOpacity
             activeOpacity={0.8}
+            onPress={handleAvatarPress}
             className="h-24 w-24 rounded-[32px] bg-white shadow-md border-2 border-primary-500 items-center justify-center overflow-hidden"
           >
             {user?.photoURL ? (
@@ -114,7 +124,7 @@ const EditProfileScreen = ({
             ) : (
               <View className="h-full w-full bg-primary-50 items-center justify-center">
                 <Text className="text-primary-600 text-3xl font-bold">
-                  {user?.displayName?.charAt(0).toUpperCase() || "?"}
+                  {toInitial(user?.displayName)}
                 </Text>
               </View>
             )}
@@ -124,7 +134,7 @@ const EditProfileScreen = ({
           </TouchableOpacity>
           <Text className="mt-4 text-text-primary font-bold text-lg">{user?.displayName}</Text>
           <Text className="text-text-muted text-xs uppercase tracking-widest mt-1 font-bold">
-            Tap to change photo
+            Tap for photo update status
           </Text>
         </View>
 

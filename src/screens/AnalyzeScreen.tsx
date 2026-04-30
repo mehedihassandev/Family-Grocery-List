@@ -11,41 +11,9 @@ import {
 } from "lucide-react-native";
 import { useAuthStore } from "../store/useAuthStore";
 import { useGroceryList } from "../hooks/queries/useGroceryQueries";
+import { useDateFormatter } from "../hooks";
 import { AppHeader, Card, DonutChart, ProgressBar } from "../components/ui";
 import NotificationModal from "../components/NotificationModal";
-
-const MONTH_NAMES = [
-  "January",
-  "February",
-  "March",
-  "April",
-  "May",
-  "June",
-  "July",
-  "August",
-  "September",
-  "October",
-  "November",
-  "December",
-];
-
-/**
- * Helper to convert Firebase Timestamp or Date string to Date object
- * @param value - The timestamp/date value from Firestore
- */
-const toDate = (value: any): Date | null => {
-  if (!value) return null;
-  if (value instanceof Date) return value;
-  if (typeof value === "object" && value.toDate) return value.toDate();
-  const d = new Date(value);
-  return isNaN(d.getTime()) ? null : d;
-};
-
-/**
- * Formats a date into a Month YYYY label
- * @param date - The date to format
- */
-const formatMonthLabel = (date: Date) => `${MONTH_NAMES[date.getMonth()]} ${date.getFullYear()}`;
 
 /**
  * Premium Analytics Screen
@@ -55,6 +23,7 @@ const formatMonthLabel = (date: Date) => `${MONTH_NAMES[date.getMonth()]} ${date
  */
 const AnalyzeScreen = ({ navigation }: AnalyzeStackScreenProps<"Analyze">) => {
   const { user } = useAuthStore();
+  const { toDate, toMonthYear } = useDateFormatter();
   const [isNotifOpen, setNotifOpen] = useState(false);
   const [selectedMonth, setSelectedMonth] = useState(() => {
     const now = new Date();
@@ -74,7 +43,7 @@ const AnalyzeScreen = ({ navigation }: AnalyzeStackScreenProps<"Analyze">) => {
         date.getFullYear() === selectedMonth.getFullYear()
       );
     });
-  }, [items, selectedMonth]);
+  }, [items, selectedMonth, toDate]);
 
   const summary = useMemo(() => {
     const total = monthlyItems.length;
@@ -111,7 +80,11 @@ const AnalyzeScreen = ({ navigation }: AnalyzeStackScreenProps<"Analyze">) => {
   return (
     <SafeAreaView edges={["top", "left", "right"]} className="flex-1 bg-background">
       <StatusBar barStyle="dark-content" />
-      <AppHeader title="Analytics" eyebrow="Overview" />
+      <AppHeader
+        title="Analytics"
+        eyebrow="Overview"
+        onNotificationPress={() => setNotifOpen(true)}
+      />
 
       <ScrollView
         showsVerticalScrollIndicator={false}
@@ -130,7 +103,7 @@ const AnalyzeScreen = ({ navigation }: AnalyzeStackScreenProps<"Analyze">) => {
           <View className="flex-row items-center">
             <CalendarIcon size={16} stroke="#3DB87A" className="mr-2" />
             <Text className="text-[17px] font-bold text-text-primary">
-              {formatMonthLabel(selectedMonth)}
+              {toMonthYear(selectedMonth)}
             </Text>
           </View>
 
@@ -232,7 +205,7 @@ const AnalyzeScreen = ({ navigation }: AnalyzeStackScreenProps<"Analyze">) => {
               <BarChart3 size={40} stroke="#9AA3AF" strokeWidth={1.5} />
             </View>
             <Text className="text-xl font-bold text-text-primary text-center">
-              No Data for {formatMonthLabel(selectedMonth)}
+              No Data for {toMonthYear(selectedMonth)}
             </Text>
             <Text className="text-text-secondary text-center mt-2 leading-6">
               Start adding and completing items to see your family&apos;s shopping trends.
