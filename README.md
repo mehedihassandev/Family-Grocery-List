@@ -109,6 +109,7 @@ flowchart LR
 - Android Studio + Android SDK for Android builds
 - Xcode + CocoaPods for iOS builds (macOS only)
 - Firebase project with Authentication + Firestore enabled
+- Java 21+ (required for Firestore emulator/rules tests)
 
 ### 2. Install dependencies
 
@@ -222,6 +223,7 @@ Minimum checklist:
 | `npm run lint:fix`      | Lint and auto-fix where possible                    |
 | `npm run format`        | Check formatting under `src/`                       |
 | `npm run format:fix`    | Fix formatting under `src/`                         |
+| `npm run test:rules`    | Run Firestore Security Rules tests via emulator     |
 
 ## Firestore Data Model
 
