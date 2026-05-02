@@ -14,6 +14,7 @@ export enum ERootRoutes {
   ADD_ITEM = "AddItem",
   ITEM_DETAIL = "ItemDetail",
   EDIT_ITEM = "EditItem",
+  ANALYZE = "Analyze",
 }
 
 export enum ETabRoutes {

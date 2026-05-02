@@ -39,7 +39,7 @@ const AppHeader = ({
   ).length;
 
   return (
-    <View className="flex-row items-center justify-between border-b border-border bg-background px-6 pb-6 pt-3">
+    <View className="flex-row items-center justify-between border-b border-border bg-background px-6 pb-4 pt-2">
       <View className="flex-row items-center flex-1">
         {showBackButton && (
           <TouchableOpacity
@@ -58,7 +58,7 @@ const AppHeader = ({
             </Text>
           ) : null}
           <Text
-            className="text-[28px] font-bold tracking-tight text-text-900 leading-tight"
+            className="text-[32px] tracking-tight font-bold tracking-tight text-text-900 leading-tight"
             numberOfLines={1}
             adjustsFontSizeToFit
           >
@@ -77,9 +77,9 @@ const AppHeader = ({
           <TouchableOpacity
             onPress={onNotificationPress}
             activeOpacity={0.7}
-            className="h-[52px] w-[52px] items-center justify-center rounded-xl border border-border bg-surface relative shadow-sm"
+            className="h-[50px] w-[50px] items-center justify-center rounded-full border border-border-muted bg-white relative shadow-sm"
           >
-            <Bell stroke="#3DB87A" size={24} strokeWidth={2.2} />
+            <Bell stroke="#10B981" size={24} strokeWidth={2.2} />
             {unreadCount > 0 && (
               <View className="absolute -right-1 -top-1 h-5 min-w-[20px] items-center justify-center rounded-full bg-danger px-1 border-2 border-surface">
                 <Text className="text-[9px] font-bold text-white">

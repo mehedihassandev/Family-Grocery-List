@@ -214,7 +214,7 @@ const DashboardScreen = ({ navigation }: HomeStackScreenProps<"Home">) => {
                       onPress={() => navigation.navigate(ETabRoutes.MEMBERS)}
                       className="h-11 w-11 rounded-xl bg-primary-50 items-center justify-center border border-primary-100"
                     >
-                      <Users size={20} stroke="#3DB87A" />
+                      <Users size={20} stroke="#10B981" />
                     </TouchableOpacity>
                   </View>
 
@@ -225,7 +225,7 @@ const DashboardScreen = ({ navigation }: HomeStackScreenProps<"Home">) => {
                           key={m.uid}
                           className={`h-7 w-7 rounded-full border-2 border-white items-center justify-center ${i > 0 ? "-ml-2" : ""}`}
                           style={{
-                            backgroundColor: i === 0 ? "#3DB87A" : i === 1 ? "#4A90D9" : "#F5A623",
+                            backgroundColor: i === 0 ? "#10B981" : i === 1 ? "#4A90D9" : "#F5A623",
                           }}
                         >
                           <Text className="text-white text-[10px] font-bold">
@@ -250,7 +250,7 @@ const DashboardScreen = ({ navigation }: HomeStackScreenProps<"Home">) => {
                     </View>
                     <View className="w-[1px] bg-border/50 mx-2" />
                     <View className="flex-1 items-center">
-                      <CheckCircle2 size={18} stroke="#3DB87A" className="mb-2" />
+                      <CheckCircle2 size={18} stroke="#10B981" className="mb-2" />
                       <Text className="text-2xl font-bold text-text-primary">{completedCount}</Text>
                       <Text className="text-[10px] font-bold text-text-muted uppercase tracking-wider">
                         Done
@@ -285,7 +285,7 @@ const DashboardScreen = ({ navigation }: HomeStackScreenProps<"Home">) => {
                       <View className="mr-3 flex-1 flex-row items-center">
                         <CheckCircle2
                           size={16}
-                          stroke={task.done ? "#3DB87A" : "#C0C8D2"}
+                          stroke={task.done ? "#10B981" : "#C0C8D2"}
                           strokeWidth={2}
                         />
                         <Text
@@ -311,7 +311,7 @@ const DashboardScreen = ({ navigation }: HomeStackScreenProps<"Home">) => {
               <Card className="mb-8 p-5">
                 <View className="flex-row justify-between items-center mb-3">
                   <View className="flex-row items-center">
-                    <ShoppingBasket size={18} stroke="#3DB87A" />
+                    <ShoppingBasket size={18} stroke="#10B981" />
                     <Text className="ml-2 text-[15px] font-bold text-text-primary">
                       Shopping Progress
                     </Text>
@@ -354,7 +354,7 @@ const DashboardScreen = ({ navigation }: HomeStackScreenProps<"Home">) => {
                     <DonutChart
                       total={totalCount}
                       data={[
-                        { value: completedCount, color: "#3DB87A" },
+                        { value: completedCount, color: "#10B981" },
                         { value: Math.max(0, pendingCount - urgentCount), color: "#F5A623" },
                         { value: urgentCount, color: "#E55C5C" },
                       ]}
@@ -405,7 +405,7 @@ const DashboardScreen = ({ navigation }: HomeStackScreenProps<"Home">) => {
                     key={cat}
                     label={cat}
                     progress={(count / (totalCount || 1)) * 100}
-                    color={cat === "Beauty" ? "#3DB87A" : "#F5A623"}
+                    color={cat === "Beauty" ? "#10B981" : "#F5A623"}
                     height={6}
                   />
                 ))}
@@ -420,7 +420,7 @@ const DashboardScreen = ({ navigation }: HomeStackScreenProps<"Home">) => {
                   <Card className="mb-8 border-primary-100 bg-primary-50/20 p-4 border-2">
                     <View className="flex-row items-center">
                       <View className="h-12 w-12 rounded-xl bg-primary-100 items-center justify-center">
-                        <ArrowRight size={22} stroke="#3DB87A" />
+                        <ArrowRight size={22} stroke="#10B981" />
                       </View>
                       <View className="ml-4 flex-1">
                         <Text className="text-primary-500 text-[10px] font-black uppercase tracking-wider mb-0.5">
@@ -445,7 +445,7 @@ const DashboardScreen = ({ navigation }: HomeStackScreenProps<"Home">) => {
           ) : (
             <Card className="mb-8 py-10 items-center">
               <View className="h-20 w-20 rounded-3xl bg-primary-50 items-center justify-center mb-6">
-                <UsersRound size={40} stroke="#3DB87A" strokeWidth={1.5} />
+                <UsersRound size={40} stroke="#10B981" strokeWidth={1.5} />
               </View>
               <Text className="text-2xl font-bold text-text-primary text-center px-4 tracking-tight">
                 Set Up Your Family
@@ -486,7 +486,7 @@ const DashboardScreen = ({ navigation }: HomeStackScreenProps<"Home">) => {
                 <ShortcutCard
                   icon={BarChart3}
                   label="Analyze"
-                  onPress={() => navigation.navigate(ETabRoutes.ANALYZE)}
+                  onPress={() => navigation.navigate(ERootRoutes.ANALYZE)}
                   iconBgColor="bg-primary-50/50"
                 />
                 <ShortcutCard
@@ -506,7 +506,7 @@ const DashboardScreen = ({ navigation }: HomeStackScreenProps<"Home">) => {
                 <Text className="text-text-primary text-[18px] font-bold tracking-tight">
                   Analytics Overview
                 </Text>
-                <TouchableOpacity onPress={() => navigation.navigate(ETabRoutes.ANALYZE)}>
+                <TouchableOpacity onPress={() => navigation.navigate(ERootRoutes.ANALYZE)}>
                   <Text className="text-primary-500 font-bold text-[13px]">Full Report</Text>
                 </TouchableOpacity>
               </View>
@@ -535,7 +535,7 @@ const DashboardScreen = ({ navigation }: HomeStackScreenProps<"Home">) => {
                         Completed
                       </Text>
                     </View>
-                    <CheckCircle2 size={16} stroke="#3DB87A" />
+                    <CheckCircle2 size={16} stroke="#10B981" />
                   </View>
                 </View>
 
@@ -558,7 +558,7 @@ const DashboardScreen = ({ navigation }: HomeStackScreenProps<"Home">) => {
                         Completion
                       </Text>
                     </View>
-                    <TrendingUp size={16} stroke="#3DB87A" />
+                    <TrendingUp size={16} stroke="#10B981" />
                   </View>
                 </View>
               </Card>
@@ -593,7 +593,7 @@ const DashboardScreen = ({ navigation }: HomeStackScreenProps<"Home">) => {
                             ? "#E55C5C"
                             : item.priority === "Medium"
                               ? "#F5A623"
-                              : "#3DB87A",
+                              : "#10B981",
                       }}
                     />
                     <View className="flex-1 p-5 justify-center">

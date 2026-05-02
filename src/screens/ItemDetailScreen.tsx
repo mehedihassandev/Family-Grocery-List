@@ -43,7 +43,7 @@ const ItemDetailScreen = ({
   if (loading) {
     return (
       <View className="flex-1 items-center justify-center bg-background">
-        <ActivityIndicator color="#3DB87A" size="large" />
+        <ActivityIndicator color="#10B981" size="large" />
       </View>
     );
   }
@@ -104,7 +104,7 @@ const ItemDetailScreen = ({
           <Card padding={false} className="mb-6 overflow-hidden">
             <View className="flex-row items-center border-b border-border-muted p-5">
               <View className="mr-4 h-10 w-10 items-center justify-center rounded-2xl bg-primary-100">
-                <ShoppingBasket stroke="#3DB87A" size={20} strokeWidth={2.5} />
+                <ShoppingBasket stroke="#10B981" size={20} strokeWidth={2.5} />
               </View>
               <View className="flex-1">
                 <Text className="text-[11px] font-bold text-text-muted uppercase tracking-widest">
@@ -185,7 +185,7 @@ const ItemDetailScreen = ({
             </View>
             <View className="mt-4 flex-row items-center justify-between">
               <View className="flex-row items-center">
-                <Wallet stroke="#3DB87A" size={16} strokeWidth={2.5} />
+                <Wallet stroke="#10B981" size={16} strokeWidth={2.5} />
                 <Text className="ml-2 text-[12px] font-bold uppercase tracking-wider text-text-muted">
                   Budget
                 </Text>
@@ -216,7 +216,7 @@ const ItemDetailScreen = ({
 
           {item.status === "completed" && item.completedBy && (
             <View className="flex-row items-center rounded-2xl bg-primary-50 p-4 border border-primary-100">
-              <Info stroke="#3DB87A" size={18} strokeWidth={2.5} className="mr-3" />
+              <Info stroke="#10B981" size={18} strokeWidth={2.5} className="mr-3" />
               <Text className="text-[14px] font-medium text-primary-800">
                 Completed by <Text className="font-black">{item.completedBy.name}</Text>
               </Text>

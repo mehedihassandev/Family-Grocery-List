@@ -24,11 +24,7 @@ import {
   ChevronUp,
 } from "lucide-react-native";
 import { useAuthStore } from "../store/useAuthStore";
-import {
-  useAddGroceryItem,
-  useGroceryList,
-  useToggleItemCompletion,
-} from "../hooks/queries/useGroceryQueries";
+import { useGroceryList, useToggleItemCompletion } from "../hooks/queries/useGroceryQueries";
 import { IGroceryItem, ListStackScreenProps } from "../types";
 import ItemCard from "../components/ItemCard";
 import EmptyState from "../components/EmptyState";
@@ -66,7 +62,6 @@ const ASSIGNEE_FILTERS: { key: TAssigneeFilter; label: string }[] = [
 const ALL_CATEGORY = "All";
 const SEARCH_PLACEHOLDER = "Search items, categories, notes";
 const PERMISSION_ERROR_LABEL = "Missing Firestore permission for this query.";
-const DEFAULT_QUICK_ADD_CATEGORY = "Other";
 const UNDO_DURATION_MS = 5000;
 
 interface IUndoState {
@@ -103,10 +98,6 @@ const HomeScreen = ({ navigation }: ListStackScreenProps<"List">) => {
   const [assigneeFilter, setAssigneeFilter] = useState<TAssigneeFilter>("all");
   const [activeCategory, setActiveCategory] = useState<string>(ALL_CATEGORY);
   const [searchQuery, setSearchQuery] = useState("");
-  const [quickAddName, setQuickAddName] = useState("");
-  const [quickAddQty, setQuickAddQty] = useState("");
-  const [quickAddCategory, setQuickAddCategory] = useState(DEFAULT_QUICK_ADD_CATEGORY);
-  const [quickAddError, setQuickAddError] = useState<string | null>(null);
   const [undoState, setUndoState] = useState<IUndoState | null>(null);
 
   const [isNotifOpen, setNotifOpen] = useState(false);
@@ -124,7 +115,6 @@ const HomeScreen = ({ navigation }: ListStackScreenProps<"List">) => {
     error: queryError,
     refetch,
   } = useGroceryList(user?.familyId);
-  const addMutation = useAddGroceryItem();
   const toggleMutation = useToggleItemCompletion();
 
   const listError = queryError ? getFirebaseErrorMessage(queryError as Error) : null;
@@ -308,43 +298,6 @@ const HomeScreen = ({ navigation }: ListStackScreenProps<"List">) => {
     setRefreshing(false);
   };
 
-  const handleQuickAdd = () => {
-    if (!user?.familyId || !user?.uid) return;
-
-    const normalizedName = toTrimmed(quickAddName);
-    if (!normalizedName) {
-      setQuickAddError("Item name required.");
-      return;
-    }
-
-    setQuickAddError(null);
-    addMutation.mutate(
-      {
-        familyId: user.familyId,
-        item: {
-          name: normalizedName,
-          quantity: toTrimmed(quickAddQty),
-          category: toTrimmed(quickAddCategory) || DEFAULT_QUICK_ADD_CATEGORY,
-          priority: "Medium",
-        },
-        user: {
-          uid: user.uid,
-          name: user.displayName,
-        },
-      },
-      {
-        onSuccess: () => {
-          setQuickAddName("");
-          setQuickAddQty("");
-          setQuickAddError(null);
-        },
-        onError: (error) => {
-          setQuickAddError(error instanceof Error ? error.message : "Could not add item.");
-        },
-      },
-    );
-  };
-
   const handleUndoComplete = () => {
     if (!user || !undoState) return;
 
@@ -416,7 +369,7 @@ const HomeScreen = ({ navigation }: ListStackScreenProps<"List">) => {
 
       {loading ? (
         <View className="flex-1 items-center justify-center">
-          <ActivityIndicator color="#3DB87A" size="large" />
+          <ActivityIndicator color="#10B981" size="large" />
         </View>
       ) : listError ? (
         <View className="flex-1 items-center justify-center px-8">
@@ -441,8 +394,8 @@ const HomeScreen = ({ navigation }: ListStackScreenProps<"List">) => {
             <RefreshControl
               refreshing={isRefreshing}
               onRefresh={handleRefresh}
-              tintColor="#3DB87A"
-              colors={["#3DB87A"]}
+              tintColor="#10B981"
+              colors={["#10B981"]}
               progressBackgroundColor="#f8faf8"
             />
           }
@@ -458,54 +411,6 @@ const HomeScreen = ({ navigation }: ListStackScreenProps<"List">) => {
                   placeholderTextColor="#C0C8D2"
                   className="ml-3 h-[56px] flex-1 text-[15px] font-bold text-text-primary"
                 />
-              </View>
-
-              <View className="mb-2 rounded-2xl border border-border/50 bg-white p-2 shadow-xs">
-                <View className="flex-row items-center">
-                  <TextInput
-                    value={quickAddName}
-                    onChangeText={(text) => {
-                      setQuickAddName(text);
-                      if (quickAddError) setQuickAddError(null);
-                    }}
-                    onSubmitEditing={handleQuickAdd}
-                    placeholder="Quick add item"
-                    placeholderTextColor="#C0C8D2"
-                    className="h-[44px] flex-1 rounded-xl bg-surface px-3 text-[14px] font-semibold text-text-primary"
-                    returnKeyType="done"
-                  />
-                  <TextInput
-                    value={quickAddQty}
-                    onChangeText={setQuickAddQty}
-                    placeholder="Qty"
-                    placeholderTextColor="#C0C8D2"
-                    className="ml-2 h-[44px] w-16 rounded-xl bg-surface px-2 text-center text-[13px] font-semibold text-text-primary"
-                  />
-                  <TextInput
-                    value={quickAddCategory}
-                    onChangeText={setQuickAddCategory}
-                    placeholder="Category"
-                    placeholderTextColor="#C0C8D2"
-                    className="ml-2 h-[44px] w-24 rounded-xl bg-surface px-2 text-[12px] font-semibold text-text-primary"
-                  />
-                  <TouchableOpacity
-                    activeOpacity={0.85}
-                    onPress={handleQuickAdd}
-                    disabled={addMutation.isPending}
-                    className="ml-2 h-[44px] w-[44px] items-center justify-center rounded-xl bg-primary-600"
-                  >
-                    {addMutation.isPending ? (
-                      <ActivityIndicator color="#FFFFFF" size="small" />
-                    ) : (
-                      <Plus color="white" size={18} strokeWidth={2.8} />
-                    )}
-                  </TouchableOpacity>
-                </View>
-                {quickAddError ? (
-                  <Text className="px-1 pt-2 text-[12px] font-medium text-urgent">
-                    {quickAddError}
-                  </Text>
-                ) : null}
               </View>
 
               <View className="mb-2 flex-row items-center justify-between">
@@ -526,14 +431,14 @@ const HomeScreen = ({ navigation }: ListStackScreenProps<"List">) => {
                   onPress={() => setCategoryFilterOpen((prev) => !prev)}
                   className={`rounded-full border p-2.5 ${
                     isCategoryFilterOpen || activeCategory !== ALL_CATEGORY
-                      ? "border-primary-300 bg-primary-50"
+                      ? "border-primary-400 bg-primary-50"
                       : "border-border-muted bg-surface"
                   }`}
                 >
                   <SlidersHorizontal
                     stroke={
                       isCategoryFilterOpen || activeCategory !== ALL_CATEGORY
-                        ? "#3DB87A"
+                        ? "#10B981"
                         : "#748379"
                     }
                     size={18}
@@ -621,7 +526,7 @@ const HomeScreen = ({ navigation }: ListStackScreenProps<"List">) => {
           ListEmptyComponent={
             <View className="items-center px-10 pb-8 pt-16">
               <View className="mb-6 h-20 w-20 items-center justify-center rounded-full bg-primary-50">
-                <ShoppingBasket stroke="#3DB87A" size={32} strokeWidth={2.2} />
+                <ShoppingBasket stroke="#10B981" size={32} strokeWidth={2.2} />
               </View>
               <Text className="text-center text-[28px] font-black tracking-tight text-text-primary">
                 No items found
@@ -664,17 +569,17 @@ const HomeScreen = ({ navigation }: ListStackScreenProps<"List">) => {
       <TouchableOpacity
         onPress={() => navigation.navigate(ERootRoutes.ADD_ITEM)}
         activeOpacity={0.85}
-        className="absolute right-6 h-14 w-14 items-center justify-center rounded-2xl bg-primary-600"
+        className="absolute right-6 h-[60px] w-[60px] items-center justify-center rounded-full bg-primary-600"
         style={{
-          bottom: insets.bottom + 78,
-          elevation: 8,
-          shadowColor: "#3DB87A",
+          bottom: insets.bottom + 84,
+          elevation: 10,
+          shadowColor: "#10B981",
           shadowOffset: { width: 0, height: 10 },
-          shadowOpacity: 0.3,
+          shadowOpacity: 0.4,
           shadowRadius: 15,
         }}
       >
-        <Plus color="white" size={28} strokeWidth={3} />
+        <Plus color="white" size={30} strokeWidth={3} />
       </TouchableOpacity>
 
       <NotificationModal visible={isNotifOpen} onClose={() => setNotifOpen(false)} />

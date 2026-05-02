@@ -111,7 +111,7 @@ const ProfileScreen = ({ navigation }: ProfileStackScreenProps<"Profile">) => {
         } border border-border`}
       >
         {loading ? (
-          <ActivityIndicator size="small" color={isDestructive ? "#E55C5C" : "#3DB87A"} />
+          <ActivityIndicator size="small" color={isDestructive ? "#E55C5C" : "#10B981"} />
         ) : (
           <Icon stroke={isDestructive ? "#E55C5C" : "#4A5568"} size={18} strokeWidth={2.5} />
         )}

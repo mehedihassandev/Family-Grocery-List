@@ -215,7 +215,7 @@ const FamilySetupScreen = ({
         </View>
         <View className="flex-1 px-8 justify-center items-center">
           <View className="w-20 h-20 bg-primary-100 rounded-full items-center justify-center mb-6">
-            <Users stroke="#3DB87A" size={40} />
+            <Users stroke="#10B981" size={40} />
           </View>
           <Text className="text-3xl font-bold text-text-primary text-center mb-2">
             Welcome, {user?.displayName}

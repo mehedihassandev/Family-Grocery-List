@@ -109,6 +109,7 @@ export type AuthenticatedStackNavigatorParamList = {
   // New screens that were previously Modals
   [ERootRoutes.ITEM_DETAIL]: { itemId: string };
   [ERootRoutes.EDIT_ITEM]: { itemId: string };
+  [ERootRoutes.ANALYZE]: undefined;
 };
 
 /** Unauthenticated Stack — Screens available before login */

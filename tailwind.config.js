@@ -6,16 +6,16 @@ module.exports = {
     extend: {
       colors: {
         primary: {
-          50: "#F6FCF9",
-          100: "#D1F0E3",
-          200: "#B2DFC5", // For dashed borders
-          300: "#74D4A4",
-          400: "#6EE5A8",
-          500: "#3DB87A", // Main CTA
-          600: "#2D6A4F",
-          700: "#1A4D33",
-          800: "#0D2E1C",
-          900: "#0D2E1C",
+          50: "#ECFDF5",
+          100: "#D1FAE5",
+          200: "#A7F3D0", // For dashed borders
+          300: "#6EE7B7",
+          400: "#34D399",
+          500: "#10B981", // Main CTA
+          600: "#059669",
+          700: "#047857",
+          800: "#065F46",
+          900: "#064E3B",
         },
         text: {
           900: "#0D1117",
@@ -28,13 +28,13 @@ module.exports = {
           inverse: "#FFFFFF",
         },
         background: {
-          DEFAULT: "#F7F8FA",
-          alt: "#F6FCF9",
+          DEFAULT: "#F9FAFB",
+          alt: "#ECFDF5",
         },
         surface: {
           DEFAULT: "#FFFFFF",
           muted: "#F0F2F5",
-          alt: "#F7F8FA",
+          alt: "#F9FAFB",
         },
         border: {
           DEFAULT: "#E8EBF0",
@@ -55,8 +55,8 @@ module.exports = {
           light: "#E8F0FE",
         },
         brand: {
-          green: "#3DB87A",
-          dark: "#2D6A4F",
+          green: "#10B981",
+          dark: "#059669",
         },
         handle: "#D0D5DD",
       },
@@ -76,7 +76,7 @@ module.exports = {
         sm: "0 2px 8px rgba(0, 0, 0, 0.06)",
         md: "0 4px 20px rgba(0, 0, 0, 0.09)",
         lg: "0 12px 40px rgba(0, 0, 0, 0.14)",
-        green: "0 4px 20px rgba(61, 184, 122, 0.3)",
+        green: "0 4px 20px rgba(16, 185, 129, 0.3)",
       },
     },
   },

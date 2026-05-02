@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from "react";
 import { AnalyzeStackScreenProps } from "../types";
+import { ERootRoutes } from "../navigation/routes";
 import { ScrollView, StatusBar, Text, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import {
@@ -36,7 +37,7 @@ const getDataErrorMessage = (error: Error) => {
  * Fix: Re-implemented DonutChart using react-native-gifted-charts for stability and animation.
  * Note: Enforces a single light theme.
  */
-const AnalyzeScreen = ({ navigation }: AnalyzeStackScreenProps<"Analyze">) => {
+const AnalyzeScreen = ({ navigation }: any) => {
   const { user } = useAuthStore();
   const { toDate, toMonthYear } = useDateFormatter();
   const [isNotifOpen, setNotifOpen] = useState(false);
@@ -172,6 +173,8 @@ const AnalyzeScreen = ({ navigation }: AnalyzeStackScreenProps<"Analyze">) => {
       <AppHeader
         title="Analytics"
         eyebrow="Overview"
+        showBackButton
+        onBackPress={() => navigation.goBack()}
         onNotificationPress={() => setNotifOpen(true)}
       />
 
@@ -190,7 +193,7 @@ const AnalyzeScreen = ({ navigation }: AnalyzeStackScreenProps<"Analyze">) => {
           </TouchableOpacity>
 
           <View className="flex-row items-center">
-            <CalendarIcon size={16} stroke="#3DB87A" className="mr-2" />
+            <CalendarIcon size={16} stroke="#10B981" className="mr-2" />
             <Text className="text-[17px] font-bold text-text-primary">
               {toMonthYear(selectedMonth)}
             </Text>
@@ -262,7 +265,7 @@ const AnalyzeScreen = ({ navigation }: AnalyzeStackScreenProps<"Analyze">) => {
                 <DonutChart
                   total={summary.total}
                   data={[
-                    { value: summary.completed, color: "#3DB87A" },
+                    { value: summary.completed, color: "#10B981" },
                     { value: Math.max(0, summary.pending - summary.urgent), color: "#F5A623" },
                     { value: summary.urgent, color: "#E55C5C" },
                   ]}
@@ -299,7 +302,7 @@ const AnalyzeScreen = ({ navigation }: AnalyzeStackScreenProps<"Analyze">) => {
             {/* Quick Metrics */}
             <View className="px-6 flex-row gap-4 mb-8">
               <View className="flex-1 bg-surface-alt rounded-2xl p-4 border border-border/50">
-                <TrendingUp size={18} stroke="#3DB87A" className="mb-2" />
+                <TrendingUp size={18} stroke="#10B981" className="mb-2" />
                 <Text className="text-2xl font-bold text-text-primary">{summary.total}</Text>
                 <Text className="text-[11px] font-bold text-text-muted uppercase tracking-wider">
                   Total Items
@@ -357,7 +360,7 @@ const AnalyzeScreen = ({ navigation }: AnalyzeStackScreenProps<"Analyze">) => {
                     </View>
                     <ProgressBar
                       progress={(count / summary.total) * 100}
-                      color={index === 0 ? "#3DB87A" : index === 1 ? "#4A90D9" : "#F5A623"}
+                      color={index === 0 ? "#10B981" : index === 1 ? "#4A90D9" : "#F5A623"}
                       height={8}
                     />
                   </View>

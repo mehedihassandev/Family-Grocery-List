@@ -289,7 +289,7 @@ const EditItemScreen = ({
   if (initialLoading) {
     return (
       <View className="flex-1 items-center justify-center bg-background">
-        <ActivityIndicator color="#3DB87A" size="large" />
+        <ActivityIndicator color="#10B981" size="large" />
       </View>
     );
   }

@@ -57,7 +57,7 @@ export const PrimaryButton = ({
 
 const styles = StyleSheet.create({
   enabledShadow: {
-    shadowColor: "#3DB87A",
+    shadowColor: "#10B981",
     shadowOffset: { width: 0, height: 10 },
     shadowOpacity: 0.2,
     shadowRadius: 16,

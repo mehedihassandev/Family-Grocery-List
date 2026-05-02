@@ -250,7 +250,7 @@ const MembersScreen = ({ navigation }: MembersStackScreenProps<"Members">) => {
 
                 {item.role === "owner" ? (
                   <View className="bg-primary-500/10 px-3 py-1.5 rounded-lg flex-row items-center border border-primary-500/20">
-                    <Crown stroke="#3DB87A" size={12} strokeWidth={3} />
+                    <Crown stroke="#10B981" size={12} strokeWidth={3} />
                     <Text className="ml-1.5 text-[10px] font-black uppercase tracking-widest text-primary-600">
                       Owner
                     </Text>

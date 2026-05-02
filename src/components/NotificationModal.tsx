@@ -60,7 +60,7 @@ const NotificationModal = ({ visible, onClose }: INotificationModalProps) => {
       case "item_completed":
         return {
           icon: Check,
-          color: "#3DB87A",
+          color: "#10B981",
           bg: "bg-primary-50",
         };
       case "urgent_item":
@@ -158,7 +158,7 @@ const NotificationModal = ({ visible, onClose }: INotificationModalProps) => {
             disabled={unreadIds.length === 0}
             className={`flex-row items-center ${unreadIds.length === 0 ? "opacity-30" : ""}`}
           >
-            <Check stroke="#3DB87A" size={14} strokeWidth={3} />
+            <Check stroke="#10B981" size={14} strokeWidth={3} />
             <Text className="ml-1.5 text-[11px] font-black uppercase tracking-wider text-primary-600">
               Mark all read
             </Text>

@@ -12,6 +12,7 @@ import {
   ItemDetailScreen,
   EditItemScreen,
   AddItemScreen,
+  AnalyzeScreen,
 } from "../screens";
 
 const Stack = createNativeStackNavigator<AuthenticatedStackNavigatorParamList>();
@@ -31,6 +32,7 @@ const AuthenticatedNavigator = () => {
       <Stack.Screen name={ERootRoutes.EDIT_PROFILE} component={EditProfileScreen} />
       <Stack.Screen name={ERootRoutes.PRIVACY_SECURITY} component={PrivacySecurityScreen} />
       <Stack.Screen name={ERootRoutes.HELP_SUPPORT} component={HelpSupportScreen} />
+      <Stack.Screen name={ERootRoutes.ANALYZE} component={AnalyzeScreen} />
 
       {/* Screens that were previously Modals */}
       <Stack.Screen
