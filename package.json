@@ -20,8 +20,6 @@
     "lint:fix": "npm run lint -- --fix",
     "format": "prettier --check ./src/**/*.{ts,tsx}",
     "format:fix": "prettier --write ./src/**/*.{ts,tsx}",
-    "test": "npm run test:rules",
-    "test:rules": "firebase emulators:exec --only firestore --project demo-family-grocery-list \"node --test tests/firestore.rules.test.mjs\"",
     "prepare": "husky",
     "commitlint": "commitlint --from HEAD~1 --to HEAD --verbose",
     "type-check": "tsc --noEmit"
@@ -69,14 +67,12 @@
   "devDependencies": {
     "@commitlint/cli": "^19.8.1",
     "@commitlint/config-conventional": "^19.8.1",
-    "@firebase/rules-unit-testing": "^5.0.0",
     "@types/react": "~19.2.10",
     "@types/react-native": "^0.72.8",
     "babel-preset-expo": "~55.0.18",
     "eslint": "^9.39.4",
     "eslint-config-expo": "~10.0.0",
     "eslint-config-prettier": "^10.1.8",
-    "firebase-tools": "^15.16.0",
     "husky": "^9.1.7",
     "prettier": "^3.8.3",
     "typescript": "~5.9.2"

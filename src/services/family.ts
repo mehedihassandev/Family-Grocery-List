@@ -6,7 +6,6 @@ import {
   writeBatch,
   query,
   where,
-  limit,
   getDoc,
   getDocs,
   onSnapshot,
@@ -17,7 +16,6 @@ import { IFamily, IUser } from "../types";
 
 const FIRESTORE_WRITE_TIMEOUT_MS = 15000;
 const FIRESTORE_PROBE_TIMEOUT_MS = 8000;
-const INVITE_CODE_MAX_GENERATION_ATTEMPTS = 6;
 
 /**
  * Simple 6-character unique code generator
@@ -176,23 +174,7 @@ export const createFamily = async (userId: string, familyName: string) => {
       throw new Error("Family name is required");
     }
 
-    let inviteCode = "";
-    let hasUniqueInviteCode = false;
-    let attempts = 0;
-
-    while (!hasUniqueInviteCode && attempts < INVITE_CODE_MAX_GENERATION_ATTEMPTS) {
-      attempts += 1;
-      inviteCode = generateInviteCode();
-      const existingFamilies = await getDocs(
-        query(collection(db, "families"), where("inviteCode", "==", inviteCode), limit(1)),
-      );
-      hasUniqueInviteCode = existingFamilies.empty;
-    }
-
-    if (!hasUniqueInviteCode) {
-      throw new Error("Could not generate a unique invite code. Please try again.");
-    }
-
+    const inviteCode = generateInviteCode();
     const familyRef = doc(collection(db, "families"));
 
     const newFamily: IFamily = {
@@ -237,7 +219,7 @@ export const joinFamily = async (userId: string, inviteCode: string) => {
     }
 
     const familiesRef = collection(db, "families");
-    const q = query(familiesRef, where("inviteCode", "==", normalizedInviteCode), limit(1));
+    const q = query(familiesRef, where("inviteCode", "==", normalizedInviteCode));
     const querySnapshot = await getDocs(q);
 
     if (querySnapshot.empty) {
