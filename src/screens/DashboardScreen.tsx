@@ -13,6 +13,7 @@ import {
   Bell,
   ArrowRight,
   TrendingUp,
+  AlertTriangle,
 } from "lucide-react-native";
 import { useAuthStore } from "../store/useAuthStore";
 import { useFamilyDetails, useFamilyMembers } from "../hooks/queries/useFamilyQueries";
@@ -43,6 +44,7 @@ const DashboardScreen = ({ navigation }: HomeStackScreenProps<"Home">) => {
   const familyName = family?.name || "Our Family";
 
   const notifications = useNotificationStore((state) => state.notifications);
+  const notificationError = useNotificationStore((state) => state.error);
   const unreadCount = notifications.filter(
     (notification) =>
       notification.actorId !== user?.uid && !notification.readBy.includes(user?.uid || ""),
@@ -60,6 +62,49 @@ const DashboardScreen = ({ navigation }: HomeStackScreenProps<"Home">) => {
   const totalCount = items.length;
   const urgentCount = pendingItems.filter((item) => item.priority === "Urgent").length;
   const completionRate = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
+  const hasInvitedMember = members.length > 1;
+  const hasAddedItem = totalCount > 0;
+  const hasCompletedItem = completedCount > 0;
+  const onboardingTasks = useMemo(
+    () => [
+      {
+        id: "invite_member",
+        title: "Invite one member",
+        done: hasInvitedMember,
+        cta: "Open Members",
+        onPress: () => navigation.navigate(ETabRoutes.MEMBERS),
+      },
+      {
+        id: "add_item",
+        title: "Add first grocery item",
+        done: hasAddedItem,
+        cta: "Add Item",
+        onPress: () => navigation.navigate(ERootRoutes.ADD_ITEM),
+      },
+      {
+        id: "complete_item",
+        title: "Mark one item complete",
+        done: hasCompletedItem,
+        cta: "Open List",
+        onPress: () => navigation.navigate(ETabRoutes.LIST),
+      },
+    ],
+    [hasAddedItem, hasCompletedItem, hasInvitedMember, navigation],
+  );
+  const onboardingDoneCount = onboardingTasks.filter((task) => task.done).length;
+  const showOwnerOnboarding =
+    user?.role === "owner" && onboardingDoneCount < onboardingTasks.length;
+  const estimatedSpend = useMemo(() => {
+    return items.reduce((sum, item) => {
+      if (typeof item.estimatedTotal === "number" && Number.isFinite(item.estimatedTotal)) {
+        return sum + item.estimatedTotal;
+      }
+      if (typeof item.unitPrice === "number" && Number.isFinite(item.unitPrice)) {
+        return sum + item.unitPrice;
+      }
+      return sum;
+    }, 0);
+  }, [items]);
 
   const categoryStats = useMemo(() => {
     const stats: Record<string, number> = {};
@@ -139,6 +184,17 @@ const DashboardScreen = ({ navigation }: HomeStackScreenProps<"Home">) => {
         className="flex-1"
       >
         <View className="px-6">
+          {notificationError ? (
+            <View className="mb-4 rounded-2xl border border-warning-light bg-warning-light/40 px-4 py-3">
+              <View className="flex-row items-start">
+                <AlertTriangle size={16} stroke="#F5A623" />
+                <Text className="ml-2 flex-1 text-[12px] font-medium leading-5 text-warning-dark">
+                  Live activity feed issue: {notificationError}
+                </Text>
+              </View>
+            </View>
+          ) : null}
+
           {user?.familyId ? (
             <>
               {/* Family Group Card */}
@@ -212,6 +268,45 @@ const DashboardScreen = ({ navigation }: HomeStackScreenProps<"Home">) => {
                 </View>
               </Card>
 
+              {/* Owner onboarding checklist */}
+              {showOwnerOnboarding ? (
+                <Card className="mb-8 p-5 border-primary-100 bg-primary-50/20">
+                  <View className="flex-row items-center justify-between mb-4">
+                    <Text className="text-[16px] font-bold text-text-primary">Quick Setup</Text>
+                    <Text className="text-[12px] font-bold text-primary-600">
+                      {onboardingDoneCount}/{onboardingTasks.length} done
+                    </Text>
+                  </View>
+                  {onboardingTasks.map((task) => (
+                    <View
+                      key={task.id}
+                      className="mb-3 flex-row items-center justify-between rounded-xl border border-border/60 bg-white px-3 py-3"
+                    >
+                      <View className="mr-3 flex-1 flex-row items-center">
+                        <CheckCircle2
+                          size={16}
+                          stroke={task.done ? "#3DB87A" : "#C0C8D2"}
+                          strokeWidth={2}
+                        />
+                        <Text
+                          className={`ml-2 text-[13px] ${task.done ? "font-semibold text-text-secondary" : "font-bold text-text-primary"}`}
+                        >
+                          {task.title}
+                        </Text>
+                      </View>
+                      {!task.done ? (
+                        <TouchableOpacity
+                          onPress={task.onPress}
+                          className="rounded-lg bg-primary-500 px-3 py-2"
+                        >
+                          <Text className="text-[11px] font-bold text-white">{task.cta}</Text>
+                        </TouchableOpacity>
+                      ) : null}
+                    </View>
+                  ))}
+                </Card>
+              ) : null}
+
               {/* Shopping Progress Bar */}
               <Card className="mb-8 p-5">
                 <View className="flex-row justify-between items-center mb-3">
@@ -231,6 +326,24 @@ const DashboardScreen = ({ navigation }: HomeStackScreenProps<"Home">) => {
                   <Text className="text-[12px] text-warning-dark font-bold">
                     {pendingCount} left to buy
                   </Text>
+                </View>
+              </Card>
+
+              <Card className="mb-8 p-5 border-primary-100 bg-primary-50/20">
+                <View className="flex-row items-center justify-between">
+                  <View>
+                    <Text className="text-[11px] font-bold uppercase tracking-wider text-text-muted">
+                      Estimated Spend
+                    </Text>
+                    <Text className="mt-1 text-[24px] font-bold tracking-tight text-text-primary">
+                      ${estimatedSpend.toFixed(2)}
+                    </Text>
+                  </View>
+                  <View className="rounded-xl bg-white px-3 py-2 border border-border/60">
+                    <Text className="text-[11px] font-bold text-primary-600">
+                      {totalCount} item{totalCount !== 1 ? "s" : ""}
+                    </Text>
+                  </View>
                 </View>
               </Card>
 

@@ -8,8 +8,6 @@ export enum ERootRoutes {
   LOGIN = "Login",
   MAIN = "Main",
   FAMILY_SETUP = "FamilySetup",
-  CREATE_FAMILY = "CreateFamily",
-  JOIN_FAMILY = "JoinFamily",
   EDIT_PROFILE = "EditProfile",
   PRIVACY_SECURITY = "PrivacySecurity",
   HELP_SUPPORT = "HelpSupport",

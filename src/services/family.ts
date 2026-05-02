@@ -4,17 +4,18 @@ import {
   setDoc,
   updateDoc,
   getDoc,
-  getDocs,
   onSnapshot,
-  query,
   runTransaction,
   serverTimestamp,
   writeBatch,
+  getDocs,
+  query,
   where,
 } from "firebase/firestore";
 import { db } from "./firebaseConfig";
 import { IFamily, IUser } from "../types";
 import { normalizeInviteCode, trimText } from "../utils";
+import { planOwnerExit } from "./familyPlan";
 
 const FIRESTORE_WRITE_TIMEOUT_MS = 15000;
 const FIRESTORE_READ_TIMEOUT_MS = 12000;
@@ -301,26 +302,6 @@ export const joinFamily = async (userId: string, inviteCode: string) => {
     if (inviteSnapshot.exists()) {
       const inviteData = inviteSnapshot.data() as { familyId?: string };
       familyId = trimText(inviteData.familyId);
-    } else {
-      // Legacy fallback for families created before family_invites indexing.
-      // This fallback can work when rules still allow inviteCode lookup on families.
-      try {
-        const familiesRef = collection(db, "families");
-        const legacyQuery = query(familiesRef, where("inviteCode", "==", normalizedInviteCode));
-        const legacySnapshot = await withFirestoreReadTimeout(
-          getDocs(legacyQuery),
-          "Legacy invite lookup timed out.",
-        );
-
-        if (!legacySnapshot.empty) {
-          const legacyFamily = legacySnapshot.docs[0].data() as IFamily;
-          familyId = trimText(legacyFamily.id);
-        }
-      } catch (legacyLookupError) {
-        if (__DEV__) {
-          console.warn("Legacy invite lookup failed:", legacyLookupError);
-        }
-      }
     }
 
     if (!familyId) {
@@ -505,11 +486,10 @@ export const leaveFamily = async ({
     throw new Error(`Leave step failed at members lookup: ${message}`);
   }
 
-  const remainingMembers = membersSnapshot.docs
-    .map((memberDoc) => memberDoc.data() as IUser)
-    .filter((member) => member.uid !== userId);
+  const memberList = membersSnapshot.docs.map((memberDoc) => memberDoc.data() as IUser);
+  const ownerExitPlan = planOwnerExit(userId, memberList);
 
-  if (remainingMembers.length === 0) {
+  if (ownerExitPlan.shouldDeleteFamily) {
     if (familySnapshot.exists()) {
       batch.delete(familyRef);
       if (familyData?.inviteCode) {
@@ -525,7 +505,10 @@ export const leaveFamily = async ({
     return { ownerTransferredTo: null, familyDeleted: true };
   }
 
-  const nextOwnerId = remainingMembers[0].uid;
+  const nextOwnerId = ownerExitPlan.nextOwnerId;
+  if (!nextOwnerId) {
+    throw new Error("Could not determine next owner.");
+  }
   batch.update(doc(db, "users", nextOwnerId), {
     role: "owner",
     updatedAt: serverTimestamp(),

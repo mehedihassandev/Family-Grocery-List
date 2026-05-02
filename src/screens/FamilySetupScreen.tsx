@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   View,
   Text,
@@ -7,7 +7,6 @@ import {
   KeyboardAvoidingView,
   Platform,
   ActivityIndicator,
-  Alert,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Users, Plus, ArrowRight, LogOut } from "lucide-react-native";
@@ -17,8 +16,9 @@ import { useAuthStore } from "../store/useAuthStore";
 import { useCreateFamily, useJoinFamily } from "../hooks/queries/useFamilyQueries";
 import { useTextFormatter } from "../hooks";
 import { AuthenticatedStackNavigatorScreenProps, ERootRoutes } from "../types";
+import { LoadingOverlay, StatusModal } from "../components/ui";
 
-// const FAMILY_ACTION_TIMEOUT_MS = 15000;
+const FAMILY_ACTION_TIMEOUT_MS = 15000;
 
 /**
  * Maps family operation errors to user-friendly messages
@@ -50,27 +50,27 @@ const getFamilyErrorMessage = (error: unknown) => {
  * @param operation - The promise to wrap
  * @param timeoutMessage - Message to display on timeout
  */
-// async function withFamilyActionTimeout<T>(
-//   operation: Promise<T>,
-//   timeoutMessage: string,
-// ): Promise<T> {
-//   let timeoutId: ReturnType<typeof setTimeout> | undefined;
+async function withFamilyActionTimeout<T>(
+  operation: Promise<T>,
+  timeoutMessage: string,
+): Promise<T> {
+  let timeoutId: ReturnType<typeof setTimeout> | undefined;
 
-//   try {
-//     return await Promise.race([
-//       operation,
-//       new Promise<T>((_, reject) => {
-//         timeoutId = setTimeout(() => {
-//           reject(new Error(timeoutMessage));
-//         }, FAMILY_ACTION_TIMEOUT_MS);
-//       }),
-//     ]);
-//   } finally {
-//     if (timeoutId) {
-//       clearTimeout(timeoutId);
-//     }
-//   }
-// }
+  try {
+    return await Promise.race([
+      operation,
+      new Promise<T>((_, reject) => {
+        timeoutId = setTimeout(() => {
+          reject(new Error(timeoutMessage));
+        }, FAMILY_ACTION_TIMEOUT_MS);
+      }),
+    ]);
+  } finally {
+    if (timeoutId) {
+      clearTimeout(timeoutId);
+    }
+  }
+}
 
 /**
  * Initial setup screen for users not yet in a family
@@ -78,13 +78,25 @@ const getFamilyErrorMessage = (error: unknown) => {
  */
 const FamilySetupScreen = ({
   navigation,
+  route,
 }: AuthenticatedStackNavigatorScreenProps<ERootRoutes.FAMILY_SETUP>) => {
   const { user, setUser } = useAuthStore();
   const { toTrimmed, toInviteCode } = useTextFormatter();
-  const [mode, setMode] = useState<"selection" | "create" | "join">("selection");
+  const [mode, setMode] = useState<"selection" | "create" | "join">(
+    route.params?.mode ?? "selection",
+  );
   const [familyName, setFamilyName] = useState("");
   const [inviteCode, setInviteCode] = useState("");
   const [actionError, setActionError] = useState<string | null>(null);
+  const [statusModal, setStatusModal] = useState<{
+    visible: boolean;
+    title: string;
+    message: string;
+  }>({
+    visible: false,
+    title: "",
+    message: "",
+  });
   // Inline field-level errors guide the user without using an Alert dialog
   const [familyNameError, setFamilyNameError] = useState<string | null>(null);
   const [inviteCodeError, setInviteCodeError] = useState<string | null>(null);
@@ -94,6 +106,13 @@ const FamilySetupScreen = ({
   const joinMutation = useJoinFamily();
 
   const loading = createMutation.isPending || joinMutation.isPending;
+
+  useEffect(() => {
+    if (!route.params?.mode) {
+      return;
+    }
+    setMode(route.params.mode);
+  }, [route.params?.mode]);
 
   /**
    * Handles creating a new family group
@@ -106,26 +125,35 @@ const FamilySetupScreen = ({
       setFamilyNameError("Family name cannot be empty.");
       return;
     }
-    if (!user) return;
+    if (!user?.uid) {
+      setStatusModal({
+        visible: true,
+        title: "Create Family Failed",
+        message: "Session not ready. Please wait and try again.",
+      });
+      return;
+    }
 
     setActionError(null);
-    createMutation.mutate(
-      { userId: user.uid, familyName: normalizedFamilyName },
-      {
-        onSuccess: (family) => {
-          setUser({ ...user, familyId: family.id, role: "owner" });
-          navigation.reset({
-            index: 0,
-            routes: [{ name: "Root" }],
-          });
-        },
-        onError: (error) => {
-          const errorMessage = getFamilyErrorMessage(error);
-          setActionError(errorMessage);
-          Alert.alert("Create Family Failed", errorMessage);
-        },
-      },
-    );
+    try {
+      const family = await withFamilyActionTimeout(
+        createMutation.mutateAsync({ userId: user.uid, familyName: normalizedFamilyName }),
+        "Create timed out. Check network and Firestore rules, then try again.",
+      );
+      setUser({ ...user, familyId: family.id, role: "owner" });
+      navigation.reset({
+        index: 0,
+        routes: [{ name: "Root" }],
+      });
+    } catch (error) {
+      const errorMessage = getFamilyErrorMessage(error);
+      setActionError(errorMessage);
+      setStatusModal({
+        visible: true,
+        title: "Create Family Failed",
+        message: errorMessage,
+      });
+    }
   };
 
   /**
@@ -143,26 +171,35 @@ const FamilySetupScreen = ({
       setInviteCodeError("Invite code must be exactly 6 characters.");
       return;
     }
-    if (!user) return;
+    if (!user?.uid) {
+      setStatusModal({
+        visible: true,
+        title: "Join Family Failed",
+        message: "Session not ready. Please wait and try again.",
+      });
+      return;
+    }
 
     setActionError(null);
-    joinMutation.mutate(
-      { userId: user.uid, inviteCode: normalizedInviteCode },
-      {
-        onSuccess: (family) => {
-          setUser({ ...user, familyId: family.id, role: "member" });
-          navigation.reset({
-            index: 0,
-            routes: [{ name: "Root" }],
-          });
-        },
-        onError: (error) => {
-          const errorMessage = getFamilyErrorMessage(error);
-          setActionError(errorMessage);
-          Alert.alert("Join Family Failed", errorMessage);
-        },
-      },
-    );
+    try {
+      const family = await withFamilyActionTimeout(
+        joinMutation.mutateAsync({ userId: user.uid, inviteCode: normalizedInviteCode }),
+        "Join timed out. Check network and Firestore rules, then try again.",
+      );
+      setUser({ ...user, familyId: family.id, role: "member" });
+      navigation.reset({
+        index: 0,
+        routes: [{ name: "Root" }],
+      });
+    } catch (error) {
+      const errorMessage = getFamilyErrorMessage(error);
+      setActionError(errorMessage);
+      setStatusModal({
+        visible: true,
+        title: "Join Family Failed",
+        message: errorMessage,
+      });
+    }
   };
 
   if (mode === "selection") {
@@ -219,6 +256,14 @@ const FamilySetupScreen = ({
 
   return (
     <SafeAreaView className="flex-1 bg-background">
+      <LoadingOverlay visible={loading} />
+      <StatusModal
+        visible={statusModal.visible}
+        title={statusModal.title}
+        message={statusModal.message}
+        type="error"
+        onClose={() => setStatusModal((prev) => ({ ...prev, visible: false }))}
+      />
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         className="flex-1"

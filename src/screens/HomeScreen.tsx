@@ -38,6 +38,8 @@ import NotificationModal from "../components/NotificationModal";
 import { useTextFormatter } from "../hooks";
 
 type TStatusFilter = "all" | "pending" | "completed";
+type TDueFilter = "all" | "overdue" | "due_soon";
+type TAssigneeFilter = "all" | "assigned" | "unassigned";
 
 interface IGrocerySection {
   key: string;
@@ -49,6 +51,16 @@ const STATUS_FILTERS: { key: TStatusFilter; label: string }[] = [
   { key: "all", label: "All" },
   { key: "pending", label: "Pending" },
   { key: "completed", label: "Completed" },
+];
+const DUE_FILTERS: { key: TDueFilter; label: string }[] = [
+  { key: "all", label: "All Due" },
+  { key: "overdue", label: "Overdue" },
+  { key: "due_soon", label: "Due Soon" },
+];
+const ASSIGNEE_FILTERS: { key: TAssigneeFilter; label: string }[] = [
+  { key: "all", label: "All Assignee" },
+  { key: "assigned", label: "Assigned" },
+  { key: "unassigned", label: "Unassigned" },
 ];
 
 const ALL_CATEGORY = "All";
@@ -87,6 +99,8 @@ const HomeScreen = ({ navigation }: ListStackScreenProps<"List">) => {
   const { toTrimmed } = useTextFormatter();
   const insets = useSafeAreaInsets();
   const [statusFilter, setStatusFilter] = useState<TStatusFilter>("pending");
+  const [dueFilter, setDueFilter] = useState<TDueFilter>("all");
+  const [assigneeFilter, setAssigneeFilter] = useState<TAssigneeFilter>("all");
   const [activeCategory, setActiveCategory] = useState<string>(ALL_CATEGORY);
   const [searchQuery, setSearchQuery] = useState("");
   const [quickAddName, setQuickAddName] = useState("");
@@ -129,6 +143,9 @@ const HomeScreen = ({ navigation }: ListStackScreenProps<"List">) => {
 
   const filteredItems = useMemo(() => {
     const query = searchQuery.trim().toLowerCase();
+    const now = new Date();
+    const dueSoon = new Date();
+    dueSoon.setDate(dueSoon.getDate() + 3);
 
     return sortedItems.filter((item) => {
       if (statusFilter !== "all" && item.status !== statusFilter) {
@@ -137,6 +154,26 @@ const HomeScreen = ({ navigation }: ListStackScreenProps<"List">) => {
 
       if (activeCategory !== ALL_CATEGORY && item.category !== activeCategory) {
         return false;
+      }
+
+      if (assigneeFilter === "assigned" && !item.assignee?.name) {
+        return false;
+      }
+      if (assigneeFilter === "unassigned" && item.assignee?.name) {
+        return false;
+      }
+
+      if (dueFilter !== "all") {
+        const dueDate = item.dueDate?.toDate ? item.dueDate.toDate() : item.dueDate;
+        if (!(dueDate instanceof Date) || Number.isNaN(dueDate.getTime())) {
+          return false;
+        }
+        if (dueFilter === "overdue" && dueDate >= now) {
+          return false;
+        }
+        if (dueFilter === "due_soon" && (dueDate < now || dueDate > dueSoon)) {
+          return false;
+        }
       }
 
       if (!query) {
@@ -149,13 +186,14 @@ const HomeScreen = ({ navigation }: ListStackScreenProps<"List">) => {
         item.notes ?? "",
         item.quantity ?? "",
         item.addedBy?.name ?? "",
+        item.assignee?.name ?? "",
       ]
         .join(" ")
         .toLowerCase();
 
       return searchText.includes(query);
     });
-  }, [sortedItems, statusFilter, activeCategory, searchQuery]);
+  }, [sortedItems, statusFilter, activeCategory, assigneeFilter, dueFilter, searchQuery]);
 
   const sections = useMemo<IGrocerySection[]>(() => {
     const pending = filteredItems.filter((item) => item.status === "pending");
@@ -210,6 +248,15 @@ const HomeScreen = ({ navigation }: ListStackScreenProps<"List">) => {
         name: item.name,
         status: item.status,
         familyId: item.familyId,
+        category: item.category,
+        priority: item.priority,
+        notes: item.notes,
+        quantity: item.quantity,
+        recurrenceFrequency: item.recurrenceFrequency,
+        assignee: item.assignee,
+        dueDate: item.dueDate,
+        unitPrice: item.unitPrice,
+        estimatedTotal: item.estimatedTotal,
       },
       user: {
         uid: user.uid,
@@ -511,6 +558,38 @@ const HomeScreen = ({ navigation }: ListStackScreenProps<"List">) => {
                     />
                   ))}
                 </ScrollView>
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  className="mb-2"
+                  contentContainerStyle={{ paddingRight: 12 }}
+                >
+                  {DUE_FILTERS.map((option) => (
+                    <Chip
+                      key={option.key}
+                      label={option.label}
+                      selected={dueFilter === option.key}
+                      onPress={() => setDueFilter(option.key)}
+                      className="mr-2"
+                    />
+                  ))}
+                </ScrollView>
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  className="mb-2"
+                  contentContainerStyle={{ paddingRight: 12 }}
+                >
+                  {ASSIGNEE_FILTERS.map((option) => (
+                    <Chip
+                      key={option.key}
+                      label={option.label}
+                      selected={assigneeFilter === option.key}
+                      onPress={() => setAssigneeFilter(option.key)}
+                      className="mr-2"
+                    />
+                  ))}
+                </ScrollView>
               </Animated.View>
 
               <View className="flex-row items-center justify-between mt-4 mb-2">
@@ -548,7 +627,10 @@ const HomeScreen = ({ navigation }: ListStackScreenProps<"List">) => {
                 No items found
               </Text>
               <Text className="mt-3 text-center text-[16px] leading-6 text-text-muted">
-                {searchQuery || activeCategory !== ALL_CATEGORY
+                {searchQuery ||
+                activeCategory !== ALL_CATEGORY ||
+                dueFilter !== "all" ||
+                assigneeFilter !== "all"
                   ? "Try a different search or category filter."
                   : "Tap '+' to add your first grocery item."}
               </Text>

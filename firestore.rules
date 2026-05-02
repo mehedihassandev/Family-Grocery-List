@@ -89,9 +89,8 @@ service cloud.firestore {
     }
 
     match /families/{familyId} {
-      // Temporary compatibility: keep signed-in read so legacy invite-code
-      // family lookup can migrate older data into family_invites.
-      allow read: if signedIn();
+      // Family docs are visible to members only.
+      allow read: if isFamilyMember(familyId);
 
       allow create: if signedIn()
         && request.resource.data.ownerId == request.auth.uid
@@ -101,7 +100,10 @@ service cloud.firestore {
     }
 
     match /family_invites/{inviteCode} {
-      allow read: if signedIn();
+      // Safe join-code path: direct code lookup allowed for signed-in users.
+      // Prevent broad collection listing of invite mappings.
+      allow get: if signedIn();
+      allow list: if false;
 
       allow create: if signedIn()
         && request.resource.data.code == inviteCode

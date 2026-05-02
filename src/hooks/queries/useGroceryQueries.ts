@@ -125,7 +125,21 @@ export const useToggleItemCompletion = () => {
       item,
       user,
     }: {
-      item: { id: string; name: string; status: "pending" | "completed"; familyId: string };
+      item: {
+        id: string;
+        name: string;
+        status: "pending" | "completed";
+        familyId: string;
+        category?: string;
+        priority?: IGroceryItem["priority"];
+        notes?: string;
+        quantity?: string;
+        recurrenceFrequency?: IGroceryItem["recurrenceFrequency"];
+        assignee?: IGroceryItem["assignee"];
+        dueDate?: IGroceryItem["dueDate"];
+        unitPrice?: IGroceryItem["unitPrice"];
+        estimatedTotal?: IGroceryItem["estimatedTotal"];
+      };
       user: { uid: string; name: string };
     }) => toggleItemCompletion(item, user),
     onSuccess: (_, variables) => {

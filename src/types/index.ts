@@ -48,6 +48,15 @@ export interface IGroceryItem {
   priority: Priority;
   notes?: string;
   quantity?: string;
+  recurrenceFrequency?: "none" | "weekly" | "monthly";
+  assignee?: {
+    uid?: string;
+    name: string;
+  } | null;
+  dueDate?: any | null;
+  reminderAt?: any | null;
+  unitPrice?: number | null;
+  estimatedTotal?: number | null;
   status: "pending" | "completed";
   addedBy: {
     uid: string;
@@ -87,11 +96,7 @@ export type AuthenticatedStackNavigatorParamList = {
   /** The main tab navigator */
   Root: undefined;
   /** Prompt user to create or join a family after first login */
-  [ERootRoutes.FAMILY_SETUP]: undefined;
-  /** Dedicated screen to create a new family group */
-  [ERootRoutes.CREATE_FAMILY]: undefined;
-  /** Dedicated screen to join via invite code */
-  [ERootRoutes.JOIN_FAMILY]: undefined;
+  [ERootRoutes.FAMILY_SETUP]: { mode?: "selection" | "create" | "join" } | undefined;
   /** Edit user display name / avatar */
   [ERootRoutes.EDIT_PROFILE]: undefined;
   /** Privacy & security settings */

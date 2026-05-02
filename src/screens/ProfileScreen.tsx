@@ -134,7 +134,7 @@ const ProfileScreen = ({ navigation }: ProfileStackScreenProps<"Profile">) => {
     <SafeAreaView edges={["top", "left", "right"]} className="flex-1 bg-background">
       <StatusBar barStyle="dark-content" />
 
-      <AppHeader title="Profile" eyebrow="Settings" />
+      <AppHeader title="Profile" eyebrow="Settings" showNotification={false} />
 
       <ScrollView
         showsVerticalScrollIndicator={false}

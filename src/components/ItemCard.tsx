@@ -74,6 +74,18 @@ const ItemCard = ({ item, onToggle, onPress }: IItemCardProps) => {
                   {item.category} {item.quantity ? `· ${item.quantity}` : ""}
                 </Text>
               </View>
+              {item.dueDate ? (
+                <View className="ml-2 bg-warning-light px-2 py-1 rounded-md border border-warning-light">
+                  <Text className="text-[10px] font-bold text-warning-dark">Due</Text>
+                </View>
+              ) : null}
+              {item.assignee?.name ? (
+                <View className="ml-2 bg-primary-50 px-2 py-1 rounded-md border border-primary-100">
+                  <Text className="text-[10px] font-bold text-primary-700">
+                    {item.assignee.name}
+                  </Text>
+                </View>
+              ) : null}
               <Text className="ml-3 text-[11px] font-medium text-text-muted">{timeAgo}</Text>
             </View>
 

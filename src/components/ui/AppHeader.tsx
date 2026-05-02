@@ -73,7 +73,7 @@ const AppHeader = ({
       </View>
       <View className="flex-row items-center gap-4 pl-4">
         {right}
-        {showNotification && (
+        {showNotification && onNotificationPress && (
           <TouchableOpacity
             onPress={onNotificationPress}
             activeOpacity={0.7}

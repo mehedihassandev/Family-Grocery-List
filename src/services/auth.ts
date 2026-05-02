@@ -3,7 +3,6 @@ import * as WebBrowser from "expo-web-browser";
 import { GoogleSignin, statusCodes } from "@react-native-google-signin/google-signin";
 import { AuthSessionResult } from "expo-auth-session";
 import { Platform } from "react-native";
-import { FirebaseError } from "firebase/app";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import {
   createUserWithEmailAndPassword,
@@ -16,6 +15,7 @@ import {
 } from "firebase/auth";
 import { doc, getDoc, setDoc, updateDoc, onSnapshot } from "firebase/firestore";
 import { auth, db } from "./firebaseConfig";
+import { getEmailAuthErrorMessage } from "./authErrors";
 import { useAuthStore } from "../store/useAuthStore";
 import { IUser } from "../types";
 import { trimLowercaseText, trimText } from "../utils";
@@ -667,50 +667,7 @@ export const getGoogleSignInErrorMessage = (error: unknown) => {
   return "Unable to continue with Google Sign-In right now.";
 };
 
-/**
- * Type guard for FirebaseError
- * @param error - The error to check
- */
-const isFirebaseAuthError = (error: unknown): error is FirebaseError =>
-  error instanceof FirebaseError ||
-  (typeof error === "object" && error !== null && "code" in error);
-
-/**
- * Returns a user-friendly error message for email authentication failures
- * @param error - The error object to map
- */
-export const getEmailAuthErrorMessage = (error: unknown) => {
-  if (isFirebaseAuthError(error)) {
-    switch (error.code) {
-      case "auth/invalid-email":
-        return "Enter a valid email address.";
-      case "auth/missing-password":
-        return "Password is required.";
-      case "auth/invalid-credential":
-      case "auth/user-not-found":
-      case "auth/wrong-password":
-        return "Email or password is incorrect.";
-      case "auth/email-already-in-use":
-        return "This email is already in use.";
-      case "auth/weak-password":
-        return "Password must be at least 6 characters.";
-      case "auth/user-disabled":
-        return "This account has been disabled.";
-      case "auth/too-many-requests":
-        return "Too many attempts. Try again later.";
-      case "auth/network-request-failed":
-        return "Network error. Check your connection and try again.";
-      default:
-        return error.message || "Unable to continue with email authentication.";
-    }
-  }
-
-  if (error instanceof Error && error.message.trim()) {
-    return error.message;
-  }
-
-  return "Unable to continue with email authentication.";
-};
+export { getEmailAuthErrorMessage };
 
 /**
  * Signs the user out of Firebase and clears local session state

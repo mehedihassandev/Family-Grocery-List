@@ -6,8 +6,6 @@ import { ERootRoutes } from "./routes";
 import TabNavigator from "./TabNavigator";
 import {
   FamilySetupScreen,
-  CreateFamilyScreen,
-  JoinFamilyScreen,
   EditProfileScreen,
   PrivacySecurityScreen,
   HelpSupportScreen,
@@ -30,8 +28,6 @@ const AuthenticatedNavigator = () => {
 
       {/* Secondary Screens */}
       <Stack.Screen name={ERootRoutes.FAMILY_SETUP} component={FamilySetupScreen} />
-      <Stack.Screen name={ERootRoutes.CREATE_FAMILY} component={CreateFamilyScreen} />
-      <Stack.Screen name={ERootRoutes.JOIN_FAMILY} component={JoinFamilyScreen} />
       <Stack.Screen name={ERootRoutes.EDIT_PROFILE} component={EditProfileScreen} />
       <Stack.Screen name={ERootRoutes.PRIVACY_SECURITY} component={PrivacySecurityScreen} />
       <Stack.Screen name={ERootRoutes.HELP_SUPPORT} component={HelpSupportScreen} />

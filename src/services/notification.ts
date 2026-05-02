@@ -4,6 +4,8 @@ import {
   setDoc,
   query,
   where,
+  orderBy,
+  limit,
   onSnapshot,
   serverTimestamp,
   writeBatch,
@@ -69,19 +71,18 @@ export const subscribeToNotifications = (
   onError?: (error: Error) => void,
 ) => {
   const notifRef = collection(db, "notifications");
-  const q = query(notifRef, where("familyId", "==", familyId));
+  const q = query(
+    notifRef,
+    where("familyId", "==", familyId),
+    orderBy("createdAt", "desc"),
+    limit(120),
+  );
 
   return onSnapshot(
     q,
     (snapshot) => {
       const notifications = snapshot.docs.map((doc) => doc.data() as IAppNotification);
-      // Sort in memory (since we don't want to enforce a composite index on familyId + createdAt right away)
-      const sorted = notifications.sort((a, b) => {
-        const timeA = a.createdAt?.toMillis() || 0;
-        const timeB = b.createdAt?.toMillis() || 0;
-        return timeB - timeA;
-      });
-      callback(sorted);
+      callback(notifications);
     },
     (error) => {
       console.error("Subscribe Notifications Error:", error);

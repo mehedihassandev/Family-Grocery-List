@@ -6,7 +6,17 @@ import {
   ActivityIndicator,
   StyleSheet,
 } from "react-native";
-import { X, Edit2, Calendar, User, ShoppingBasket, AlignLeft, Info } from "lucide-react-native";
+import {
+  X,
+  Edit2,
+  Calendar,
+  User,
+  ShoppingBasket,
+  AlignLeft,
+  Info,
+  Repeat,
+  Wallet,
+} from "lucide-react-native";
 import { AuthenticatedStackNavigatorScreenProps, ERootRoutes } from "../types";
 import { GroceryPriority } from "../features/grocery";
 import { useDateFormatter } from "../hooks";
@@ -126,6 +136,14 @@ const ItemDetailScreen = ({
                   {item.addedBy?.name || "Unknown"}
                 </Text>
               </View>
+              <View className="w-28">
+                <Text className="text-[11px] font-bold text-text-muted uppercase tracking-widest">
+                  Assignee
+                </Text>
+                <Text className="text-[14px] font-bold text-text-primary mt-0.5">
+                  {item.assignee?.name || "—"}
+                </Text>
+              </View>
             </View>
 
             <View className="flex-row items-center p-5">
@@ -140,6 +158,45 @@ const ItemDetailScreen = ({
                   {toDateLabel(item.createdAt)}
                 </Text>
               </View>
+              <View className="w-28">
+                <Text className="text-[11px] font-bold text-text-muted uppercase tracking-widest">
+                  Due
+                </Text>
+                <Text className="text-[14px] font-bold text-text-primary mt-0.5">
+                  {item.dueDate ? toDateLabel(item.dueDate) : "—"}
+                </Text>
+              </View>
+            </View>
+          </Card>
+
+          <Card className="mb-6 p-5">
+            <View className="flex-row items-center justify-between">
+              <View className="flex-row items-center">
+                <Repeat stroke="#4A90D9" size={16} strokeWidth={2.5} />
+                <Text className="ml-2 text-[12px] font-bold uppercase tracking-wider text-text-muted">
+                  Recurring
+                </Text>
+              </View>
+              <Text className="text-[14px] font-bold text-text-primary">
+                {item.recurrenceFrequency && item.recurrenceFrequency !== "none"
+                  ? item.recurrenceFrequency
+                  : "One-time"}
+              </Text>
+            </View>
+            <View className="mt-4 flex-row items-center justify-between">
+              <View className="flex-row items-center">
+                <Wallet stroke="#3DB87A" size={16} strokeWidth={2.5} />
+                <Text className="ml-2 text-[12px] font-bold uppercase tracking-wider text-text-muted">
+                  Budget
+                </Text>
+              </View>
+              <Text className="text-[14px] font-bold text-text-primary">
+                {typeof item.estimatedTotal === "number"
+                  ? `$${item.estimatedTotal.toFixed(2)}`
+                  : typeof item.unitPrice === "number"
+                    ? `$${item.unitPrice.toFixed(2)}`
+                    : "—"}
+              </Text>
             </View>
           </Card>
 
