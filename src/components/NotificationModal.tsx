@@ -22,6 +22,7 @@ const NotificationModal = ({ visible, onClose }: INotificationModalProps) => {
   const { toRelativeTime } = useDateFormatter();
   const notifications = useNotificationStore((state) => state.notifications);
   const [filter, setFilter] = useState<"all" | "unread">("all");
+  const [markReadError, setMarkReadError] = useState<string | null>(null);
 
   const myUid = user?.uid || "";
 
@@ -35,7 +36,12 @@ const NotificationModal = ({ visible, onClose }: INotificationModalProps) => {
    */
   const handleMarkAllRead = async () => {
     if (unreadIds.length > 0) {
-      await markNotificationsAsRead(unreadIds, myUid);
+      try {
+        setMarkReadError(null);
+        await markNotificationsAsRead(unreadIds, myUid);
+      } catch (error) {
+        setMarkReadError(error instanceof Error ? error.message : "Could not mark notifications.");
+      }
     }
   };
 
@@ -158,6 +164,9 @@ const NotificationModal = ({ visible, onClose }: INotificationModalProps) => {
             </Text>
           </TouchableOpacity>
         </View>
+        {markReadError ? (
+          <Text className="mb-2 text-[12px] font-medium text-urgent">{markReadError}</Text>
+        ) : null}
 
         <ScrollView showsVerticalScrollIndicator={false} className="flex-1">
           {displayList.length === 0 ? (
@@ -184,7 +193,13 @@ const NotificationModal = ({ visible, onClose }: INotificationModalProps) => {
                   key={notif.id}
                   activeOpacity={0.8}
                   onPress={() => {
-                    if (isUnread) markNotificationsAsRead([notif.id], myUid);
+                    if (!isUnread) return;
+
+                    void markNotificationsAsRead([notif.id], myUid).catch((error) => {
+                      setMarkReadError(
+                        error instanceof Error ? error.message : "Could not mark notification.",
+                      );
+                    });
                   }}
                   className="mb-3"
                 >

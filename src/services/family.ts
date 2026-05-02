@@ -3,20 +3,25 @@ import {
   doc,
   setDoc,
   updateDoc,
-  writeBatch,
-  query,
-  where,
   getDoc,
   getDocs,
   onSnapshot,
+  query,
+  runTransaction,
   serverTimestamp,
+  writeBatch,
+  where,
 } from "firebase/firestore";
 import { db } from "./firebaseConfig";
 import { IFamily, IUser } from "../types";
 import { normalizeInviteCode, trimText } from "../utils";
 
 const FIRESTORE_WRITE_TIMEOUT_MS = 15000;
+const FIRESTORE_READ_TIMEOUT_MS = 12000;
 const FIRESTORE_PROBE_TIMEOUT_MS = 8000;
+const FAMILY_INVITES_COLLECTION = "family_invites";
+const INVITE_CODE_MAX_GENERATION_ATTEMPTS = 12;
+const INVITE_CODE_ALREADY_EXISTS_ERROR = "INVITE_CODE_ALREADY_EXISTS";
 
 /**
  * Simple 6-character unique code generator
@@ -24,6 +29,9 @@ const FIRESTORE_PROBE_TIMEOUT_MS = 8000;
 const generateInviteCode = () => {
   return Math.random().toString(36).substring(2, 8).toUpperCase();
 };
+
+const getFamilyInviteRef = (inviteCode: string) =>
+  doc(db, FAMILY_INVITES_COLLECTION, normalizeInviteCode(inviteCode));
 
 /**
  * Wraps a firestore write operation with a timeout
@@ -41,6 +49,31 @@ async function withFirestoreWriteTimeout<T>(
         timeoutId = setTimeout(() => {
           reject(new Error(timeoutMessage));
         }, FIRESTORE_WRITE_TIMEOUT_MS);
+      }),
+    ]);
+  } finally {
+    if (timeoutId) {
+      clearTimeout(timeoutId);
+    }
+  }
+}
+
+/**
+ * Wraps a firestore read operation with a timeout
+ */
+async function withFirestoreReadTimeout<T>(
+  operation: Promise<T>,
+  timeoutMessage: string,
+): Promise<T> {
+  let timeoutId: ReturnType<typeof setTimeout> | undefined;
+
+  try {
+    return await Promise.race([
+      operation,
+      new Promise<T>((_, reject) => {
+        timeoutId = setTimeout(() => {
+          reject(new Error(timeoutMessage));
+        }, FIRESTORE_READ_TIMEOUT_MS);
       }),
     ]);
   } finally {
@@ -146,8 +179,10 @@ const upsertUserFamilyMembership = async (
   userId: string,
   familyId: string,
   role: IUser["role"],
+  inviteCode?: string,
 ) => {
   const userRef = doc(db, "users", userId);
+  const normalizedInviteCode = inviteCode ? normalizeInviteCode(inviteCode) : "";
   await withFirestoreWriteTimeout(
     setDoc(
       userRef,
@@ -155,6 +190,7 @@ const upsertUserFamilyMembership = async (
         uid: userId,
         familyId,
         role,
+        lastInviteCode: normalizedInviteCode,
         updatedAt: serverTimestamp(),
       },
       { merge: true },
@@ -175,25 +211,62 @@ export const createFamily = async (userId: string, familyName: string) => {
       throw new Error("Family name is required");
     }
 
-    const inviteCode = generateInviteCode();
-    const familyRef = doc(collection(db, "families"));
+    for (let attempt = 0; attempt < INVITE_CODE_MAX_GENERATION_ATTEMPTS; attempt += 1) {
+      const inviteCode = generateInviteCode();
+      const familyRef = doc(collection(db, "families"));
+      const userRef = doc(db, "users", userId);
+      const inviteRef = getFamilyInviteRef(inviteCode);
 
-    const newFamily: IFamily = {
-      id: familyRef.id,
-      name: normalizedFamilyName,
-      inviteCode: inviteCode,
-      ownerId: userId,
-      createdAt: serverTimestamp(),
-    };
+      const newFamily: IFamily = {
+        id: familyRef.id,
+        name: normalizedFamilyName,
+        inviteCode,
+        ownerId: userId,
+        createdAt: serverTimestamp(),
+      };
 
-    await withFirestoreWriteTimeout(
-      setDoc(familyRef, newFamily),
-      "Family document write timed out.",
-    );
+      try {
+        await withFirestoreWriteTimeout(
+          runTransaction(db, async (transaction) => {
+            const inviteSnapshot = await transaction.get(inviteRef);
+            if (inviteSnapshot.exists()) {
+              throw new Error(INVITE_CODE_ALREADY_EXISTS_ERROR);
+            }
 
-    await upsertUserFamilyMembership(userId, familyRef.id, "owner");
+            transaction.set(familyRef, newFamily);
+            transaction.set(inviteRef, {
+              code: inviteCode,
+              familyId: familyRef.id,
+              familyName: normalizedFamilyName,
+              ownerId: userId,
+              createdAt: serverTimestamp(),
+              updatedAt: serverTimestamp(),
+            });
+            transaction.set(
+              userRef,
+              {
+                uid: userId,
+                familyId: familyRef.id,
+                role: "owner",
+                lastInviteCode: inviteCode,
+                updatedAt: serverTimestamp(),
+              },
+              { merge: true },
+            );
+          }),
+          "Family setup write timed out.",
+        );
 
-    return newFamily;
+        return newFamily;
+      } catch (error) {
+        if (error instanceof Error && error.message === INVITE_CODE_ALREADY_EXISTS_ERROR) {
+          continue;
+        }
+        throw error;
+      }
+    }
+
+    throw new Error("Could not generate a unique invite code. Please try again.");
   } catch (error) {
     if (error instanceof Error && error.message.toLowerCase().includes("timed out")) {
       const configIssue = await getFirestoreConfigurationIssue();
@@ -219,19 +292,54 @@ export const joinFamily = async (userId: string, inviteCode: string) => {
       throw new Error("Invite code is required");
     }
 
-    const familiesRef = collection(db, "families");
-    const q = query(familiesRef, where("inviteCode", "==", normalizedInviteCode));
-    const querySnapshot = await getDocs(q);
+    const inviteSnapshot = await withFirestoreReadTimeout(
+      getDoc(getFamilyInviteRef(normalizedInviteCode)),
+      "Invite lookup timed out.",
+    );
+    let familyId = "";
 
-    if (querySnapshot.empty) {
-      throw new Error("Invalid invite code");
+    if (inviteSnapshot.exists()) {
+      const inviteData = inviteSnapshot.data() as { familyId?: string };
+      familyId = trimText(inviteData.familyId);
+    } else {
+      // Legacy fallback for families created before family_invites indexing.
+      // This fallback can work when rules still allow inviteCode lookup on families.
+      try {
+        const familiesRef = collection(db, "families");
+        const legacyQuery = query(familiesRef, where("inviteCode", "==", normalizedInviteCode));
+        const legacySnapshot = await withFirestoreReadTimeout(
+          getDocs(legacyQuery),
+          "Legacy invite lookup timed out.",
+        );
+
+        if (!legacySnapshot.empty) {
+          const legacyFamily = legacySnapshot.docs[0].data() as IFamily;
+          familyId = trimText(legacyFamily.id);
+        }
+      } catch (legacyLookupError) {
+        if (__DEV__) {
+          console.warn("Legacy invite lookup failed:", legacyLookupError);
+        }
+      }
     }
 
-    const familyDoc = querySnapshot.docs[0];
-    const familyData = familyDoc.data() as IFamily;
+    if (!familyId) {
+      throw new Error(
+        "Invalid invite code. Ask family owner to open app once (owner account) and re-share invite code. If still failing, deploy latest Firestore rules.",
+      );
+    }
 
-    await upsertUserFamilyMembership(userId, familyData.id, "member");
-    return familyData;
+    await upsertUserFamilyMembership(userId, familyId, "member", normalizedInviteCode);
+
+    const familySnapshot = await withFirestoreReadTimeout(
+      getDoc(doc(db, "families", familyId)),
+      "Family lookup timed out.",
+    );
+    if (!familySnapshot.exists()) {
+      throw new Error("Family is no longer available.");
+    }
+
+    return familySnapshot.data() as IFamily;
   } catch (error) {
     if (error instanceof Error && error.message.toLowerCase().includes("timed out")) {
       const configIssue = await getFirestoreConfigurationIssue();
@@ -243,6 +351,44 @@ export const joinFamily = async (userId: string, inviteCode: string) => {
     console.error("Join Family Error:", error);
     throw error;
   }
+};
+
+/**
+ * Ensures a family's invite-code index document exists and is up to date.
+ * Useful for migrating older family docs that were created before family_invites.
+ */
+export const syncFamilyInviteForOwner = async (familyId: string, ownerId: string) => {
+  if (!familyId || !ownerId) {
+    return;
+  }
+
+  const familyRef = doc(db, "families", familyId);
+  const familySnapshot = await getDoc(familyRef);
+  if (!familySnapshot.exists()) {
+    return;
+  }
+
+  const familyData = familySnapshot.data() as IFamily;
+  if (familyData.ownerId !== ownerId) {
+    return;
+  }
+
+  const normalizedInviteCode = normalizeInviteCode(familyData.inviteCode);
+  if (!normalizedInviteCode) {
+    return;
+  }
+
+  await setDoc(
+    getFamilyInviteRef(normalizedInviteCode),
+    {
+      code: normalizedInviteCode,
+      familyId,
+      familyName: familyData.name ?? "",
+      ownerId,
+      updatedAt: serverTimestamp(),
+    },
+    { merge: true },
+  );
 };
 
 /**
@@ -305,7 +451,6 @@ type LeaveFamilyResult = {
 export const leaveFamily = async ({
   userId,
   familyId,
-  role,
 }: LeaveFamilyInput): Promise<LeaveFamilyResult> => {
   if (!userId) {
     throw new Error("User is required.");
@@ -318,16 +463,19 @@ export const leaveFamily = async ({
   const userRef = doc(db, "users", userId);
   const familyRef = doc(db, "families", familyId);
 
-  const [familySnapshot, membersSnapshot] = await Promise.all([
-    withFirestoreWriteTimeout(getDoc(familyRef), "Family lookup timed out while leaving family."),
-    withFirestoreWriteTimeout(
-      getDocs(query(collection(db, "users"), where("familyId", "==", familyId))),
-      "Family members lookup timed out while leaving family.",
-    ),
-  ]);
+  let familySnapshot;
+  try {
+    familySnapshot = await withFirestoreWriteTimeout(
+      getDoc(familyRef),
+      "Family lookup timed out while leaving family.",
+    );
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Unknown error";
+    throw new Error(`Leave step failed at family lookup: ${message}`);
+  }
 
   const familyData = familySnapshot.data() as IFamily | undefined;
-  const isOwner = familyData?.ownerId === userId || role === "owner";
+  const isOwner = familyData?.ownerId === userId;
 
   const batch = writeBatch(db);
   batch.update(userRef, {
@@ -337,8 +485,24 @@ export const leaveFamily = async ({
   });
 
   if (!isOwner) {
-    await withFirestoreWriteTimeout(batch.commit(), "Leave family write timed out.");
+    try {
+      await withFirestoreWriteTimeout(batch.commit(), "Leave family write timed out.");
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Unknown error";
+      throw new Error(`Leave step failed at self-leave commit: ${message}`);
+    }
     return { ownerTransferredTo: null, familyDeleted: false };
+  }
+
+  let membersSnapshot;
+  try {
+    membersSnapshot = await withFirestoreWriteTimeout(
+      getDocs(query(collection(db, "users"), where("familyId", "==", familyId))),
+      "Family members lookup timed out while leaving family.",
+    );
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Unknown error";
+    throw new Error(`Leave step failed at members lookup: ${message}`);
   }
 
   const remainingMembers = membersSnapshot.docs
@@ -348,8 +512,16 @@ export const leaveFamily = async ({
   if (remainingMembers.length === 0) {
     if (familySnapshot.exists()) {
       batch.delete(familyRef);
+      if (familyData?.inviteCode) {
+        batch.delete(getFamilyInviteRef(familyData.inviteCode));
+      }
     }
-    await withFirestoreWriteTimeout(batch.commit(), "Owner leave write timed out.");
+    try {
+      await withFirestoreWriteTimeout(batch.commit(), "Owner leave write timed out.");
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Unknown error";
+      throw new Error(`Leave step failed at owner-delete commit: ${message}`);
+    }
     return { ownerTransferredTo: null, familyDeleted: true };
   }
 
@@ -364,9 +536,26 @@ export const leaveFamily = async ({
       ownerId: nextOwnerId,
       updatedAt: serverTimestamp(),
     });
+    if (familyData?.inviteCode) {
+      batch.set(
+        getFamilyInviteRef(familyData.inviteCode),
+        {
+          ownerId: nextOwnerId,
+          familyId,
+          familyName: familyData.name ?? "",
+          updatedAt: serverTimestamp(),
+        },
+        { merge: true },
+      );
+    }
   }
 
-  await withFirestoreWriteTimeout(batch.commit(), "Owner transfer write timed out.");
+  try {
+    await withFirestoreWriteTimeout(batch.commit(), "Owner transfer write timed out.");
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Unknown error";
+    throw new Error(`Leave step failed at owner-transfer commit: ${message}`);
+  }
 
   return { ownerTransferredTo: nextOwnerId, familyDeleted: false };
 };

@@ -62,13 +62,17 @@ export const addGroceryItem = async (
     await setDoc(itemRef, newItem);
 
     // Create an "item_added" notification (or "urgent_item" if priority is Urgent)
-    await createNotification(
-      familyId,
-      newItem.priority === "Urgent" ? "urgent_item" : "item_added",
-      `${user.name} added ${newItem.name}`,
-      user,
-      { id: newItem.id, name: newItem.name },
-    );
+    try {
+      await createNotification(
+        familyId,
+        newItem.priority === "Urgent" ? "urgent_item" : "item_added",
+        `${user.name} added ${newItem.name}`,
+        user,
+        { id: newItem.id, name: newItem.name },
+      );
+    } catch (error) {
+      console.warn("Item added but notification creation failed:", error);
+    }
 
     return newItem;
   } catch (error) {
@@ -116,13 +120,17 @@ export const toggleItemCompletion = async (
     });
 
     if (isCompleting) {
-      await createNotification(
-        item.familyId,
-        "item_completed",
-        `${user.name} checked off ${item.name}`,
-        user,
-        { id: item.id, name: item.name },
-      );
+      try {
+        await createNotification(
+          item.familyId,
+          "item_completed",
+          `${user.name} checked off ${item.name}`,
+          user,
+          { id: item.id, name: item.name },
+        );
+      } catch (error) {
+        console.warn("Item completion updated but notification creation failed:", error);
+      }
     }
   } catch (error) {
     console.error("Toggle Completion Error:", error);

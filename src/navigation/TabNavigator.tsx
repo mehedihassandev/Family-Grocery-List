@@ -19,6 +19,7 @@ import {
   ProfileStackParamList,
 } from "../types";
 import { View } from "react-native";
+import { syncFamilyInviteForOwner } from "../services/family";
 
 const Tab = createBottomTabNavigator<BottomTabNavigatorParamList>();
 const HomeStack = createNativeStackNavigator<HomeStackParamList>();
@@ -67,28 +68,42 @@ const TAB_ICON_STROKE_WIDTH = 2.5;
 const TabNavigator = () => {
   const insets = useSafeAreaInsets();
   const tabBarPaddingBottom = Math.max(insets.bottom, 10);
-  const { user } = useAuthStore();
+  const { user, loading, hasHydrated } = useAuthStore();
   const initNotifications = useNotificationStore((state) => state.init);
   const clearNotifications = useNotificationStore((state) => state.clear);
+  const authReady = hasHydrated && !loading;
+  const familyId = authReady ? user?.familyId : null;
 
   useEffect(() => {
     // Re-initialise or clear the notification listener whenever the family
     // changes (e.g. user joins/leaves a family while the app is open).
-    if (user?.familyId) {
-      initNotifications(user.familyId);
+    if (familyId) {
+      initNotifications(familyId);
     } else {
       clearNotifications();
     }
 
     // Cleanup on unmount to prevent persistent listeners after logout
     return () => clearNotifications();
-  }, [clearNotifications, initNotifications, user?.familyId]);
+  }, [clearNotifications, familyId, initNotifications]);
+
+  useEffect(() => {
+    if (!authReady || !user?.uid || !familyId || user.role !== "owner") {
+      return;
+    }
+
+    void syncFamilyInviteForOwner(familyId, user.uid).catch((error) => {
+      if (__DEV__) {
+        console.warn("Owner invite sync failed:", error);
+      }
+    });
+  }, [authReady, familyId, user?.role, user?.uid]);
 
   return (
     <Tab.Navigator
       // When the user leaves a family while focused on a family-only tab,
       // remount the navigator so it cleanly resets to the available routes.
-      key={user?.familyId ? "family-tabs" : "no-family-tabs"}
+      key={familyId ? "family-tabs" : "no-family-tabs"}
       screenOptions={{
         headerShown: false,
         tabBarActiveTintColor: "#3DB87A",
@@ -131,7 +146,7 @@ const TabNavigator = () => {
         }}
       />
 
-      {user?.familyId ? (
+      {familyId ? (
         <>
           <Tab.Screen
             name="ListStack"

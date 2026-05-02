@@ -18,7 +18,7 @@ import { useJoinFamily } from "../hooks/queries/useFamilyQueries";
 import { useTextFormatter } from "../hooks";
 import { joinFamilySchema, type JoinFamilyFormValues } from "../utils/validationSchemas";
 
-// const FAMILY_ACTION_TIMEOUT_MS = 15000;
+const FAMILY_ACTION_TIMEOUT_MS = 15000;
 
 /**
  * Maps family operation errors to user-friendly messages
@@ -46,24 +46,24 @@ const getFamilyErrorMessage = (error: unknown) => {
  * @param operation - The promise to wrap
  * @param timeoutMessage - Message to display on timeout
  */
-// async function withFamilyActionTimeout<T>(
-//   operation: Promise<T>,
-//   timeoutMessage: string,
-// ): Promise<T> {
-//   let timeoutId: ReturnType<typeof setTimeout> | undefined;
-//   try {
-//     return await Promise.race([
-//       operation,
-//       new Promise<T>((_, reject) => {
-//         timeoutId = setTimeout(() => {
-//           reject(new Error(timeoutMessage));
-//         }, FAMILY_ACTION_TIMEOUT_MS);
-//       }),
-//     ]);
-//   } finally {
-//     if (timeoutId) clearTimeout(timeoutId);
-//   }
-// }
+async function withFamilyActionTimeout<T>(
+  operation: Promise<T>,
+  timeoutMessage: string,
+): Promise<T> {
+  let timeoutId: ReturnType<typeof setTimeout> | undefined;
+  try {
+    return await Promise.race([
+      operation,
+      new Promise<T>((_, reject) => {
+        timeoutId = setTimeout(() => {
+          reject(new Error(timeoutMessage));
+        }, FAMILY_ACTION_TIMEOUT_MS);
+      }),
+    ]);
+  } finally {
+    if (timeoutId) clearTimeout(timeoutId);
+  }
+}
 
 /**
  * Premium Join Family Screen
@@ -99,47 +99,47 @@ const JoinFamilyScreen = ({
    * @param values - Validated form values containing the invite code
    */
   const handleJoin = async (values: JoinFamilyFormValues) => {
-    if (!user?.uid) return;
+    if (!user?.uid) {
+      setStatusModal({
+        visible: true,
+        title: "Join Failed",
+        message: "Session not ready. Please wait 2 seconds and try again.",
+        type: "error",
+      });
+      return;
+    }
     clearErrors("code");
 
-    joinMutation.mutate(
-      { userId: user.uid, inviteCode: values.code },
-      {
-        onSuccess: (family) => {
-          setUser({ ...user, familyId: family.id, role: "member" });
-          setStatusModal({
-            visible: true,
-            title: "Welcome!",
-            message: `You've successfully joined ${family.name}.`,
-            type: "success",
-          });
-        },
-        onError: (error) => {
-          const message = getFamilyErrorMessage(error);
-          if (message.toLowerCase().includes("invalid invite code")) {
-            setError("code", { type: "manual", message });
-            return;
-          }
-          setStatusModal({
-            visible: true,
-            title: "Join Failed",
-            message,
-            type: "error",
-          });
-        },
-      },
-    );
+    try {
+      const family = await withFamilyActionTimeout(
+        joinMutation.mutateAsync({ userId: user.uid, inviteCode: values.code }),
+        "Join timed out. Check network and Firestore rules, then try again.",
+      );
+
+      setUser({ ...user, familyId: family.id, role: "member" });
+      navigation.reset({
+        index: 0,
+        routes: [{ name: "Root" }],
+      });
+    } catch (error) {
+      const message = getFamilyErrorMessage(error);
+      if (message.toLowerCase().includes("invalid invite code")) {
+        setError("code", { type: "manual", message });
+      }
+      setStatusModal({
+        visible: true,
+        title: "Join Failed",
+        message,
+        type: "error",
+      });
+    }
   };
 
   /**
    * Handles closing the status modal and navigating back on success
    */
   const handleModalClose = () => {
-    const isSuccess = statusModal.type === "success";
     setStatusModal((prev) => ({ ...prev, visible: false }));
-    if (isSuccess) {
-      navigation.goBack();
-    }
   };
 
   return (

@@ -104,11 +104,9 @@ const CreateFamilyScreen = ({
       {
         onSuccess: (family) => {
           setUser({ ...user, familyId: family.id, role: "owner" });
-          setStatusModal({
-            visible: true,
-            title: "Family Created!",
-            message: `${family.name} is ready. Share your invite code to start collaborating.`,
-            type: "success",
+          navigation.reset({
+            index: 0,
+            routes: [{ name: "Root" }],
           });
         },
         onError: (error) => {
@@ -127,11 +125,7 @@ const CreateFamilyScreen = ({
    * Handles closing the status modal and navigating back on success
    */
   const handleModalClose = () => {
-    const isSuccess = statusModal.type === "success";
     setStatusModal((prev) => ({ ...prev, visible: false }));
-    if (isSuccess) {
-      navigation.goBack();
-    }
   };
 
   return (

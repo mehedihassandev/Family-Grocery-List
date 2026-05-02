@@ -16,6 +16,7 @@ import { signOut } from "../services/auth";
 import { useAuthStore } from "../store/useAuthStore";
 import { useCreateFamily, useJoinFamily } from "../hooks/queries/useFamilyQueries";
 import { useTextFormatter } from "../hooks";
+import { AuthenticatedStackNavigatorScreenProps, ERootRoutes } from "../types";
 
 // const FAMILY_ACTION_TIMEOUT_MS = 15000;
 
@@ -75,7 +76,9 @@ const getFamilyErrorMessage = (error: unknown) => {
  * Initial setup screen for users not yet in a family
  * Why: To guide users through creating or joining a family group immediately after signup.
  */
-const FamilySetupScreen = () => {
+const FamilySetupScreen = ({
+  navigation,
+}: AuthenticatedStackNavigatorScreenProps<ERootRoutes.FAMILY_SETUP>) => {
   const { user, setUser } = useAuthStore();
   const { toTrimmed, toInviteCode } = useTextFormatter();
   const [mode, setMode] = useState<"selection" | "create" | "join">("selection");
@@ -111,6 +114,10 @@ const FamilySetupScreen = () => {
       {
         onSuccess: (family) => {
           setUser({ ...user, familyId: family.id, role: "owner" });
+          navigation.reset({
+            index: 0,
+            routes: [{ name: "Root" }],
+          });
         },
         onError: (error) => {
           const errorMessage = getFamilyErrorMessage(error);
@@ -144,6 +151,10 @@ const FamilySetupScreen = () => {
       {
         onSuccess: (family) => {
           setUser({ ...user, familyId: family.id, role: "member" });
+          navigation.reset({
+            index: 0,
+            routes: [{ name: "Root" }],
+          });
         },
         onError: (error) => {
           const errorMessage = getFamilyErrorMessage(error);

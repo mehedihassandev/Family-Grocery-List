@@ -53,6 +53,7 @@ export const createNotification = async (
     return newNotif;
   } catch (error) {
     console.error("Create Notification Error:", error);
+    throw error;
   }
 };
 
@@ -110,5 +111,6 @@ export const markNotificationsAsRead = async (notificationIds: string[], userId:
     await batch.commit();
   } catch (error) {
     console.error("Mark Read Error:", error);
+    throw error;
   }
 };

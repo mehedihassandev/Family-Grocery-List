@@ -90,8 +90,9 @@ const PrivacySecurityScreen = ({
           <Card className="p-5 mb-4">
             <Text className="text-[16px] font-bold text-text-900 mb-2">Local storage</Text>
             <Text className="text-[13px] leading-5 text-text-secondary">
-              The app persists your session on your device using encrypted storage so you don’t need
-              to log in every time you open the app.
+              The app persists your session on your device using AsyncStorage so you don&apos;t need
+              to log in every time you open the app. Avoid using shared devices for sensitive
+              accounts.
             </Text>
           </Card>
 

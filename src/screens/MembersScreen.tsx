@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { MembersStackScreenProps, IUser } from "../types";
 import { View, Text, FlatList, Image, TouchableOpacity, Share, StatusBar } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -10,6 +10,7 @@ import {
   useRemoveMember,
   useLeaveFamily,
 } from "../hooks/queries/useFamilyQueries";
+import { syncFamilyInviteForOwner } from "../services/family";
 import { AppHeader, Card, StatusModal, LoadingOverlay } from "../components/ui";
 import NotificationModal from "../components/NotificationModal";
 import { useTextFormatter } from "../hooks";
@@ -63,6 +64,16 @@ const MembersScreen = ({ navigation }: MembersStackScreenProps<"Members">) => {
   const myRole = myMember?.role ?? user?.role;
   const isOwner = myRole === "owner";
 
+  useEffect(() => {
+    if (!user?.uid || !family?.id || !isOwner) return;
+
+    void syncFamilyInviteForOwner(family.id, user.uid).catch((error) => {
+      if (__DEV__) {
+        console.warn("Invite sync failed:", error);
+      }
+    });
+  }, [family?.id, isOwner, user?.uid]);
+
   /**
    * Opens the system share sheet with the family invite code
    */
@@ -73,7 +84,12 @@ const MembersScreen = ({ navigation }: MembersStackScreenProps<"Members">) => {
         message: `Join our family grocery list! Use invite code: ${family.inviteCode}`,
       });
     } catch (error) {
-      console.error(error);
+      setStatusModal({
+        visible: true,
+        title: "Share Failed",
+        message: error instanceof Error ? error.message : "Could not open share sheet.",
+        type: "error",
+      });
     }
   };
 

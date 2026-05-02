@@ -42,6 +42,17 @@ const AddItemScreen = ({
   const addMutation = useAddGroceryItem();
 
   const [showSuccess, setShowSuccess] = useState(false);
+  const [statusModal, setStatusModal] = useState<{
+    visible: boolean;
+    title: string;
+    message: string;
+    type: "success" | "error";
+  }>({
+    visible: false,
+    title: "",
+    message: "",
+    type: "success",
+  });
 
   useEffect(() => {
     if (!familyId) return;
@@ -65,13 +76,28 @@ const AddItemScreen = ({
    */
   const handleAddCategory = async () => {
     if (!newCatInput.trim()) return;
+    if (!familyId) {
+      setStatusModal({
+        visible: true,
+        title: "Category Failed",
+        message: "Join or create a family before adding custom categories.",
+        type: "error",
+      });
+      return;
+    }
+
     try {
       await addCustomCategory(familyId, newCatInput.trim());
       setCategory(newCatInput.trim());
       setNewCatInput("");
       setShowAddCat(false);
     } catch (error) {
-      console.error(error);
+      setStatusModal({
+        visible: true,
+        title: "Category Failed",
+        message: error instanceof Error ? error.message : "Could not add category. Please retry.",
+        type: "error",
+      });
     }
   };
 
@@ -80,6 +106,15 @@ const AddItemScreen = ({
    */
   const handleSave = async () => {
     if (!name.trim()) return;
+    if (!familyId || !user?.uid) {
+      setStatusModal({
+        visible: true,
+        title: "Add Failed",
+        message: "Family membership required before adding items.",
+        type: "error",
+      });
+      return;
+    }
 
     addMutation.mutate(
       {
@@ -101,7 +136,12 @@ const AddItemScreen = ({
           setShowSuccess(true);
         },
         onError: (error) => {
-          console.error(error);
+          setStatusModal({
+            visible: true,
+            title: "Add Failed",
+            message: error instanceof Error ? error.message : "Could not add item. Please retry.",
+            type: "error",
+          });
         },
       },
     );
@@ -123,6 +163,13 @@ const AddItemScreen = ({
         title="Item Added"
         message={`"${name}" has been added to your family list.`}
         onClose={handleSuccessClose}
+      />
+      <StatusModal
+        visible={statusModal.visible}
+        title={statusModal.title}
+        message={statusModal.message}
+        type={statusModal.type}
+        onClose={() => setStatusModal((prev) => ({ ...prev, visible: false }))}
       />
 
       <KeyboardAvoidingView

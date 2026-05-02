@@ -100,7 +100,12 @@ const EditItemScreen = ({
       setNewCatInput("");
       setShowAddCat(false);
     } catch (error) {
-      console.error(error);
+      setStatusModal({
+        visible: true,
+        title: "Category Failed",
+        message: error instanceof Error ? error.message : "Could not add category. Please retry.",
+        type: "error",
+      });
     }
   };
 
