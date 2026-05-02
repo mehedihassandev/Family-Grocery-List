@@ -31,11 +31,11 @@ import {
   signUpWithEmailCredentials,
 } from "../services/auth";
 import {
-  signInSchema,
-  signUpSchema,
+  getValidationSchema,
   type SignInFormValues,
   type SignUpFormValues,
 } from "../utils/validationSchemas";
+import { EFormModelKey, getFormDefaultValues } from "../utils";
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -65,9 +65,9 @@ const LoginScreen = () => {
   // all validation; no manual validate* functions needed.
   // ---------------------------------------------------------------------------
   const signInForm = useForm<SignInFormValues>({
-    resolver: yupResolver(signInSchema),
+    resolver: yupResolver(getValidationSchema(EFormModelKey.AUTH_SIGN_IN)),
     mode: "onTouched", // validate on blur, re-validate on change after first touch
-    defaultValues: { email: "", password: "" },
+    defaultValues: getFormDefaultValues(EFormModelKey.AUTH_SIGN_IN),
   });
 
   // ---------------------------------------------------------------------------
@@ -75,14 +75,9 @@ const LoginScreen = () => {
   // A separate form instance so switching tabs resets the inactive form state.
   // ---------------------------------------------------------------------------
   const signUpForm = useForm<SignUpFormValues>({
-    resolver: yupResolver(signUpSchema),
+    resolver: yupResolver(getValidationSchema(EFormModelKey.AUTH_SIGN_UP)),
     mode: "onTouched",
-    defaultValues: {
-      displayName: "",
-      email: "",
-      password: "",
-      confirmPassword: "",
-    },
+    defaultValues: getFormDefaultValues(EFormModelKey.AUTH_SIGN_UP),
   });
 
   // ---------------------------------------------------------------------------

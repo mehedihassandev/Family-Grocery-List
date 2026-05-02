@@ -9,12 +9,20 @@
  * in sync with validation rules.
  */
 import * as yup from "yup";
+import {
+  EFormModelKey,
+  ICreateFamilyFormModel,
+  IJoinFamilyFormModel,
+  ISignInFormModel,
+  ISignUpFormModel,
+  TFormModelMap,
+} from "./formModels";
 
 // ---------------------------------------------------------------------------
 // Auth — Sign In
 // ---------------------------------------------------------------------------
 
-export const signInSchema = yup.object({
+export const signInSchema: yup.ObjectSchema<ISignInFormModel> = yup.object({
   email: yup.string().trim().email("Enter a valid email address.").required("Email is required."),
   password: yup
     .string()
@@ -22,13 +30,13 @@ export const signInSchema = yup.object({
     .required("Password is required."),
 });
 
-export type SignInFormValues = yup.InferType<typeof signInSchema>;
+export type SignInFormValues = ISignInFormModel;
 
 // ---------------------------------------------------------------------------
 // Auth — Sign Up
 // ---------------------------------------------------------------------------
 
-export const signUpSchema = yup.object({
+export const signUpSchema: yup.ObjectSchema<ISignUpFormModel> = yup.object({
   displayName: yup
     .string()
     .trim()
@@ -47,13 +55,13 @@ export const signUpSchema = yup.object({
     .required("Please confirm your password."),
 });
 
-export type SignUpFormValues = yup.InferType<typeof signUpSchema>;
+export type SignUpFormValues = ISignUpFormModel;
 
 // ---------------------------------------------------------------------------
 // Family — Create
 // ---------------------------------------------------------------------------
 
-export const createFamilySchema = yup.object({
+export const createFamilySchema: yup.ObjectSchema<ICreateFamilyFormModel> = yup.object({
   name: yup
     .string()
     .trim()
@@ -62,13 +70,13 @@ export const createFamilySchema = yup.object({
     .required("Family name is required."),
 });
 
-export type CreateFamilyFormValues = yup.InferType<typeof createFamilySchema>;
+export type CreateFamilyFormValues = ICreateFamilyFormModel;
 
 // ---------------------------------------------------------------------------
 // Family — Join via invite code
 // ---------------------------------------------------------------------------
 
-export const joinFamilySchema = yup.object({
+export const joinFamilySchema: yup.ObjectSchema<IJoinFamilyFormModel> = yup.object({
   code: yup
     .string()
     .trim()
@@ -78,4 +86,17 @@ export const joinFamilySchema = yup.object({
     .required("Invite code is required."),
 });
 
-export type JoinFamilyFormValues = yup.InferType<typeof joinFamilySchema>;
+export type JoinFamilyFormValues = IJoinFamilyFormModel;
+
+export const formSchemaMap: {
+  [K in EFormModelKey]: yup.ObjectSchema<TFormModelMap[K]>;
+} = {
+  [EFormModelKey.AUTH_SIGN_IN]: signInSchema,
+  [EFormModelKey.AUTH_SIGN_UP]: signUpSchema,
+  [EFormModelKey.FAMILY_CREATE]: createFamilySchema,
+  [EFormModelKey.FAMILY_JOIN]: joinFamilySchema,
+};
+
+export const getValidationSchema = <T extends EFormModelKey>(
+  formKey: T,
+): yup.ObjectSchema<TFormModelMap[T]> => formSchemaMap[formKey];
