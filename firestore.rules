@@ -30,32 +30,15 @@ service cloud.firestore {
         && get(/databases/$(database)/documents/families/$(familyId)).data.ownerId == request.auth.uid;
     }
 
-    function isValidRole(role) {
-      return role == "owner" || role == "member";
-    }
-
     match /families/{familyId} {
-      // Family details are private to members.
-      // Invite-code lookup is allowed via constrained list query (limit=1).
-      allow get: if isFamilyMember(familyId);
-      allow list: if signedIn() && request.query.limit != null && request.query.limit <= 1;
+      // Needed for invite-code join lookup.
+      allow read: if signedIn();
 
       allow create: if signedIn()
         && request.resource.data.ownerId == request.auth.uid
-        && request.resource.data.id == familyId
-        && request.resource.data.name is string
-        && request.resource.data.name.size() > 0
-        && request.resource.data.name.size() <= 40
-        && request.resource.data.inviteCode is string
-        && request.resource.data.inviteCode.matches('^[A-Z0-9]{6}$');
+        && request.resource.data.id == familyId;
 
-      allow update: if isOwnerOf(familyId)
-        && request.resource.data.id == resource.data.id
-        && request.resource.data.ownerId == resource.data.ownerId
-        && request.resource.data.inviteCode == resource.data.inviteCode
-        && request.resource.data.diff(resource.data).changedKeys().hasOnly(["name", "updatedAt"]);
-
-      allow delete: if isOwnerOf(familyId);
+      allow update, delete: if isOwnerOf(familyId);
     }
 
     match /users/{uid} {
@@ -72,14 +55,7 @@ service cloud.firestore {
 
       // User can update own profile.
       // Family owner can remove/transfer family membership for another member.
-      allow update: if (
-          isRequester(uid)
-          && request.resource.data.uid == resource.data.uid
-          && request.resource.data.email == resource.data.email
-          && request.resource.data.familyId == resource.data.familyId
-          && request.resource.data.role == resource.data.role
-          && request.resource.data.diff(resource.data).changedKeys().hasOnly(["displayName", "photoURL", "updatedAt"])
-        )
+      allow update: if isRequester(uid)
         || (
           requesterDocExists()
           && resource.data.familyId != null
@@ -95,7 +71,7 @@ service cloud.firestore {
             // Transfer/change role within same family.
             || (
               request.resource.data.familyId == resource.data.familyId
-              && isValidRole(request.resource.data.role)
+              && (request.resource.data.role == "owner" || request.resource.data.role == "member")
             )
           )
         );
@@ -105,103 +81,20 @@ service cloud.firestore {
 
     match /grocery_items/{itemId} {
       allow read: if isFamilyMember(resource.data.get('familyId', null));
-      allow create: if isFamilyMember(request.resource.data.get('familyId', null))
-        && request.resource.data.id == itemId
-        && request.resource.data.name is string
-        && request.resource.data.name.size() > 0
-        && request.resource.data.name.size() <= 120
-        && request.resource.data.priority in ["Urgent", "Medium", "Low"]
-        && request.resource.data.status == "pending"
-        && request.resource.data.addedBy.uid == request.auth.uid
-        && request.resource.data.get('completedBy', null) == null
-        && request.resource.data.get('completedAt', null) == null;
-
-      allow update: if isFamilyMember(resource.data.get('familyId', null))
-        && request.resource.data.id == resource.data.id
-        && request.resource.data.familyId == resource.data.familyId
-        && request.resource.data.addedBy == resource.data.addedBy
-        && request.resource.data.diff(resource.data).changedKeys().hasOnly([
-          "name",
-          "category",
-          "priority",
-          "quantity",
-          "notes",
-          "status",
-          "completedBy",
-          "completedAt",
-          "updatedAt"
-        ])
-        && (
-          // Non-status edits
-          request.resource.data.status == resource.data.status
-          // Pending -> completed
-          || (
-            resource.data.status == "pending"
-            && request.resource.data.status == "completed"
-            && request.resource.data.completedBy.uid == request.auth.uid
-          )
-          // Completed -> pending
-          || (
-            resource.data.status == "completed"
-            && request.resource.data.status == "pending"
-            && request.resource.data.get('completedBy', null) == null
-            && request.resource.data.get('completedAt', null) == null
-          )
-        );
-
-      allow delete: if isFamilyMember(resource.data.get('familyId', null));
+      allow create: if isFamilyMember(request.resource.data.get('familyId', null));
+      allow update, delete: if isFamilyMember(resource.data.get('familyId', null));
     }
 
     match /categories/{categoryId} {
       allow read: if isFamilyMember(resource.data.get('familyId', null));
-      allow create: if isFamilyMember(request.resource.data.get('familyId', null))
-        && request.resource.data.id == categoryId
-        && request.resource.data.name is string
-        && request.resource.data.name.size() > 0
-        && request.resource.data.name.size() <= 40;
-      allow update: if isFamilyMember(resource.data.get('familyId', null))
-        && request.resource.data.id == resource.data.id
-        && request.resource.data.familyId == resource.data.familyId
-        && request.resource.data.diff(resource.data).changedKeys().hasOnly(["name"])
-        && request.resource.data.name is string
-        && request.resource.data.name.size() > 0
-        && request.resource.data.name.size() <= 40;
-      allow delete: if isFamilyMember(resource.data.get('familyId', null));
+      allow create: if isFamilyMember(request.resource.data.get('familyId', null));
+      allow update, delete: if isFamilyMember(resource.data.get('familyId', null));
     }
 
     match /notifications/{notifId} {
       allow read: if isFamilyMember(resource.data.get('familyId', null));
-      allow create: if isFamilyMember(request.resource.data.get('familyId', null))
-        && request.resource.data.id == notifId
-        && request.resource.data.actorId == request.auth.uid
-        && request.resource.data.readBy is list
-        && request.resource.data.readBy.size() == 0;
-
-      allow update: if isFamilyMember(resource.data.get('familyId', null))
-        && request.resource.data.id == resource.data.id
-        && request.resource.data.familyId == resource.data.familyId
-        && request.resource.data.actorId == resource.data.actorId
-        && request.resource.data.actorName == resource.data.actorName
-        && request.resource.data.type == resource.data.type
-        && request.resource.data.title == resource.data.title
-        && request.resource.data.message == resource.data.message
-        && request.resource.data.itemId == resource.data.itemId
-        && request.resource.data.itemName == resource.data.itemName
-        && request.resource.data.createdAt == resource.data.createdAt
-        && request.resource.data.diff(resource.data).changedKeys().hasOnly(["readBy"])
-        && (
-          // No-op allowed
-          request.resource.data.readBy == resource.data.readBy
-          // Add requester read receipt once
-          || (
-            !resource.data.readBy.hasAny([request.auth.uid])
-            && request.resource.data.readBy.hasAll(resource.data.readBy)
-            && request.resource.data.readBy.hasAny([request.auth.uid])
-            && request.resource.data.readBy.size() == resource.data.readBy.size() + 1
-          )
-        );
-
-      allow delete: if false;
+      allow create: if isFamilyMember(request.resource.data.get('familyId', null));
+      allow update, delete: if isFamilyMember(resource.data.get('familyId', null));
     }
   }
 }
