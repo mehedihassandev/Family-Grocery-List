@@ -1,6 +1,5 @@
 import React, { useMemo, useState } from "react";
 import { AnalyzeStackScreenProps } from "../types";
-import { ERootRoutes } from "../navigation/routes";
 import { ScrollView, StatusBar, Text, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import {
@@ -37,7 +36,7 @@ const getDataErrorMessage = (error: Error) => {
  * Fix: Re-implemented DonutChart using react-native-gifted-charts for stability and animation.
  * Note: Enforces a single light theme.
  */
-const AnalyzeScreen = ({ navigation }: any) => {
+const AnalyzeScreen = ({ navigation }: AnalyzeStackScreenProps<"Analyze">) => {
   const { user } = useAuthStore();
   const { toDate, toMonthYear } = useDateFormatter();
   const [isNotifOpen, setNotifOpen] = useState(false);

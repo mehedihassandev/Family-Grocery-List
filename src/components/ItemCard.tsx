@@ -3,7 +3,7 @@ import { View, Text, TouchableOpacity, Image } from "react-native";
 import { Check } from "lucide-react-native";
 import { IGroceryItem } from "../types";
 import { useDateFormatter, useTextFormatter } from "../hooks";
-import { Card, PriorityBadge } from "./ui";
+import { PriorityBadge } from "./ui";
 
 interface IItemCardProps {
   item: IGroceryItem;

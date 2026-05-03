@@ -709,7 +709,7 @@ export const signOut = async () => {
  * Why: To ensure the application state is always in sync with both Auth and user profile data.
  */
 export const listenToAuthChanges = () => {
-  const { setUser, setLoading } = useAuthStore.getState();
+  const { setUser, setLoading, setProfileSynced } = useAuthStore.getState();
   let authEventVersion = 0;
   let userDocUnsubscribe: (() => void) | null = null;
 
@@ -724,6 +724,7 @@ export const listenToAuthChanges = () => {
 
     try {
       if (firebaseUser) {
+        setProfileSynced(false);
         // 1. Set initial basic info from Auth (fastest UI update)
         setUser(mapFirebaseUserToAppUser(firebaseUser));
 
@@ -743,16 +744,20 @@ export const listenToAuthChanges = () => {
             if (snapshot.exists()) {
               const userData = snapshot.data() as Partial<IUser>;
               setUser(mapFirebaseUserToAppUser(firebaseUser, userData));
+              setProfileSynced(true);
             } else {
+              setProfileSynced(false);
               // Document doesn't exist yet, try to create it (fallback logic)
               void upsertUserProfile(firebaseUser);
             }
           },
           (error) => {
+            setProfileSynced(false);
             if (__DEV__) console.warn("User Doc Listener Error:", error);
           },
         );
       } else {
+        setProfileSynced(false);
         setUser(null);
         await clearPersistedAuthSession();
       }
@@ -767,7 +772,9 @@ export const listenToAuthChanges = () => {
         auth.currentUser?.uid === firebaseUser.uid
       ) {
         setUser(mapFirebaseUserToAppUser(firebaseUser));
+        setProfileSynced(false);
       } else {
+        setProfileSynced(false);
         setUser(null);
         await clearPersistedAuthSession();
       }

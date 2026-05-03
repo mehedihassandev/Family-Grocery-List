@@ -11,6 +11,7 @@ import {
 } from "../../services/family";
 import { QUERY_KEYS } from "../../constants/query-keys";
 import { IFamily, IUser } from "../../types";
+import { useAuthStore } from "../../store/useAuthStore";
 
 /**
  * Real-time hook for family details
@@ -18,9 +19,11 @@ import { IFamily, IUser } from "../../types";
  */
 export const useFamilyDetails = (familyId?: string | null) => {
   const queryClient = useQueryClient();
+  const { hasHydrated, loading, profileSynced, user } = useAuthStore();
+  const canSubscribe = Boolean(familyId && hasHydrated && !loading && profileSynced && user?.uid);
 
   useEffect(() => {
-    if (!familyId) return;
+    if (!familyId || !canSubscribe) return;
 
     // Set up real-time listener
     const unsubscribe = onSnapshot(
@@ -38,12 +41,12 @@ export const useFamilyDetails = (familyId?: string | null) => {
     );
 
     return () => unsubscribe();
-  }, [familyId, queryClient]);
+  }, [canSubscribe, familyId, queryClient]);
 
   return useQuery<IFamily | null>({
     queryKey: [QUERY_KEYS.FAMILY, familyId],
     queryFn: () => (familyId ? getFamilyDetails(familyId) : null),
-    enabled: !!familyId,
+    enabled: canSubscribe,
   });
 };
 
@@ -54,9 +57,11 @@ export const useFamilyDetails = (familyId?: string | null) => {
 export const useFamilyMembers = (familyId?: string | null) => {
   const queryClient = useQueryClient();
   const queryKey = [QUERY_KEYS.FAMILY_MEMBERS, familyId] as const;
+  const { hasHydrated, loading, profileSynced, user } = useAuthStore();
+  const canSubscribe = Boolean(familyId && hasHydrated && !loading && profileSynced && user?.uid);
 
   useEffect(() => {
-    if (!familyId) return;
+    if (!familyId || !canSubscribe) return;
 
     const q = query(collection(db, "users"), where("familyId", "==", familyId));
     const unsubscribe = onSnapshot(
@@ -78,7 +83,7 @@ export const useFamilyMembers = (familyId?: string | null) => {
     );
 
     return () => unsubscribe();
-  }, [familyId, queryClient]);
+  }, [canSubscribe, familyId, queryClient]);
 
   return useQuery<IUser[]>({
     queryKey,
@@ -95,7 +100,7 @@ export const useFamilyMembers = (familyId?: string | null) => {
         };
       });
     },
-    enabled: !!familyId,
+    enabled: canSubscribe,
   });
 };
 

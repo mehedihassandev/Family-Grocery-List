@@ -79,11 +79,11 @@ const TabIcon = ({
 const TabNavigator = () => {
   const insets = useSafeAreaInsets();
   const tabBarPaddingBottom = Math.max(insets.bottom, 10);
-  const { user, loading, hasHydrated } = useAuthStore();
+  const { user, loading, hasHydrated, profileSynced } = useAuthStore();
   const initNotifications = useNotificationStore((state) => state.init);
   const clearNotifications = useNotificationStore((state) => state.clear);
   const authReady = hasHydrated && !loading;
-  const familyId = authReady ? user?.familyId : null;
+  const familyId = authReady && profileSynced ? user?.familyId : null;
 
   useEffect(() => {
     if (familyId) {
@@ -95,7 +95,7 @@ const TabNavigator = () => {
   }, [clearNotifications, familyId, initNotifications]);
 
   useEffect(() => {
-    if (!authReady || !user?.uid || !familyId || user.role !== "owner") {
+    if (!authReady || !profileSynced || !user?.uid || !familyId || user.role !== "owner") {
       return;
     }
     void syncFamilyInviteForOwner(familyId, user.uid).catch((error) => {
@@ -103,7 +103,7 @@ const TabNavigator = () => {
         console.warn("Owner invite sync failed:", error);
       }
     });
-  }, [authReady, familyId, user?.role, user?.uid]);
+  }, [authReady, familyId, profileSynced, user?.role, user?.uid]);
 
   return (
     <Tab.Navigator

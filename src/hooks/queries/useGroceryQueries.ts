@@ -11,6 +11,7 @@ import {
 } from "../../services/grocery";
 import { QUERY_KEYS } from "../../constants/query-keys";
 import { IGroceryItem } from "../../types";
+import { useAuthStore } from "../../store/useAuthStore";
 
 /**
  * Real-time hook for family grocery list
@@ -19,9 +20,11 @@ import { IGroceryItem } from "../../types";
 export const useGroceryList = (familyId?: string | null) => {
   const queryClient = useQueryClient();
   const queryKey = [QUERY_KEYS.GROCERY_LIST, familyId] as const;
+  const { hasHydrated, loading, profileSynced, user } = useAuthStore();
+  const canSubscribe = Boolean(familyId && hasHydrated && !loading && profileSynced && user?.uid);
 
   useEffect(() => {
-    if (!familyId) return;
+    if (!familyId || !canSubscribe) return;
 
     const q = query(collection(db, "grocery_items"), where("familyId", "==", familyId));
     const unsubscribe = onSnapshot(
@@ -43,7 +46,7 @@ export const useGroceryList = (familyId?: string | null) => {
     );
 
     return () => unsubscribe();
-  }, [familyId, queryClient]);
+  }, [canSubscribe, familyId, queryClient]);
 
   return useQuery<IGroceryItem[]>({
     queryKey,
@@ -60,7 +63,7 @@ export const useGroceryList = (familyId?: string | null) => {
         };
       });
     },
-    enabled: !!familyId,
+    enabled: canSubscribe,
   });
 };
 

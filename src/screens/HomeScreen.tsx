@@ -31,7 +31,6 @@ import EmptyState from "../components/EmptyState";
 import { GROCERY_CATEGORIES, sortLegacyGroceryItemsForHome } from "../features/grocery";
 import { AppHeader, Chip } from "../components/ui";
 import NotificationModal from "../components/NotificationModal";
-import { useTextFormatter } from "../hooks";
 
 type TStatusFilter = "all" | "pending" | "completed";
 type TDueFilter = "all" | "overdue" | "due_soon";
@@ -91,7 +90,6 @@ const getFirebaseErrorMessage = (error: Error) => {
  */
 const HomeScreen = ({ navigation }: ListStackScreenProps<"List">) => {
   const { user } = useAuthStore();
-  const { toTrimmed } = useTextFormatter();
   const insets = useSafeAreaInsets();
   const [statusFilter, setStatusFilter] = useState<TStatusFilter>("pending");
   const [dueFilter, setDueFilter] = useState<TDueFilter>("all");
