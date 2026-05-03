@@ -1,14 +1,6 @@
 import React, { useMemo, useState } from "react";
 import { HomeStackScreenProps } from "../types";
-import {
-  ScrollView,
-  StatusBar,
-  Text,
-  View,
-  TouchableOpacity,
-  Image,
-  TextInput,
-} from "react-native";
+import { ScrollView, StatusBar, Text, View, TouchableOpacity, Image } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import {
   BarChart3,
@@ -21,34 +13,16 @@ import {
   Bell,
   ArrowRight,
   TrendingUp,
+  AlertTriangle,
 } from "lucide-react-native";
 import { useAuthStore } from "../store/useAuthStore";
-import {
-  useFamilyDetails,
-  useFamilyMembers,
-  useJoinFamily,
-} from "../hooks/queries/useFamilyQueries";
+import { useFamilyDetails, useFamilyMembers } from "../hooks/queries/useFamilyQueries";
 import { useGroceryList } from "../hooks/queries/useGroceryQueries";
-import {
-  Card,
-  ShortcutCard,
-  ProgressBar,
-  DonutChart,
-  PriorityBadge,
-  LoadingOverlay,
-  StatusModal,
-} from "../components/ui";
+import { useDateFormatter, useTextFormatter } from "../hooks";
+import { Card, ShortcutCard, ProgressBar, DonutChart, PriorityBadge } from "../components/ui";
 import NotificationModal from "../components/NotificationModal";
+import { useNotificationStore } from "../store/useNotificationStore";
 import { ERootRoutes, ETabRoutes } from "../navigation/routes";
-
-// Helper to convert Firebase Timestamp or Date string to Date object
-const toDate = (value: any): Date | null => {
-  if (!value) return null;
-  if (value instanceof Date) return value;
-  if (typeof value === "object" && value.toDate) return value.toDate();
-  const d = new Date(value);
-  return isNaN(d.getTime()) ? null : d;
-};
 
 /**
  * Premium Dashboard Screen
@@ -58,29 +32,23 @@ const toDate = (value: any): Date | null => {
  */
 const DashboardScreen = ({ navigation }: HomeStackScreenProps<"Home">) => {
   const { user } = useAuthStore();
+  const { toDate, toRelativeTime, toMonthYear } = useDateFormatter();
+  const { toInitial, toTrimmed } = useTextFormatter();
   const [isNotifOpen, setNotifOpen] = useState(false);
 
   // TanStack Query Hooks
   const { data: family } = useFamilyDetails(user?.familyId);
   const { data: members = [] } = useFamilyMembers(user?.familyId);
   const { data: items = [] } = useGroceryList(user?.familyId);
-  const joinFamilyMutation = useJoinFamily();
 
   const familyName = family?.name || "Our Family";
 
-  // UI State
-  const [joinCode, setJoinCode] = useState("");
-  const [statusModal, setStatusModal] = useState<{
-    visible: boolean;
-    title: string;
-    message: string;
-    type: "success" | "error";
-  }>({
-    visible: false,
-    title: "",
-    message: "",
-    type: "success",
-  });
+  const notifications = useNotificationStore((state) => state.notifications);
+  const notificationError = useNotificationStore((state) => state.error);
+  const unreadCount = notifications.filter(
+    (notification) =>
+      notification.actorId !== user?.uid && !notification.readBy.includes(user?.uid || ""),
+  ).length;
 
   // Stats Calculations
   const pendingItems = useMemo(() => items.filter((item) => item.status === "pending"), [items]);
@@ -94,6 +62,49 @@ const DashboardScreen = ({ navigation }: HomeStackScreenProps<"Home">) => {
   const totalCount = items.length;
   const urgentCount = pendingItems.filter((item) => item.priority === "Urgent").length;
   const completionRate = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
+  const hasInvitedMember = members.length > 1;
+  const hasAddedItem = totalCount > 0;
+  const hasCompletedItem = completedCount > 0;
+  const onboardingTasks = useMemo(
+    () => [
+      {
+        id: "invite_member",
+        title: "Invite one member",
+        done: hasInvitedMember,
+        cta: "Open Members",
+        onPress: () => navigation.navigate(ETabRoutes.MEMBERS),
+      },
+      {
+        id: "add_item",
+        title: "Add first grocery item",
+        done: hasAddedItem,
+        cta: "Add Item",
+        onPress: () => navigation.navigate(ERootRoutes.ADD_ITEM),
+      },
+      {
+        id: "complete_item",
+        title: "Mark one item complete",
+        done: hasCompletedItem,
+        cta: "Open List",
+        onPress: () => navigation.navigate(ETabRoutes.LIST),
+      },
+    ],
+    [hasAddedItem, hasCompletedItem, hasInvitedMember, navigation],
+  );
+  const onboardingDoneCount = onboardingTasks.filter((task) => task.done).length;
+  const showOwnerOnboarding =
+    user?.role === "owner" && onboardingDoneCount < onboardingTasks.length;
+  const estimatedSpend = useMemo(() => {
+    return items.reduce((sum, item) => {
+      if (typeof item.estimatedTotal === "number" && Number.isFinite(item.estimatedTotal)) {
+        return sum + item.estimatedTotal;
+      }
+      if (typeof item.unitPrice === "number" && Number.isFinite(item.unitPrice)) {
+        return sum + item.unitPrice;
+      }
+      return sum;
+    }, 0);
+  }, [items]);
 
   const categoryStats = useMemo(() => {
     const stats: Record<string, number> = {};
@@ -113,9 +124,10 @@ const DashboardScreen = ({ navigation }: HomeStackScreenProps<"Home">) => {
         return bDate - aDate;
       })
       .slice(0, 3);
-  }, [pendingItems]);
+  }, [pendingItems, toDate]);
 
   const nextItem = recentPending[0];
+  const currentMonthLabel = useMemo(() => toMonthYear(new Date()), [toMonthYear]);
 
   const getGreeting = () => {
     const hour = new Date().getHours();
@@ -124,53 +136,15 @@ const DashboardScreen = ({ navigation }: HomeStackScreenProps<"Home">) => {
     return "Good evening";
   };
 
-  const firstName = user?.displayName?.split(" ")[0] || "Friend";
-
-  /**
-   * Joins a family group using the entered invite code
-   */
-  const handleJoinFamily = async () => {
-    if (!user || !joinCode.trim()) return;
-
-    joinFamilyMutation.mutate(
-      { userId: user.uid, inviteCode: joinCode.trim() },
-      {
-        onSuccess: (family) => {
-          // Update store immediately for instant UI response
-          const { setUser } = useAuthStore.getState();
-          setUser({ ...user, familyId: family.id, role: "member" });
-
-          setStatusModal({
-            visible: true,
-            title: "Welcome Home!",
-            message: `You have successfully joined ${family.name}.`,
-            type: "success",
-          });
-          setJoinCode("");
-        },
-        onError: (error: any) => {
-          setStatusModal({
-            visible: true,
-            title: "Join Failed",
-            message: error.message || "Could not join family. Please check the code.",
-            type: "error",
-          });
-        },
-      },
-    );
-  };
+  const firstName = useMemo(() => {
+    const normalized = toTrimmed(user?.displayName);
+    if (!normalized) return "Friend";
+    return normalized.split(/\s+/)[0];
+  }, [toTrimmed, user?.displayName]);
 
   return (
     <SafeAreaView edges={["top", "left", "right"]} className="flex-1 bg-background">
       <StatusBar barStyle="dark-content" />
-      <LoadingOverlay visible={joinFamilyMutation.isPending} />
-      <StatusModal
-        visible={statusModal.visible}
-        title={statusModal.title}
-        message={statusModal.message}
-        type={statusModal.type}
-        onClose={() => setStatusModal((prev) => ({ ...prev, visible: false }))}
-      />
 
       {/* Modern Header with Avatar & Notification */}
       <View className="px-6 py-4 flex-row items-center justify-between">
@@ -179,9 +153,7 @@ const DashboardScreen = ({ navigation }: HomeStackScreenProps<"Home">) => {
             {user?.photoURL ? (
               <Image source={{ uri: user.photoURL }} className="h-full w-full" />
             ) : (
-              <Text className="text-white font-bold text-xl">
-                {firstName.charAt(0).toUpperCase()}
-              </Text>
+              <Text className="text-white font-bold text-xl">{toInitial(firstName)}</Text>
             )}
           </View>
           <View className="ml-3">
@@ -196,7 +168,13 @@ const DashboardScreen = ({ navigation }: HomeStackScreenProps<"Home">) => {
           className="h-12 w-12 rounded-2xl bg-white items-center justify-center border border-border shadow-xs"
         >
           <Bell size={22} stroke="#4A5568" />
-          <View className="absolute top-3 right-3 h-2.5 w-2.5 rounded-full bg-danger-DEFAULT border-2 border-white" />
+          {unreadCount > 0 ? (
+            <View className="absolute -right-1 -top-1 h-5 min-w-[20px] items-center justify-center rounded-full border-2 border-surface bg-danger px-1">
+              <Text className="text-[9px] font-bold text-white">
+                {unreadCount > 99 ? "99+" : unreadCount}
+              </Text>
+            </View>
+          ) : null}
         </TouchableOpacity>
       </View>
 
@@ -206,6 +184,17 @@ const DashboardScreen = ({ navigation }: HomeStackScreenProps<"Home">) => {
         className="flex-1"
       >
         <View className="px-6">
+          {notificationError ? (
+            <View className="mb-4 rounded-2xl border border-warning-light bg-warning-light/40 px-4 py-3">
+              <View className="flex-row items-start">
+                <AlertTriangle size={16} stroke="#F5A623" />
+                <Text className="ml-2 flex-1 text-[12px] font-medium leading-5 text-warning-dark">
+                  Live activity feed issue: {notificationError}
+                </Text>
+              </View>
+            </View>
+          ) : null}
+
           {user?.familyId ? (
             <>
               {/* Family Group Card */}
@@ -225,7 +214,7 @@ const DashboardScreen = ({ navigation }: HomeStackScreenProps<"Home">) => {
                       onPress={() => navigation.navigate(ETabRoutes.MEMBERS)}
                       className="h-11 w-11 rounded-xl bg-primary-50 items-center justify-center border border-primary-100"
                     >
-                      <Users size={20} stroke="#3DB87A" />
+                      <Users size={20} stroke="#10B981" />
                     </TouchableOpacity>
                   </View>
 
@@ -236,11 +225,11 @@ const DashboardScreen = ({ navigation }: HomeStackScreenProps<"Home">) => {
                           key={m.uid}
                           className={`h-7 w-7 rounded-full border-2 border-white items-center justify-center ${i > 0 ? "-ml-2" : ""}`}
                           style={{
-                            backgroundColor: i === 0 ? "#3DB87A" : i === 1 ? "#4A90D9" : "#F5A623",
+                            backgroundColor: i === 0 ? "#10B981" : i === 1 ? "#4A90D9" : "#F5A623",
                           }}
                         >
                           <Text className="text-white text-[10px] font-bold">
-                            {m.displayName?.charAt(0).toUpperCase()}
+                            {toInitial(m.displayName)}
                           </Text>
                         </View>
                       ))}
@@ -261,7 +250,7 @@ const DashboardScreen = ({ navigation }: HomeStackScreenProps<"Home">) => {
                     </View>
                     <View className="w-[1px] bg-border/50 mx-2" />
                     <View className="flex-1 items-center">
-                      <CheckCircle2 size={18} stroke="#3DB87A" className="mb-2" />
+                      <CheckCircle2 size={18} stroke="#10B981" className="mb-2" />
                       <Text className="text-2xl font-bold text-text-primary">{completedCount}</Text>
                       <Text className="text-[10px] font-bold text-text-muted uppercase tracking-wider">
                         Done
@@ -279,11 +268,50 @@ const DashboardScreen = ({ navigation }: HomeStackScreenProps<"Home">) => {
                 </View>
               </Card>
 
+              {/* Owner onboarding checklist */}
+              {showOwnerOnboarding ? (
+                <Card className="mb-8 p-5 border-primary-100 bg-primary-50/20">
+                  <View className="flex-row items-center justify-between mb-4">
+                    <Text className="text-[16px] font-bold text-text-primary">Quick Setup</Text>
+                    <Text className="text-[12px] font-bold text-primary-600">
+                      {onboardingDoneCount}/{onboardingTasks.length} done
+                    </Text>
+                  </View>
+                  {onboardingTasks.map((task) => (
+                    <View
+                      key={task.id}
+                      className="mb-3 flex-row items-center justify-between rounded-xl border border-border/60 bg-white px-3 py-3"
+                    >
+                      <View className="mr-3 flex-1 flex-row items-center">
+                        <CheckCircle2
+                          size={16}
+                          stroke={task.done ? "#10B981" : "#C0C8D2"}
+                          strokeWidth={2}
+                        />
+                        <Text
+                          className={`ml-2 text-[13px] ${task.done ? "font-semibold text-text-secondary" : "font-bold text-text-primary"}`}
+                        >
+                          {task.title}
+                        </Text>
+                      </View>
+                      {!task.done ? (
+                        <TouchableOpacity
+                          onPress={task.onPress}
+                          className="rounded-lg bg-primary-500 px-3 py-2"
+                        >
+                          <Text className="text-[11px] font-bold text-white">{task.cta}</Text>
+                        </TouchableOpacity>
+                      ) : null}
+                    </View>
+                  ))}
+                </Card>
+              ) : null}
+
               {/* Shopping Progress Bar */}
               <Card className="mb-8 p-5">
                 <View className="flex-row justify-between items-center mb-3">
                   <View className="flex-row items-center">
-                    <ShoppingBasket size={18} stroke="#3DB87A" />
+                    <ShoppingBasket size={18} stroke="#10B981" />
                     <Text className="ml-2 text-[15px] font-bold text-text-primary">
                       Shopping Progress
                     </Text>
@@ -301,6 +329,24 @@ const DashboardScreen = ({ navigation }: HomeStackScreenProps<"Home">) => {
                 </View>
               </Card>
 
+              <Card className="mb-8 p-5 border-primary-100 bg-primary-50/20">
+                <View className="flex-row items-center justify-between">
+                  <View>
+                    <Text className="text-[11px] font-bold uppercase tracking-wider text-text-muted">
+                      Estimated Spend
+                    </Text>
+                    <Text className="mt-1 text-[24px] font-bold tracking-tight text-text-primary">
+                      ${estimatedSpend.toFixed(2)}
+                    </Text>
+                  </View>
+                  <View className="rounded-xl bg-white px-3 py-2 border border-border/60">
+                    <Text className="text-[11px] font-bold text-primary-600">
+                      {totalCount} item{totalCount !== 1 ? "s" : ""}
+                    </Text>
+                  </View>
+                </View>
+              </Card>
+
               {/* Main Stats Card with Professional Donut Chart */}
               <Card className="mb-8">
                 <View className="flex-row items-center">
@@ -308,7 +354,7 @@ const DashboardScreen = ({ navigation }: HomeStackScreenProps<"Home">) => {
                     <DonutChart
                       total={totalCount}
                       data={[
-                        { value: completedCount, color: "#3DB87A" },
+                        { value: completedCount, color: "#10B981" },
                         { value: Math.max(0, pendingCount - urgentCount), color: "#F5A623" },
                         { value: urgentCount, color: "#E55C5C" },
                       ]}
@@ -359,7 +405,7 @@ const DashboardScreen = ({ navigation }: HomeStackScreenProps<"Home">) => {
                     key={cat}
                     label={cat}
                     progress={(count / (totalCount || 1)) * 100}
-                    color={cat === "Beauty" ? "#3DB87A" : "#F5A623"}
+                    color={cat === "Beauty" ? "#10B981" : "#F5A623"}
                     height={6}
                   />
                 ))}
@@ -374,7 +420,7 @@ const DashboardScreen = ({ navigation }: HomeStackScreenProps<"Home">) => {
                   <Card className="mb-8 border-primary-100 bg-primary-50/20 p-4 border-2">
                     <View className="flex-row items-center">
                       <View className="h-12 w-12 rounded-xl bg-primary-100 items-center justify-center">
-                        <ArrowRight size={22} stroke="#3DB87A" />
+                        <ArrowRight size={22} stroke="#10B981" />
                       </View>
                       <View className="ml-4 flex-1">
                         <Text className="text-primary-500 text-[10px] font-black uppercase tracking-wider mb-0.5">
@@ -399,55 +445,21 @@ const DashboardScreen = ({ navigation }: HomeStackScreenProps<"Home">) => {
           ) : (
             <Card className="mb-8 py-10 items-center">
               <View className="h-20 w-20 rounded-3xl bg-primary-50 items-center justify-center mb-6">
-                <UsersRound size={40} stroke="#3DB87A" strokeWidth={1.5} />
+                <UsersRound size={40} stroke="#10B981" strokeWidth={1.5} />
               </View>
               <Text className="text-2xl font-bold text-text-primary text-center px-4 tracking-tight">
-                Join a Family Group
+                Set Up Your Family
               </Text>
               <Text className="text-text-secondary text-center mt-3 mb-8 px-6 leading-6">
-                Collaboration is better! Join your family to share grocery lists and see real-time
-                updates.
+                Use one setup flow to create or join family, then unlock list, members, analytics.
               </Text>
 
-              <View className="w-full px-4 mb-4">
-                <View className="flex-row items-center rounded-[20px] border border-border bg-white px-5 mb-4 shadow-xs">
-                  <Users size={18} stroke="#9AA3AF" />
-                  <TextInput
-                    value={joinCode}
-                    onChangeText={setJoinCode}
-                    placeholder="INVITE CODE"
-                    placeholderTextColor="#C0C8D2"
-                    className="h-14 flex-1 ml-3 text-[16px] font-black text-text-primary tracking-[3px] uppercase"
-                    autoCapitalize="characters"
-                    maxLength={6}
-                  />
-                </View>
-                <TouchableOpacity
-                  onPress={handleJoinFamily}
-                  activeOpacity={0.8}
-                  className="bg-primary-500 w-full py-3 rounded-[20px] items-center shadow-lg shadow-primary-500/25"
-                >
-                  <View className="flex-row items-center">
-                    <Text className="text-white font-bold text-[17px] mr-2">Join Family Group</Text>
-                    <ArrowRight size={18} stroke="white" strokeWidth={3} />
-                  </View>
-                </TouchableOpacity>
-              </View>
-
-              <View className="flex-row items-center my-6 w-full px-10">
-                <View className="h-[1px] flex-1 bg-border/40" />
-                <Text className="mx-4 text-text-muted font-black text-[10px] tracking-widest uppercase">
-                  OR
-                </Text>
-                <View className="h-[1px] flex-1 bg-border/40" />
-              </View>
-
               <TouchableOpacity
-                onPress={() => navigation.navigate(ERootRoutes.CREATE_FAMILY)}
-                activeOpacity={0.7}
-                className="w-[90%] py-3 rounded-2xl items-center border border-primary-500/20 bg-primary-50/20"
+                onPress={() => navigation.navigate(ERootRoutes.FAMILY_SETUP)}
+                activeOpacity={0.8}
+                className="w-[90%] rounded-2xl bg-primary-500 py-3 items-center"
               >
-                <Text className="text-primary-600 font-bold text-[15px]">Create New Family</Text>
+                <Text className="text-white font-bold text-[15px]">Continue Setup</Text>
               </TouchableOpacity>
             </Card>
           )}
@@ -474,7 +486,7 @@ const DashboardScreen = ({ navigation }: HomeStackScreenProps<"Home">) => {
                 <ShortcutCard
                   icon={BarChart3}
                   label="Analyze"
-                  onPress={() => navigation.navigate(ETabRoutes.ANALYZE)}
+                  onPress={() => navigation.navigate(ERootRoutes.ANALYZE)}
                   iconBgColor="bg-primary-50/50"
                 />
                 <ShortcutCard
@@ -494,14 +506,16 @@ const DashboardScreen = ({ navigation }: HomeStackScreenProps<"Home">) => {
                 <Text className="text-text-primary text-[18px] font-bold tracking-tight">
                   Analytics Overview
                 </Text>
-                <TouchableOpacity onPress={() => navigation.navigate(ETabRoutes.ANALYZE)}>
+                <TouchableOpacity onPress={() => navigation.navigate(ERootRoutes.ANALYZE)}>
                   <Text className="text-primary-500 font-bold text-[13px]">Full Report</Text>
                 </TouchableOpacity>
               </View>
 
               <Card className="bg-surface-alt/50 border-border/30">
                 <View className="flex-row items-center justify-between mb-6">
-                  <Text className="text-text-primary text-[17px] font-bold">April 2026</Text>
+                  <Text className="text-text-primary text-[17px] font-bold">
+                    {currentMonthLabel}
+                  </Text>
                   <View className="bg-white px-3 py-1.5 rounded-lg border border-border shadow-xs flex-row items-center">
                     <Text className="text-text-secondary text-[12px] font-bold">This month</Text>
                   </View>
@@ -521,7 +535,7 @@ const DashboardScreen = ({ navigation }: HomeStackScreenProps<"Home">) => {
                         Completed
                       </Text>
                     </View>
-                    <CheckCircle2 size={16} stroke="#3DB87A" />
+                    <CheckCircle2 size={16} stroke="#10B981" />
                   </View>
                 </View>
 
@@ -544,7 +558,7 @@ const DashboardScreen = ({ navigation }: HomeStackScreenProps<"Home">) => {
                         Completion
                       </Text>
                     </View>
-                    <TrendingUp size={16} stroke="#3DB87A" />
+                    <TrendingUp size={16} stroke="#10B981" />
                   </View>
                 </View>
               </Card>
@@ -579,7 +593,7 @@ const DashboardScreen = ({ navigation }: HomeStackScreenProps<"Home">) => {
                             ? "#E55C5C"
                             : item.priority === "Medium"
                               ? "#F5A623"
-                              : "#3DB87A",
+                              : "#10B981",
                       }}
                     />
                     <View className="flex-1 p-5 justify-center">
@@ -604,11 +618,11 @@ const DashboardScreen = ({ navigation }: HomeStackScreenProps<"Home">) => {
                       <View className="flex-row items-center mt-4">
                         <View className="h-6 w-6 rounded-full bg-primary-600 items-center justify-center mr-2">
                           <Text className="text-white text-[10px] font-bold">
-                            {item.addedBy.name.charAt(0).toUpperCase()}
+                            {toInitial(item.addedBy.name)}
                           </Text>
                         </View>
                         <Text className="text-text-muted text-[12px] font-medium">
-                          {item.addedBy.name} · 1 day ago
+                          {item.addedBy.name} · {toRelativeTime(item.createdAt)}
                         </Text>
                       </View>
                     </View>

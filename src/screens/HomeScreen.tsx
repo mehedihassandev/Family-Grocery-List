@@ -33,6 +33,8 @@ import { AppHeader, Chip } from "../components/ui";
 import NotificationModal from "../components/NotificationModal";
 
 type TStatusFilter = "all" | "pending" | "completed";
+type TDueFilter = "all" | "overdue" | "due_soon";
+type TAssigneeFilter = "all" | "assigned" | "unassigned";
 
 interface IGrocerySection {
   key: string;
@@ -45,10 +47,27 @@ const STATUS_FILTERS: { key: TStatusFilter; label: string }[] = [
   { key: "pending", label: "Pending" },
   { key: "completed", label: "Completed" },
 ];
+const DUE_FILTERS: { key: TDueFilter; label: string }[] = [
+  { key: "all", label: "All Due" },
+  { key: "overdue", label: "Overdue" },
+  { key: "due_soon", label: "Due Soon" },
+];
+const ASSIGNEE_FILTERS: { key: TAssigneeFilter; label: string }[] = [
+  { key: "all", label: "All Assignee" },
+  { key: "assigned", label: "Assigned" },
+  { key: "unassigned", label: "Unassigned" },
+];
 
 const ALL_CATEGORY = "All";
 const SEARCH_PLACEHOLDER = "Search items, categories, notes";
 const PERMISSION_ERROR_LABEL = "Missing Firestore permission for this query.";
+const UNDO_DURATION_MS = 5000;
+
+interface IUndoState {
+  itemId: string;
+  itemName: string;
+  familyId: string;
+}
 
 /**
  * Maps Firebase error messages to user-friendly strings
@@ -72,9 +91,12 @@ const getFirebaseErrorMessage = (error: Error) => {
 const HomeScreen = ({ navigation }: ListStackScreenProps<"List">) => {
   const { user } = useAuthStore();
   const insets = useSafeAreaInsets();
-  const [statusFilter, setStatusFilter] = useState<TStatusFilter>("all");
+  const [statusFilter, setStatusFilter] = useState<TStatusFilter>("pending");
+  const [dueFilter, setDueFilter] = useState<TDueFilter>("all");
+  const [assigneeFilter, setAssigneeFilter] = useState<TAssigneeFilter>("all");
   const [activeCategory, setActiveCategory] = useState<string>(ALL_CATEGORY);
   const [searchQuery, setSearchQuery] = useState("");
+  const [undoState, setUndoState] = useState<IUndoState | null>(null);
 
   const [isNotifOpen, setNotifOpen] = useState(false);
 
@@ -82,6 +104,7 @@ const HomeScreen = ({ navigation }: ListStackScreenProps<"List">) => {
   const [showCompleted, setShowCompleted] = useState(false);
   const [isCategoryFilterOpen, setCategoryFilterOpen] = useState(false);
   const categoryAnimation = useRef(new Animated.Value(0)).current;
+  const undoTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // TanStack Query Hooks
   const {
@@ -108,6 +131,9 @@ const HomeScreen = ({ navigation }: ListStackScreenProps<"List">) => {
 
   const filteredItems = useMemo(() => {
     const query = searchQuery.trim().toLowerCase();
+    const now = new Date();
+    const dueSoon = new Date();
+    dueSoon.setDate(dueSoon.getDate() + 3);
 
     return sortedItems.filter((item) => {
       if (statusFilter !== "all" && item.status !== statusFilter) {
@@ -116,6 +142,26 @@ const HomeScreen = ({ navigation }: ListStackScreenProps<"List">) => {
 
       if (activeCategory !== ALL_CATEGORY && item.category !== activeCategory) {
         return false;
+      }
+
+      if (assigneeFilter === "assigned" && !item.assignee?.name) {
+        return false;
+      }
+      if (assigneeFilter === "unassigned" && item.assignee?.name) {
+        return false;
+      }
+
+      if (dueFilter !== "all") {
+        const dueDate = item.dueDate?.toDate ? item.dueDate.toDate() : item.dueDate;
+        if (!(dueDate instanceof Date) || Number.isNaN(dueDate.getTime())) {
+          return false;
+        }
+        if (dueFilter === "overdue" && dueDate >= now) {
+          return false;
+        }
+        if (dueFilter === "due_soon" && (dueDate < now || dueDate > dueSoon)) {
+          return false;
+        }
       }
 
       if (!query) {
@@ -128,13 +174,14 @@ const HomeScreen = ({ navigation }: ListStackScreenProps<"List">) => {
         item.notes ?? "",
         item.quantity ?? "",
         item.addedBy?.name ?? "",
+        item.assignee?.name ?? "",
       ]
         .join(" ")
         .toLowerCase();
 
       return searchText.includes(query);
     });
-  }, [sortedItems, statusFilter, activeCategory, searchQuery]);
+  }, [sortedItems, statusFilter, activeCategory, assigneeFilter, dueFilter, searchQuery]);
 
   const sections = useMemo<IGrocerySection[]>(() => {
     const pending = filteredItems.filter((item) => item.status === "pending");
@@ -181,18 +228,52 @@ const HomeScreen = ({ navigation }: ListStackScreenProps<"List">) => {
    */
   const handleToggle = async (item: IGroceryItem) => {
     if (!user) return;
+    const isCompleting = item.status === "pending";
+
     toggleMutation.mutate({
       item: {
         id: item.id,
         name: item.name,
         status: item.status,
         familyId: item.familyId,
+        category: item.category,
+        priority: item.priority,
+        notes: item.notes,
+        quantity: item.quantity,
+        recurrenceFrequency: item.recurrenceFrequency,
+        assignee: item.assignee,
+        dueDate: item.dueDate,
+        unitPrice: item.unitPrice,
+        estimatedTotal: item.estimatedTotal,
       },
       user: {
         uid: user.uid,
         name: user.displayName,
       },
     });
+
+    if (isCompleting) {
+      if (undoTimerRef.current) {
+        clearTimeout(undoTimerRef.current);
+      }
+
+      setUndoState({
+        itemId: item.id,
+        itemName: item.name,
+        familyId: item.familyId,
+      });
+
+      undoTimerRef.current = setTimeout(() => {
+        setUndoState(null);
+        undoTimerRef.current = null;
+      }, UNDO_DURATION_MS);
+    } else {
+      setUndoState(null);
+      if (undoTimerRef.current) {
+        clearTimeout(undoTimerRef.current);
+        undoTimerRef.current = null;
+      }
+    }
   };
 
   const filteredCompletedCount = filteredItems.filter((item) => item.status === "completed").length;
@@ -215,6 +296,29 @@ const HomeScreen = ({ navigation }: ListStackScreenProps<"List">) => {
     setRefreshing(false);
   };
 
+  const handleUndoComplete = () => {
+    if (!user || !undoState) return;
+
+    if (undoTimerRef.current) {
+      clearTimeout(undoTimerRef.current);
+      undoTimerRef.current = null;
+    }
+
+    toggleMutation.mutate({
+      item: {
+        id: undoState.itemId,
+        name: undoState.itemName,
+        status: "completed",
+        familyId: undoState.familyId,
+      },
+      user: {
+        uid: user.uid,
+        name: user.displayName,
+      },
+    });
+    setUndoState(null);
+  };
+
   useEffect(() => {
     Animated.timing(categoryAnimation, {
       toValue: isCategoryFilterOpen ? 1 : 0,
@@ -223,6 +327,14 @@ const HomeScreen = ({ navigation }: ListStackScreenProps<"List">) => {
       useNativeDriver: false,
     }).start();
   }, [isCategoryFilterOpen, categoryAnimation]);
+
+  useEffect(() => {
+    return () => {
+      if (undoTimerRef.current) {
+        clearTimeout(undoTimerRef.current);
+      }
+    };
+  }, []);
 
   const categoryPanelStyle = {
     maxHeight: categoryAnimation.interpolate({
@@ -255,7 +367,7 @@ const HomeScreen = ({ navigation }: ListStackScreenProps<"List">) => {
 
       {loading ? (
         <View className="flex-1 items-center justify-center">
-          <ActivityIndicator color="#3DB87A" size="large" />
+          <ActivityIndicator color="#10B981" size="large" />
         </View>
       ) : listError ? (
         <View className="flex-1 items-center justify-center px-8">
@@ -280,8 +392,8 @@ const HomeScreen = ({ navigation }: ListStackScreenProps<"List">) => {
             <RefreshControl
               refreshing={isRefreshing}
               onRefresh={handleRefresh}
-              tintColor="#3DB87A"
-              colors={["#3DB87A"]}
+              tintColor="#10B981"
+              colors={["#10B981"]}
               progressBackgroundColor="#f8faf8"
             />
           }
@@ -317,14 +429,14 @@ const HomeScreen = ({ navigation }: ListStackScreenProps<"List">) => {
                   onPress={() => setCategoryFilterOpen((prev) => !prev)}
                   className={`rounded-full border p-2.5 ${
                     isCategoryFilterOpen || activeCategory !== ALL_CATEGORY
-                      ? "border-primary-300 bg-primary-50"
+                      ? "border-primary-400 bg-primary-50"
                       : "border-border-muted bg-surface"
                   }`}
                 >
                   <SlidersHorizontal
                     stroke={
                       isCategoryFilterOpen || activeCategory !== ALL_CATEGORY
-                        ? "#3DB87A"
+                        ? "#10B981"
                         : "#748379"
                     }
                     size={18}
@@ -345,6 +457,38 @@ const HomeScreen = ({ navigation }: ListStackScreenProps<"List">) => {
                       label={category}
                       selected={activeCategory === category}
                       onPress={() => setActiveCategory(category)}
+                      className="mr-2"
+                    />
+                  ))}
+                </ScrollView>
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  className="mb-2"
+                  contentContainerStyle={{ paddingRight: 12 }}
+                >
+                  {DUE_FILTERS.map((option) => (
+                    <Chip
+                      key={option.key}
+                      label={option.label}
+                      selected={dueFilter === option.key}
+                      onPress={() => setDueFilter(option.key)}
+                      className="mr-2"
+                    />
+                  ))}
+                </ScrollView>
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  className="mb-2"
+                  contentContainerStyle={{ paddingRight: 12 }}
+                >
+                  {ASSIGNEE_FILTERS.map((option) => (
+                    <Chip
+                      key={option.key}
+                      label={option.label}
+                      selected={assigneeFilter === option.key}
+                      onPress={() => setAssigneeFilter(option.key)}
                       className="mr-2"
                     />
                   ))}
@@ -380,13 +524,16 @@ const HomeScreen = ({ navigation }: ListStackScreenProps<"List">) => {
           ListEmptyComponent={
             <View className="items-center px-10 pb-8 pt-16">
               <View className="mb-6 h-20 w-20 items-center justify-center rounded-full bg-primary-50">
-                <ShoppingBasket stroke="#3DB87A" size={32} strokeWidth={2.2} />
+                <ShoppingBasket stroke="#10B981" size={32} strokeWidth={2.2} />
               </View>
               <Text className="text-center text-[28px] font-black tracking-tight text-text-primary">
                 No items found
               </Text>
               <Text className="mt-3 text-center text-[16px] leading-6 text-text-muted">
-                {searchQuery || activeCategory !== ALL_CATEGORY
+                {searchQuery ||
+                activeCategory !== ALL_CATEGORY ||
+                dueFilter !== "all" ||
+                assigneeFilter !== "all"
                   ? "Try a different search or category filter."
                   : "Tap '+' to add your first grocery item."}
               </Text>
@@ -420,20 +567,41 @@ const HomeScreen = ({ navigation }: ListStackScreenProps<"List">) => {
       <TouchableOpacity
         onPress={() => navigation.navigate(ERootRoutes.ADD_ITEM)}
         activeOpacity={0.85}
-        className="absolute right-6 h-14 w-14 items-center justify-center rounded-2xl bg-primary-600"
+        className="absolute right-6 h-[60px] w-[60px] items-center justify-center rounded-full bg-primary-600"
         style={{
-          bottom: insets.bottom + 78,
-          elevation: 8,
-          shadowColor: "#3DB87A",
+          bottom: insets.bottom + 84,
+          elevation: 10,
+          shadowColor: "#10B981",
           shadowOffset: { width: 0, height: 10 },
-          shadowOpacity: 0.3,
+          shadowOpacity: 0.4,
           shadowRadius: 15,
         }}
       >
-        <Plus color="white" size={28} strokeWidth={3} />
+        <Plus color="white" size={30} strokeWidth={3} />
       </TouchableOpacity>
 
       <NotificationModal visible={isNotifOpen} onClose={() => setNotifOpen(false)} />
+
+      {undoState ? (
+        <View
+          className="absolute left-6 right-6 flex-row items-center justify-between rounded-2xl border border-primary-100 bg-white px-4 py-3 shadow-lg"
+          style={{
+            bottom: insets.bottom + 14,
+          }}
+        >
+          <Text
+            className="mr-3 flex-1 text-[13px] font-semibold text-text-primary"
+            numberOfLines={1}
+          >
+            {`Marked "${undoState.itemName}" complete`}
+          </Text>
+          <TouchableOpacity onPress={handleUndoComplete} activeOpacity={0.8}>
+            <Text className="text-[13px] font-bold uppercase tracking-wide text-primary-600">
+              Undo
+            </Text>
+          </TouchableOpacity>
+        </View>
+      ) : null}
     </SafeAreaView>
   );
 };

@@ -9,6 +9,7 @@ import { RootNavigatorParamList, ERootRoutes } from "../types";
 
 import AuthenticatedNavigator from "./AuthenticatedNavigator";
 import UnAuthenticatedNavigator from "./UnAuthenticatedNavigator";
+import { navigationRef } from "./navigationRef";
 import { ActivityIndicator, View } from "react-native";
 
 const Stack = createNativeStackNavigator<RootNavigatorParamList>();
@@ -22,7 +23,7 @@ const LoadingScreen = () => (
       backgroundColor: "#f5f7f4",
     }}
   >
-    <ActivityIndicator size="large" color="#3DB87A" />
+    <ActivityIndicator size="large" color="#10B981" />
   </View>
 );
 
@@ -43,6 +44,7 @@ const Navigator = () => {
 
   return (
     <NavigationContainer
+      ref={navigationRef}
       onReady={() => {
         // Only hide the splash screen when navigation is fully mounted.
         // This avoids white flicker on startup.

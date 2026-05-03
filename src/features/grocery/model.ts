@@ -24,6 +24,12 @@ export interface IGroceryItemModel {
   priority: GroceryPriority;
   quantity: string;
   note: string;
+  recurrence_frequency: "none" | "weekly" | "monthly";
+  assignee_name: string | null;
+  due_date: unknown | null;
+  reminder_at: unknown | null;
+  unit_price: number | null;
+  estimated_total: number | null;
   status: GroceryStatus;
   family_id: string;
   created_by: string;
@@ -100,6 +106,12 @@ export const toGroceryItemModel = (item: IGroceryItem): IGroceryItemModel => ({
   priority: legacyToModelPriority[item.priority],
   quantity: item.quantity ?? "",
   note: item.notes ?? "",
+  recurrence_frequency: item.recurrenceFrequency ?? "none",
+  assignee_name: item.assignee?.name ?? null,
+  due_date: item.dueDate ?? null,
+  reminder_at: item.reminderAt ?? null,
+  unit_price: typeof item.unitPrice === "number" ? item.unitPrice : null,
+  estimated_total: typeof item.estimatedTotal === "number" ? item.estimatedTotal : null,
   status: item.status,
   family_id: item.familyId,
   created_by: item.addedBy.uid,
@@ -122,6 +134,12 @@ export const fromGroceryItemModel = (item: IGroceryItemModel): Partial<IGroceryI
   priority: modelToLegacyPriority[item.priority],
   quantity: item.quantity,
   notes: item.note,
+  recurrenceFrequency: item.recurrence_frequency,
+  assignee: item.assignee_name ? { name: item.assignee_name } : null,
+  dueDate: item.due_date,
+  reminderAt: item.reminder_at,
+  unitPrice: item.unit_price,
+  estimatedTotal: item.estimated_total,
   status: item.status,
   familyId: item.family_id,
   addedBy: {

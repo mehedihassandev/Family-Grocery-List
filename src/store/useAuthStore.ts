@@ -7,9 +7,11 @@ interface IAuthState {
   user: IUser | null;
   loading: boolean;
   hasHydrated: boolean;
+  profileSynced: boolean;
   setUser: (user: IUser | null) => void;
   setLoading: (loading: boolean) => void;
   setHasHydrated: (hasHydrated: boolean) => void;
+  setProfileSynced: (profileSynced: boolean) => void;
 }
 
 /**
@@ -22,9 +24,11 @@ export const useAuthStore = create<IAuthState>()(
       user: null,
       loading: true,
       hasHydrated: false,
+      profileSynced: false,
       setUser: (user) => set({ user }),
       setLoading: (loading) => set({ loading }),
       setHasHydrated: (hasHydrated) => set({ hasHydrated }),
+      setProfileSynced: (profileSynced) => set({ profileSynced }),
     }),
     {
       name: "auth-session-store",

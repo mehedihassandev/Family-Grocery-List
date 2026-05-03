@@ -20,7 +20,7 @@ const ShortcutCard = ({
   label,
   onPress,
   iconBgColor = "bg-surface-alt",
-  iconColor = "#3DB87A",
+  iconColor = "#10B981",
 }: IShortcutCardProps) => {
   return (
     <View className="items-center">

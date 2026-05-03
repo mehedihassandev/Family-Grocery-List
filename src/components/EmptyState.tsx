@@ -16,7 +16,7 @@ const EmptyState = ({ title, description }: IEmptyStateProps) => {
   return (
     <View className="flex-1 items-center justify-center px-10">
       <View className="mb-6 h-24 w-24 items-center justify-center rounded-[32px] bg-primary-50">
-        <ShoppingBasket stroke="#3DB87A" size={40} strokeWidth={1.5} />
+        <ShoppingBasket stroke="#10B981" size={40} strokeWidth={1.5} />
       </View>
       <Text className="mb-3 text-center text-[22px] font-bold text-text-primary tracking-tight">
         {title}

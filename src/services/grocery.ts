@@ -14,6 +14,29 @@ import { db } from "./firebaseConfig";
 import { IGroceryItem } from "../types";
 import { createNotification } from "./notification";
 
+const parseDateInput = (value: unknown) => {
+  if (!value) return null;
+  if (value instanceof Date) return value;
+  if (typeof value === "string") {
+    const normalized = value.trim();
+    if (!normalized) return null;
+    const parsed = new Date(normalized);
+    return Number.isNaN(parsed.getTime()) ? null : parsed;
+  }
+  return null;
+};
+
+const toNumberOrNull = (value: unknown) => {
+  if (typeof value === "number" && Number.isFinite(value)) {
+    return value;
+  }
+  if (typeof value === "string") {
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : null;
+  }
+  return null;
+};
+
 /**
  * Fetches a single grocery item by its ID
  * @param itemId - The ID of the item to fetch
@@ -53,6 +76,12 @@ export const addGroceryItem = async (
       priority: item.priority || "Medium",
       notes: item.notes || "",
       quantity: item.quantity || "",
+      recurrenceFrequency: item.recurrenceFrequency || "none",
+      assignee: item.assignee || null,
+      dueDate: parseDateInput(item.dueDate),
+      reminderAt: parseDateInput(item.reminderAt),
+      unitPrice: toNumberOrNull(item.unitPrice),
+      estimatedTotal: toNumberOrNull(item.estimatedTotal),
       status: "pending",
       addedBy: user,
       createdAt: serverTimestamp(),
@@ -62,13 +91,17 @@ export const addGroceryItem = async (
     await setDoc(itemRef, newItem);
 
     // Create an "item_added" notification (or "urgent_item" if priority is Urgent)
-    await createNotification(
-      familyId,
-      newItem.priority === "Urgent" ? "urgent_item" : "item_added",
-      `${user.name} added ${newItem.name}`,
-      user,
-      { id: newItem.id, name: newItem.name },
-    );
+    try {
+      await createNotification(
+        familyId,
+        newItem.priority === "Urgent" ? "urgent_item" : "item_added",
+        `${user.name} added ${newItem.name}`,
+        user,
+        { id: newItem.id, name: newItem.name },
+      );
+    } catch (error) {
+      console.warn("Item added but notification creation failed:", error);
+    }
 
     return newItem;
   } catch (error) {
@@ -85,8 +118,23 @@ export const addGroceryItem = async (
 export const updateGroceryItem = async (itemId: string, updates: Partial<IGroceryItem>) => {
   try {
     const itemRef = doc(db, "grocery_items", itemId);
-    await updateDoc(itemRef, {
+    const normalizedUpdates: Partial<IGroceryItem> = {
       ...updates,
+      dueDate:
+        updates.dueDate === undefined ? undefined : (parseDateInput(updates.dueDate) ?? null),
+      reminderAt:
+        updates.reminderAt === undefined ? undefined : (parseDateInput(updates.reminderAt) ?? null),
+      unitPrice:
+        updates.unitPrice === undefined ? undefined : (toNumberOrNull(updates.unitPrice) ?? null),
+      estimatedTotal:
+        updates.estimatedTotal === undefined
+          ? undefined
+          : (toNumberOrNull(updates.estimatedTotal) ?? null),
+      recurrenceFrequency: updates.recurrenceFrequency || "none",
+    };
+
+    await updateDoc(itemRef, {
+      ...normalizedUpdates,
       updatedAt: serverTimestamp(),
     });
   } catch (error) {
@@ -101,7 +149,21 @@ export const updateGroceryItem = async (itemId: string, updates: Partial<IGrocer
  * @param user - The user toggling the status
  */
 export const toggleItemCompletion = async (
-  item: { id: string; name: string; status: "pending" | "completed"; familyId: string },
+  item: {
+    id: string;
+    name: string;
+    status: "pending" | "completed";
+    familyId: string;
+    category?: string;
+    priority?: IGroceryItem["priority"];
+    notes?: string;
+    quantity?: string;
+    recurrenceFrequency?: IGroceryItem["recurrenceFrequency"];
+    assignee?: IGroceryItem["assignee"];
+    dueDate?: IGroceryItem["dueDate"];
+    unitPrice?: IGroceryItem["unitPrice"];
+    estimatedTotal?: IGroceryItem["estimatedTotal"];
+  },
   user: { uid: string; name: string },
 ) => {
   try {
@@ -115,14 +177,54 @@ export const toggleItemCompletion = async (
       updatedAt: serverTimestamp(),
     });
 
+    if (isCompleting && item.recurrenceFrequency && item.recurrenceFrequency !== "none") {
+      const recurrenceRef = doc(collection(db, "grocery_items"));
+      const baseDueDate = parseDateInput(item.dueDate) ?? new Date();
+      const nextDueDate = new Date(baseDueDate);
+      if (item.recurrenceFrequency === "weekly") {
+        nextDueDate.setDate(nextDueDate.getDate() + 7);
+      } else {
+        nextDueDate.setMonth(nextDueDate.getMonth() + 1);
+      }
+
+      const nextItem: IGroceryItem = {
+        id: recurrenceRef.id,
+        familyId: item.familyId,
+        name: item.name,
+        category: item.category || "Other",
+        priority: item.priority || "Medium",
+        notes: item.notes || "",
+        quantity: item.quantity || "",
+        recurrenceFrequency: item.recurrenceFrequency,
+        assignee: item.assignee || null,
+        dueDate: nextDueDate,
+        reminderAt: null,
+        unitPrice: toNumberOrNull(item.unitPrice),
+        estimatedTotal: toNumberOrNull(item.estimatedTotal),
+        status: "pending",
+        addedBy: {
+          uid: user.uid,
+          name: user.name,
+        },
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+      };
+
+      await setDoc(recurrenceRef, nextItem);
+    }
+
     if (isCompleting) {
-      await createNotification(
-        item.familyId,
-        "item_completed",
-        `${user.name} checked off ${item.name}`,
-        user,
-        { id: item.id, name: item.name },
-      );
+      try {
+        await createNotification(
+          item.familyId,
+          "item_completed",
+          `${user.name} checked off ${item.name}`,
+          user,
+          { id: item.id, name: item.name },
+        );
+      } catch (error) {
+        console.warn("Item completion updated but notification creation failed:", error);
+      }
     }
   } catch (error) {
     console.error("Toggle Completion Error:", error);

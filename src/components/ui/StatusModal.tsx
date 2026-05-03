@@ -37,7 +37,7 @@ const StatusModal = ({
   const getIcon = () => {
     switch (type) {
       case "success":
-        return <CheckCircle2 size={48} stroke="#3DB87A" strokeWidth={1.5} />;
+        return <CheckCircle2 size={48} stroke="#10B981" strokeWidth={1.5} />;
       case "error":
         return <XCircle size={48} stroke="#E55C5C" strokeWidth={1.5} />;
       case "warning":

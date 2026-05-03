@@ -7,7 +7,6 @@ import {
   Image,
   ScrollView,
   StatusBar,
-  Alert,
   ActivityIndicator,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -15,82 +14,72 @@ import { LogOut, Shield, HelpCircle, ChevronRight, Edit3, Users } from "lucide-r
 import { useAuthStore } from "../store/useAuthStore";
 import { signOut } from "../services/auth";
 import { leaveFamily } from "../services/family";
-import { AppHeader, Card } from "../components/ui";
+import { useTextFormatter } from "../hooks";
+import { AppHeader, Card, StatusModal } from "../components/ui";
 import { ERootRoutes, ETabRoutes } from "../navigation/routes";
 
-/**
- * Maps family-related operation errors to user-friendly messages
- * @param error - The error object
- * @param fallback - The default message if error is unknown
- */
-const getFamilyActionErrorMessage = (error: unknown, fallback: string) => {
+const getFamilyActionErrorMessage = (error: any, fallback: string) => {
   const rawMessage = error instanceof Error ? error.message : "";
   const normalized = rawMessage.toLowerCase();
-
   if (normalized.includes("permission-denied") || normalized.includes("insufficient permissions")) {
-    return "Permission denied. Publish Firestore rules from FIRESTORE_RULES_SETUP.md";
+    return "Permission denied. Please check your family status.";
   }
-
   return rawMessage.trim() || fallback;
 };
 
-/**
- * Extracts initials from a user's display name
- * @param name - The full name
- */
-const getInitials = (name?: string | null) => {
-  if (!name) return "U";
-  const parts = name.trim().split(" ");
-  if (parts.length > 1) {
-    return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
-  }
-  return parts[0][0].toUpperCase();
-};
-
-/**
- * User profile and settings screen
- * Why: To manage account details, app preferences, and family membership.
- * Note: Theme functionality removed to enforce a single light theme.
- */
 const ProfileScreen = ({ navigation }: ProfileStackScreenProps<"Profile">) => {
   const { user, setUser } = useAuthStore();
+  const { toInitials } = useTextFormatter();
   const [leavingFamily, setLeavingFamily] = useState(false);
+  const [confirmLeaveModal, setConfirmLeaveModal] = useState(false);
+  const [statusModal, setStatusModal] = useState<any>({
+    visible: false,
+    title: "",
+    message: "",
+    type: "error",
+  });
 
-  /**
-   * Handles leaving the family group with confirmation alerts
-   */
-  const handleLeaveFamily = () => {
+  const handleLeaveFamilyRequest = () => {
     if (!user?.uid || !user.familyId || leavingFamily) return;
+    setConfirmLeaveModal(true);
+  };
 
-    const isOwner = user.role === "owner";
-    const confirmMessage = isOwner
-      ? "You are owner. If other members exist, ownership will transfer automatically. Continue?"
-      : "Do you want to leave this family?";
+  const executeLeaveFamily = async () => {
+    if (!user?.uid || !user.familyId) return;
+    setConfirmLeaveModal(false);
+    try {
+      setLeavingFamily(true);
+      await leaveFamily({
+        userId: user.uid,
+        familyId: user.familyId,
+        role: user.role,
+      });
+      setUser({ ...user, familyId: null, role: "member" });
+      setStatusModal({
+        visible: true,
+        title: "Family Left",
+        message: "You have successfully left the family group.",
+        type: "success",
+      });
+    } catch (error) {
+      const message = getFamilyActionErrorMessage(error, "Could not leave family.");
+      setStatusModal({
+        visible: true,
+        title: "Action Failed",
+        message: message,
+        type: "error",
+      });
+    } finally {
+      setLeavingFamily(false);
+    }
+  };
 
-    Alert.alert("Leave Family", confirmMessage, [
-      { text: "Cancel", style: "cancel" },
-      {
-        text: "Leave",
-        style: "destructive",
-        onPress: async () => {
-          try {
-            setLeavingFamily(true);
-            await leaveFamily({
-              userId: user.uid,
-              familyId: user.familyId!,
-              role: user.role,
-            });
-            setUser({ ...user, familyId: null, role: "member" });
-            navigation.navigate(ETabRoutes.HOME);
-          } catch (error) {
-            const message = getFamilyActionErrorMessage(error, "Could not leave family.");
-            Alert.alert("Leave Failed", message);
-          } finally {
-            setLeavingFamily(false);
-          }
-        },
-      },
-    ]);
+  const handleStatusModalClose = () => {
+    const wasSuccess = statusModal.type === "success";
+    setStatusModal((prev: any) => ({ ...prev, visible: false }));
+    if (wasSuccess) {
+      navigation.navigate(ETabRoutes.HOME);
+    }
   };
 
   const SectionHeader = ({ title }: { title: string }) => (
@@ -117,20 +106,21 @@ const ProfileScreen = ({ navigation }: ProfileStackScreenProps<"Profile">) => {
       className="flex-row items-center py-4 px-5 border-b border-border last:border-b-0"
     >
       <View
-        className={`mr-4 h-9 w-9 items-center justify-center rounded-md ${
-          isDestructive ? "bg-danger-light" : "bg-surface-alt"
-        } border border-border`}
+        className={
+          "mr-4 h-9 w-9 items-center justify-center rounded-md border border-border " +
+          (isDestructive ? "bg-danger-light" : "bg-surface-alt")
+        }
       >
         {loading ? (
-          <ActivityIndicator size="small" color={isDestructive ? "#E55C5C" : "#3DB87A"} />
+          <ActivityIndicator size="small" color={isDestructive ? "#E55C5C" : "#10B981"} />
         ) : (
           <Icon stroke={isDestructive ? "#E55C5C" : "#4A5568"} size={18} strokeWidth={2.5} />
         )}
       </View>
       <Text
-        className={`flex-1 text-[15px] font-bold ${
-          isDestructive ? "text-danger-dark" : "text-text-900"
-        }`}
+        className={
+          "flex-1 text-[15px] font-bold " + (isDestructive ? "text-danger-dark" : "text-text-900")
+        }
       >
         {title}
       </Text>
@@ -141,11 +131,34 @@ const ProfileScreen = ({ navigation }: ProfileStackScreenProps<"Profile">) => {
     </TouchableOpacity>
   );
 
+  const confirmLeaveMessage =
+    user?.role === "owner"
+      ? "You are the owner. Ownership will be transferred to another member automatically. Continue?"
+      : "Are you sure you want to leave this family group?";
+
   return (
     <SafeAreaView edges={["top", "left", "right"]} className="flex-1 bg-background">
       <StatusBar barStyle="dark-content" />
+      <AppHeader title="Profile" eyebrow="Settings" showNotification={false} />
 
-      <AppHeader title="Profile" eyebrow="Settings" />
+      <StatusModal
+        visible={confirmLeaveModal}
+        title="Leave Family?"
+        message={confirmLeaveMessage}
+        type="confirm"
+        confirmLabel="Leave Family"
+        cancelLabel="Stay"
+        onConfirm={executeLeaveFamily}
+        onClose={() => setConfirmLeaveModal(false)}
+      />
+
+      <StatusModal
+        visible={statusModal.visible}
+        title={statusModal.title}
+        message={statusModal.message}
+        type={statusModal.type}
+        onClose={handleStatusModalClose}
+      />
 
       <ScrollView
         showsVerticalScrollIndicator={false}
@@ -153,15 +166,14 @@ const ProfileScreen = ({ navigation }: ProfileStackScreenProps<"Profile">) => {
         className="flex-1"
       >
         <View className="px-6 pt-4">
-          {/* User Profile Header */}
           <Card className="mb-6 p-5 border-primary-100 bg-primary-50/30">
             <View className="flex-row items-center">
-              <View className="mr-4 h-16 w-16 items-center justify-center overflow-hidden rounded-md bg-white border border-border shadow-xs">
+              <View className="mr-4 h-16 w-16 items-center justify-center overflow-hidden rounded-2xl bg-white border border-border shadow-xs">
                 {user?.photoURL ? (
                   <Image source={{ uri: user.photoURL }} className="h-full w-full" />
                 ) : (
                   <Text className="text-[24px] font-bold text-primary-600">
-                    {getInitials(user?.displayName)}
+                    {toInitials(user?.displayName)}
                   </Text>
                 )}
               </View>
@@ -183,7 +195,6 @@ const ProfileScreen = ({ navigation }: ProfileStackScreenProps<"Profile">) => {
             </View>
           </Card>
 
-          {/* Preferences Section */}
           <SectionHeader title="Preferences" />
           <Card padding={false} className="mb-2">
             <MenuItem
@@ -198,7 +209,6 @@ const ProfileScreen = ({ navigation }: ProfileStackScreenProps<"Profile">) => {
             />
           </Card>
 
-          {/* Family Section */}
           {user?.familyId && (
             <>
               <SectionHeader title="Family" />
@@ -206,7 +216,7 @@ const ProfileScreen = ({ navigation }: ProfileStackScreenProps<"Profile">) => {
                 <MenuItem
                   icon={Users}
                   title="Leave Family"
-                  onPress={handleLeaveFamily}
+                  onPress={handleLeaveFamilyRequest}
                   isDestructive
                   loading={leavingFamily}
                 />
@@ -214,7 +224,6 @@ const ProfileScreen = ({ navigation }: ProfileStackScreenProps<"Profile">) => {
             </>
           )}
 
-          {/* Account Section */}
           <SectionHeader title="Account" />
           <Card padding={false} className="mb-2">
             <MenuItem
@@ -226,10 +235,9 @@ const ProfileScreen = ({ navigation }: ProfileStackScreenProps<"Profile">) => {
             />
           </Card>
 
-          {/* Version Text */}
           <View className="mt-12 items-center">
             <Text className="text-[11px] font-bold tracking-widest text-text-muted uppercase opacity-40">
-              Family Grocery · v2.0.0
+              Family Grocery · v2.1.0
             </Text>
           </View>
         </View>

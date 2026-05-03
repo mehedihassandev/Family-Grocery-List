@@ -6,23 +6,24 @@ import {
   ActivityIndicator,
   StyleSheet,
 } from "react-native";
-import { X, Edit2, Calendar, User, ShoppingBasket, AlignLeft, Info } from "lucide-react-native";
+import {
+  X,
+  Edit2,
+  Calendar,
+  User,
+  ShoppingBasket,
+  AlignLeft,
+  Info,
+  Repeat,
+  Wallet,
+} from "lucide-react-native";
 import { AuthenticatedStackNavigatorScreenProps, ERootRoutes } from "../types";
 import { GroceryPriority } from "../features/grocery";
+import { useDateFormatter } from "../hooks";
 import { Card, Chip, PriorityBadge } from "../components/ui";
 import { useGroceryItem } from "../hooks/queries/useGroceryQueries";
 
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-
-/**
- * Formats a date value to a readable string
- */
-const formatDate = (dateValue: any) => {
-  if (!dateValue) return "Unknown";
-  const dateStr =
-    dateValue?.toDate?.()?.toLocaleDateString() || new Date(dateValue).toLocaleDateString();
-  return dateStr !== "Invalid Date" ? dateStr : "Unknown";
-};
 
 /**
  * Item Detail Screen
@@ -33,6 +34,7 @@ const ItemDetailScreen = ({
   navigation,
 }: AuthenticatedStackNavigatorScreenProps<ERootRoutes.ITEM_DETAIL>) => {
   const insets = useSafeAreaInsets();
+  const { toDateLabel } = useDateFormatter();
   const { itemId } = route.params;
 
   // TanStack Query Hook
@@ -41,7 +43,7 @@ const ItemDetailScreen = ({
   if (loading) {
     return (
       <View className="flex-1 items-center justify-center bg-background">
-        <ActivityIndicator color="#3DB87A" size="large" />
+        <ActivityIndicator color="#10B981" size="large" />
       </View>
     );
   }
@@ -102,7 +104,7 @@ const ItemDetailScreen = ({
           <Card padding={false} className="mb-6 overflow-hidden">
             <View className="flex-row items-center border-b border-border-muted p-5">
               <View className="mr-4 h-10 w-10 items-center justify-center rounded-2xl bg-primary-100">
-                <ShoppingBasket stroke="#3DB87A" size={20} strokeWidth={2.5} />
+                <ShoppingBasket stroke="#10B981" size={20} strokeWidth={2.5} />
               </View>
               <View className="flex-1">
                 <Text className="text-[11px] font-bold text-text-muted uppercase tracking-widest">
@@ -134,6 +136,14 @@ const ItemDetailScreen = ({
                   {item.addedBy?.name || "Unknown"}
                 </Text>
               </View>
+              <View className="w-28">
+                <Text className="text-[11px] font-bold text-text-muted uppercase tracking-widest">
+                  Assignee
+                </Text>
+                <Text className="text-[14px] font-bold text-text-primary mt-0.5">
+                  {item.assignee?.name || "—"}
+                </Text>
+              </View>
             </View>
 
             <View className="flex-row items-center p-5">
@@ -145,9 +155,48 @@ const ItemDetailScreen = ({
                   Created At
                 </Text>
                 <Text className="text-[16px] font-bold text-text-primary mt-0.5">
-                  {formatDate(item.createdAt)}
+                  {toDateLabel(item.createdAt)}
                 </Text>
               </View>
+              <View className="w-28">
+                <Text className="text-[11px] font-bold text-text-muted uppercase tracking-widest">
+                  Due
+                </Text>
+                <Text className="text-[14px] font-bold text-text-primary mt-0.5">
+                  {item.dueDate ? toDateLabel(item.dueDate) : "—"}
+                </Text>
+              </View>
+            </View>
+          </Card>
+
+          <Card className="mb-6 p-5">
+            <View className="flex-row items-center justify-between">
+              <View className="flex-row items-center">
+                <Repeat stroke="#4A90D9" size={16} strokeWidth={2.5} />
+                <Text className="ml-2 text-[12px] font-bold uppercase tracking-wider text-text-muted">
+                  Recurring
+                </Text>
+              </View>
+              <Text className="text-[14px] font-bold text-text-primary">
+                {item.recurrenceFrequency && item.recurrenceFrequency !== "none"
+                  ? item.recurrenceFrequency
+                  : "One-time"}
+              </Text>
+            </View>
+            <View className="mt-4 flex-row items-center justify-between">
+              <View className="flex-row items-center">
+                <Wallet stroke="#10B981" size={16} strokeWidth={2.5} />
+                <Text className="ml-2 text-[12px] font-bold uppercase tracking-wider text-text-muted">
+                  Budget
+                </Text>
+              </View>
+              <Text className="text-[14px] font-bold text-text-primary">
+                {typeof item.estimatedTotal === "number"
+                  ? `$${item.estimatedTotal.toFixed(2)}`
+                  : typeof item.unitPrice === "number"
+                    ? `$${item.unitPrice.toFixed(2)}`
+                    : "—"}
+              </Text>
             </View>
           </Card>
 
@@ -167,7 +216,7 @@ const ItemDetailScreen = ({
 
           {item.status === "completed" && item.completedBy && (
             <View className="flex-row items-center rounded-2xl bg-primary-50 p-4 border border-primary-100">
-              <Info stroke="#3DB87A" size={18} strokeWidth={2.5} className="mr-3" />
+              <Info stroke="#10B981" size={18} strokeWidth={2.5} className="mr-3" />
               <Text className="text-[14px] font-medium text-primary-800">
                 Completed by <Text className="font-black">{item.completedBy.name}</Text>
               </Text>

@@ -3,7 +3,6 @@ import * as WebBrowser from "expo-web-browser";
 import { GoogleSignin, statusCodes } from "@react-native-google-signin/google-signin";
 import { AuthSessionResult } from "expo-auth-session";
 import { Platform } from "react-native";
-import { FirebaseError } from "firebase/app";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import {
   createUserWithEmailAndPassword,
@@ -16,8 +15,10 @@ import {
 } from "firebase/auth";
 import { doc, getDoc, setDoc, updateDoc, onSnapshot } from "firebase/firestore";
 import { auth, db } from "./firebaseConfig";
+import { getEmailAuthErrorMessage } from "./authErrors";
 import { useAuthStore } from "../store/useAuthStore";
 import { IUser } from "../types";
+import { trimLowercaseText, trimText } from "../utils";
 
 WebBrowser.maybeCompleteAuthSession();
 
@@ -127,7 +128,7 @@ const isFirestoreProfileTimeoutError = (error: unknown) =>
  * Normalizes an email address for consistent storage/comparison
  * @param email - The email to normalize
  */
-const normalizeEmail = (email: string) => email.trim().toLowerCase();
+const normalizeEmail = (email: string) => trimLowercaseText(email);
 
 let activeSignOut: Promise<void> | null = null;
 let nativeGoogleSignInConfigured = false;
@@ -234,7 +235,7 @@ const getRequiredGoogleClientIdKeysForPlatform = (): TGoogleClientIdKey[] => {
  * @param clientId - The client ID to parse
  */
 const getProjectNumberFromGoogleClientId = (clientId: string) => {
-  const match = clientId.trim().match(/^(\d+)-[A-Za-z0-9_-]+\.apps\.googleusercontent\.com$/);
+  const match = trimText(clientId).match(/^(\d+)-[A-Za-z0-9_-]+\.apps\.googleusercontent\.com$/);
   return match?.[1] ?? null;
 };
 
@@ -666,50 +667,7 @@ export const getGoogleSignInErrorMessage = (error: unknown) => {
   return "Unable to continue with Google Sign-In right now.";
 };
 
-/**
- * Type guard for FirebaseError
- * @param error - The error to check
- */
-const isFirebaseAuthError = (error: unknown): error is FirebaseError =>
-  error instanceof FirebaseError ||
-  (typeof error === "object" && error !== null && "code" in error);
-
-/**
- * Returns a user-friendly error message for email authentication failures
- * @param error - The error object to map
- */
-export const getEmailAuthErrorMessage = (error: unknown) => {
-  if (isFirebaseAuthError(error)) {
-    switch (error.code) {
-      case "auth/invalid-email":
-        return "Enter a valid email address.";
-      case "auth/missing-password":
-        return "Password is required.";
-      case "auth/invalid-credential":
-      case "auth/user-not-found":
-      case "auth/wrong-password":
-        return "Email or password is incorrect.";
-      case "auth/email-already-in-use":
-        return "This email is already in use.";
-      case "auth/weak-password":
-        return "Password must be at least 6 characters.";
-      case "auth/user-disabled":
-        return "This account has been disabled.";
-      case "auth/too-many-requests":
-        return "Too many attempts. Try again later.";
-      case "auth/network-request-failed":
-        return "Network error. Check your connection and try again.";
-      default:
-        return error.message || "Unable to continue with email authentication.";
-    }
-  }
-
-  if (error instanceof Error && error.message.trim()) {
-    return error.message;
-  }
-
-  return "Unable to continue with email authentication.";
-};
+export { getEmailAuthErrorMessage };
 
 /**
  * Signs the user out of Firebase and clears local session state
@@ -751,7 +709,7 @@ export const signOut = async () => {
  * Why: To ensure the application state is always in sync with both Auth and user profile data.
  */
 export const listenToAuthChanges = () => {
-  const { setUser, setLoading } = useAuthStore.getState();
+  const { setUser, setLoading, setProfileSynced } = useAuthStore.getState();
   let authEventVersion = 0;
   let userDocUnsubscribe: (() => void) | null = null;
 
@@ -766,6 +724,7 @@ export const listenToAuthChanges = () => {
 
     try {
       if (firebaseUser) {
+        setProfileSynced(false);
         // 1. Set initial basic info from Auth (fastest UI update)
         setUser(mapFirebaseUserToAppUser(firebaseUser));
 
@@ -785,16 +744,20 @@ export const listenToAuthChanges = () => {
             if (snapshot.exists()) {
               const userData = snapshot.data() as Partial<IUser>;
               setUser(mapFirebaseUserToAppUser(firebaseUser, userData));
+              setProfileSynced(true);
             } else {
+              setProfileSynced(false);
               // Document doesn't exist yet, try to create it (fallback logic)
               void upsertUserProfile(firebaseUser);
             }
           },
           (error) => {
+            setProfileSynced(false);
             if (__DEV__) console.warn("User Doc Listener Error:", error);
           },
         );
       } else {
+        setProfileSynced(false);
         setUser(null);
         await clearPersistedAuthSession();
       }
@@ -809,7 +772,9 @@ export const listenToAuthChanges = () => {
         auth.currentUser?.uid === firebaseUser.uid
       ) {
         setUser(mapFirebaseUserToAppUser(firebaseUser));
+        setProfileSynced(false);
       } else {
+        setProfileSynced(false);
         setUser(null);
         await clearPersistedAuthSession();
       }

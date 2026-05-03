@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { MembersStackScreenProps, IUser } from "../types";
 import { View, Text, FlatList, Image, TouchableOpacity, Share, StatusBar } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -10,8 +10,10 @@ import {
   useRemoveMember,
   useLeaveFamily,
 } from "../hooks/queries/useFamilyQueries";
+import { syncFamilyInviteForOwner } from "../services/family";
 import { AppHeader, Card, StatusModal, LoadingOverlay } from "../components/ui";
 import NotificationModal from "../components/NotificationModal";
+import { useTextFormatter } from "../hooks";
 
 /**
  * Maps family-related operation errors to user-friendly messages
@@ -35,6 +37,7 @@ const getFamilyActionErrorMessage = (error: unknown, fallback: string) => {
  */
 const MembersScreen = ({ navigation }: MembersStackScreenProps<"Members">) => {
   const { user } = useAuthStore();
+  const { toInitial } = useTextFormatter();
   const [isNotifOpen, setNotifOpen] = useState(false);
 
   // TanStack Query Hooks
@@ -61,6 +64,16 @@ const MembersScreen = ({ navigation }: MembersStackScreenProps<"Members">) => {
   const myRole = myMember?.role ?? user?.role;
   const isOwner = myRole === "owner";
 
+  useEffect(() => {
+    if (!user?.uid || !family?.id || !isOwner) return;
+
+    void syncFamilyInviteForOwner(family.id, user.uid).catch((error) => {
+      if (__DEV__) {
+        console.warn("Invite sync failed:", error);
+      }
+    });
+  }, [family?.id, isOwner, user?.uid]);
+
   /**
    * Opens the system share sheet with the family invite code
    */
@@ -71,7 +84,12 @@ const MembersScreen = ({ navigation }: MembersStackScreenProps<"Members">) => {
         message: `Join our family grocery list! Use invite code: ${family.inviteCode}`,
       });
     } catch (error) {
-      console.error(error);
+      setStatusModal({
+        visible: true,
+        title: "Share Failed",
+        message: error instanceof Error ? error.message : "Could not open share sheet.",
+        type: "error",
+      });
     }
   };
 
@@ -217,7 +235,7 @@ const MembersScreen = ({ navigation }: MembersStackScreenProps<"Members">) => {
                     <Image source={{ uri: item.photoURL }} className="h-full w-full" />
                   ) : (
                     <Text className="text-primary-600 text-lg font-black">
-                      {item.displayName?.charAt(0).toUpperCase() || "?"}
+                      {toInitial(item.displayName)}
                     </Text>
                   )}
                 </View>
@@ -232,7 +250,7 @@ const MembersScreen = ({ navigation }: MembersStackScreenProps<"Members">) => {
 
                 {item.role === "owner" ? (
                   <View className="bg-primary-500/10 px-3 py-1.5 rounded-lg flex-row items-center border border-primary-500/20">
-                    <Crown stroke="#3DB87A" size={12} strokeWidth={3} />
+                    <Crown stroke="#10B981" size={12} strokeWidth={3} />
                     <Text className="ml-1.5 text-[10px] font-black uppercase tracking-widest text-primary-600">
                       Owner
                     </Text>

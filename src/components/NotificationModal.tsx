@@ -4,7 +4,7 @@ import { Bell, Check, ShoppingBag, X, AlertCircle, Inbox } from "lucide-react-na
 import { useAuthStore } from "../store/useAuthStore";
 import { useNotificationStore } from "../store/useNotificationStore";
 import { markNotificationsAsRead } from "../services/notification";
-import { formatDistanceToNow } from "date-fns";
+import { useDateFormatter } from "../hooks";
 import { Card } from "./ui";
 
 interface INotificationModalProps {
@@ -19,8 +19,10 @@ interface INotificationModalProps {
  */
 const NotificationModal = ({ visible, onClose }: INotificationModalProps) => {
   const { user } = useAuthStore();
+  const { toRelativeTime } = useDateFormatter();
   const notifications = useNotificationStore((state) => state.notifications);
   const [filter, setFilter] = useState<"all" | "unread">("all");
+  const [markReadError, setMarkReadError] = useState<string | null>(null);
 
   const myUid = user?.uid || "";
 
@@ -34,21 +36,12 @@ const NotificationModal = ({ visible, onClose }: INotificationModalProps) => {
    */
   const handleMarkAllRead = async () => {
     if (unreadIds.length > 0) {
-      await markNotificationsAsRead(unreadIds, myUid);
-    }
-  };
-
-  /**
-   * Formats a timestamp into a "time ago" string
-   * @param timestamp - The timestamp to format
-   */
-  const formatTime = (timestamp: any) => {
-    if (!timestamp) return "Just now";
-    try {
-      const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
-      return formatDistanceToNow(date, { addSuffix: true });
-    } catch {
-      return "Just now";
+      try {
+        setMarkReadError(null);
+        await markNotificationsAsRead(unreadIds, myUid);
+      } catch (error) {
+        setMarkReadError(error instanceof Error ? error.message : "Could not mark notifications.");
+      }
     }
   };
 
@@ -67,7 +60,7 @@ const NotificationModal = ({ visible, onClose }: INotificationModalProps) => {
       case "item_completed":
         return {
           icon: Check,
-          color: "#3DB87A",
+          color: "#10B981",
           bg: "bg-primary-50",
         };
       case "urgent_item":
@@ -165,12 +158,15 @@ const NotificationModal = ({ visible, onClose }: INotificationModalProps) => {
             disabled={unreadIds.length === 0}
             className={`flex-row items-center ${unreadIds.length === 0 ? "opacity-30" : ""}`}
           >
-            <Check stroke="#3DB87A" size={14} strokeWidth={3} />
+            <Check stroke="#10B981" size={14} strokeWidth={3} />
             <Text className="ml-1.5 text-[11px] font-black uppercase tracking-wider text-primary-600">
               Mark all read
             </Text>
           </TouchableOpacity>
         </View>
+        {markReadError ? (
+          <Text className="mb-2 text-[12px] font-medium text-urgent">{markReadError}</Text>
+        ) : null}
 
         <ScrollView showsVerticalScrollIndicator={false} className="flex-1">
           {displayList.length === 0 ? (
@@ -197,7 +193,13 @@ const NotificationModal = ({ visible, onClose }: INotificationModalProps) => {
                   key={notif.id}
                   activeOpacity={0.8}
                   onPress={() => {
-                    if (isUnread) markNotificationsAsRead([notif.id], myUid);
+                    if (!isUnread) return;
+
+                    void markNotificationsAsRead([notif.id], myUid).catch((error) => {
+                      setMarkReadError(
+                        error instanceof Error ? error.message : "Could not mark notification.",
+                      );
+                    });
                   }}
                   className="mb-3"
                 >
@@ -216,7 +218,7 @@ const NotificationModal = ({ visible, onClose }: INotificationModalProps) => {
                             {notif.title}
                           </Text>
                           <Text className="text-[10px] font-bold text-text-muted uppercase tracking-wider">
-                            {formatTime(notif.createdAt)}
+                            {toRelativeTime(notif.createdAt, "Just now")}
                           </Text>
                         </View>
                         <Text

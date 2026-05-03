@@ -24,6 +24,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 const CATEGORIES: Category[] = [...GROCERY_CATEGORIES];
 const PRIORITIES: Priority[] = ["Low", "Medium", "Urgent"];
+const RECURRENCE_OPTIONS: ("none" | "weekly" | "monthly")[] = ["none", "weekly", "monthly"];
 
 /**
  * Edit Item Screen
@@ -43,6 +44,14 @@ const EditItemScreen = ({
   const [priority, setPriority] = useState<Priority>("Medium");
   const [quantity, setQuantity] = useState("");
   const [notes, setNotes] = useState("");
+  const [recurrenceFrequency, setRecurrenceFrequency] = useState<"none" | "weekly" | "monthly">(
+    "none",
+  );
+  const [assigneeName, setAssigneeName] = useState("");
+  const [dueDateInput, setDueDateInput] = useState("");
+  const [reminderAtInput, setReminderAtInput] = useState("");
+  const [unitPriceInput, setUnitPriceInput] = useState("");
+  const [estimatedTotalInput, setEstimatedTotalInput] = useState("");
   const [customCategories, setCustomCategories] = useState<ICustomCategory[]>([]);
   const [newCatInput, setNewCatInput] = useState("");
   const [showAddCat, setShowAddCat] = useState(false);
@@ -72,6 +81,36 @@ const EditItemScreen = ({
       setPriority(item.priority || "Medium");
       setQuantity(item.quantity || "");
       setNotes(item.notes || "");
+      setRecurrenceFrequency(item.recurrenceFrequency || "none");
+      setAssigneeName(item.assignee?.name || "");
+      if (item.dueDate?.toDate) {
+        setDueDateInput(item.dueDate.toDate().toISOString().slice(0, 10));
+      } else if (item.dueDate instanceof Date) {
+        setDueDateInput(item.dueDate.toISOString().slice(0, 10));
+      } else if (typeof item.dueDate === "string") {
+        setDueDateInput(item.dueDate.slice(0, 10));
+      } else {
+        setDueDateInput("");
+      }
+      if (item.reminderAt?.toDate) {
+        setReminderAtInput(item.reminderAt.toDate().toISOString().slice(0, 10));
+      } else if (item.reminderAt instanceof Date) {
+        setReminderAtInput(item.reminderAt.toISOString().slice(0, 10));
+      } else if (typeof item.reminderAt === "string") {
+        setReminderAtInput(item.reminderAt.slice(0, 10));
+      } else {
+        setReminderAtInput("");
+      }
+      setUnitPriceInput(
+        typeof item.unitPrice === "number" && Number.isFinite(item.unitPrice)
+          ? String(item.unitPrice)
+          : "",
+      );
+      setEstimatedTotalInput(
+        typeof item.estimatedTotal === "number" && Number.isFinite(item.estimatedTotal)
+          ? String(item.estimatedTotal)
+          : "",
+      );
     }
   }, [item]);
 
@@ -100,12 +139,75 @@ const EditItemScreen = ({
       setNewCatInput("");
       setShowAddCat(false);
     } catch (error) {
-      console.error(error);
+      setStatusModal({
+        visible: true,
+        title: "Category Failed",
+        message: error instanceof Error ? error.message : "Could not add category. Please retry.",
+        type: "error",
+      });
     }
   };
 
   const handleSave = async () => {
     if (!item || !name.trim()) return;
+
+    const parseDateInput = (value: string) => {
+      const normalized = value.trim();
+      if (!normalized) return null;
+      const parsed = new Date(normalized);
+      return Number.isNaN(parsed.getTime()) ? null : parsed;
+    };
+
+    const dueDate = parseDateInput(dueDateInput);
+    if (dueDateInput.trim() && !dueDate) {
+      setStatusModal({
+        visible: true,
+        title: "Invalid Due Date",
+        message: "Use format YYYY-MM-DD (example: 2026-05-15).",
+        type: "error",
+      });
+      return;
+    }
+
+    const reminderAt = parseDateInput(reminderAtInput);
+    if (reminderAtInput.trim() && !reminderAt) {
+      setStatusModal({
+        visible: true,
+        title: "Invalid Reminder Date",
+        message: "Use format YYYY-MM-DD (example: 2026-05-14).",
+        type: "error",
+      });
+      return;
+    }
+
+    const unitPriceValue = unitPriceInput.trim();
+    const unitPriceParsed = unitPriceValue ? Number(unitPriceValue) : NaN;
+    if (unitPriceValue && (!Number.isFinite(unitPriceParsed) || unitPriceParsed < 0)) {
+      setStatusModal({
+        visible: true,
+        title: "Invalid Unit Price",
+        message: "Enter a valid non-negative number.",
+        type: "error",
+      });
+      return;
+    }
+    const unitPrice = unitPriceValue ? unitPriceParsed : null;
+
+    const estimatedTotalValue = estimatedTotalInput.trim();
+    const estimatedTotalParsed = estimatedTotalValue ? Number(estimatedTotalValue) : NaN;
+    if (
+      estimatedTotalValue &&
+      (!Number.isFinite(estimatedTotalParsed) || estimatedTotalParsed < 0)
+    ) {
+      setStatusModal({
+        visible: true,
+        title: "Invalid Estimated Total",
+        message: "Enter a valid non-negative number.",
+        type: "error",
+      });
+      return;
+    }
+    const estimatedTotal = estimatedTotalValue ? estimatedTotalParsed : null;
 
     updateMutation.mutate(
       {
@@ -116,6 +218,12 @@ const EditItemScreen = ({
           priority,
           quantity: quantity.trim(),
           notes: notes.trim(),
+          recurrenceFrequency,
+          assignee: assigneeName.trim() ? { name: assigneeName.trim() } : null,
+          dueDate,
+          reminderAt,
+          unitPrice,
+          estimatedTotal,
         },
       },
       {
@@ -181,7 +289,7 @@ const EditItemScreen = ({
   if (initialLoading) {
     return (
       <View className="flex-1 items-center justify-center bg-background">
-        <ActivityIndicator color="#3DB87A" size="large" />
+        <ActivityIndicator color="#10B981" size="large" />
       </View>
     );
   }
@@ -357,6 +465,67 @@ const EditItemScreen = ({
             containerClassName="mb-10"
             inputClassName="h-32 pt-4 leading-6"
             textAlignVertical="top"
+          />
+
+          <View className="mb-6">
+            <Text className="mb-2 ml-1 text-[11px] font-black uppercase tracking-[1.5px] text-text-muted">
+              RECURRING
+            </Text>
+            <View className="flex-row gap-2">
+              {RECURRENCE_OPTIONS.map((option) => (
+                <Chip
+                  key={option}
+                  label={option === "none" ? "One-time" : option}
+                  selected={recurrenceFrequency === option}
+                  onPress={() => setRecurrenceFrequency(option)}
+                  className="mr-2"
+                />
+              ))}
+            </View>
+          </View>
+
+          <View className="mb-6 flex-row gap-3">
+            <InputField
+              label="ASSIGNEE"
+              placeholder="Name (optional)"
+              value={assigneeName}
+              onChangeText={setAssigneeName}
+              containerClassName="flex-1"
+            />
+            <InputField
+              label="DUE DATE"
+              placeholder="YYYY-MM-DD"
+              value={dueDateInput}
+              onChangeText={setDueDateInput}
+              containerClassName="flex-1"
+            />
+          </View>
+
+          <View className="mb-10 flex-row gap-3">
+            <InputField
+              label="REMINDER"
+              placeholder="YYYY-MM-DD"
+              value={reminderAtInput}
+              onChangeText={setReminderAtInput}
+              containerClassName="flex-1"
+            />
+            <InputField
+              label="UNIT PRICE"
+              placeholder="e.g. 5.99"
+              value={unitPriceInput}
+              onChangeText={setUnitPriceInput}
+              keyboardType="decimal-pad"
+              containerClassName="flex-1"
+            />
+          </View>
+
+          <InputField
+            label="ESTIMATED TOTAL"
+            placeholder="e.g. 24.50"
+            value={estimatedTotalInput}
+            onChangeText={setEstimatedTotalInput}
+            keyboardType="decimal-pad"
+            containerClassName="mb-10"
           />
 
           <View className="flex-row gap-4">

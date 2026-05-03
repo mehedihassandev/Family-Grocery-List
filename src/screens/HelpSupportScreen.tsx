@@ -59,7 +59,7 @@ const HelpSupportScreen = ({
         <View className="p-6">
           <View className="items-center mb-6">
             <View className="h-16 w-16 items-center justify-center rounded-full bg-primary-50 mb-4">
-              <HelpCircle stroke="#3DB87A" size={32} />
+              <HelpCircle stroke="#10B981" size={32} />
             </View>
             <Text className="text-[24px] font-black text-text-primary mb-2 text-center">
               Need help?

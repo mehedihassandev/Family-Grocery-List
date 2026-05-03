@@ -4,6 +4,8 @@ import {
   setDoc,
   query,
   where,
+  orderBy,
+  limit,
   onSnapshot,
   serverTimestamp,
   writeBatch,
@@ -53,6 +55,7 @@ export const createNotification = async (
     return newNotif;
   } catch (error) {
     console.error("Create Notification Error:", error);
+    throw error;
   }
 };
 
@@ -68,25 +71,56 @@ export const subscribeToNotifications = (
   onError?: (error: Error) => void,
 ) => {
   const notifRef = collection(db, "notifications");
-  const q = query(notifRef, where("familyId", "==", familyId));
-
-  return onSnapshot(
-    q,
-    (snapshot) => {
-      const notifications = snapshot.docs.map((doc) => doc.data() as IAppNotification);
-      // Sort in memory (since we don't want to enforce a composite index on familyId + createdAt right away)
-      const sorted = notifications.sort((a, b) => {
-        const timeA = a.createdAt?.toMillis() || 0;
-        const timeB = b.createdAt?.toMillis() || 0;
-        return timeB - timeA;
-      });
-      callback(sorted);
-    },
-    (error) => {
-      console.error("Subscribe Notifications Error:", error);
-      onError?.(error);
-    },
+  const optimizedQuery = query(
+    notifRef,
+    where("familyId", "==", familyId),
+    orderBy("createdAt", "desc"),
+    limit(120),
   );
+  const fallbackQuery = query(notifRef, where("familyId", "==", familyId));
+
+  let usingFallback = false;
+  let unsubscribeCurrent: () => void = () => {};
+
+  const subscribe = (useFallback: boolean) =>
+    onSnapshot(
+      useFallback ? fallbackQuery : optimizedQuery,
+      (snapshot) => {
+        const notifications = snapshot.docs.map((doc) => doc.data() as IAppNotification);
+
+        if (useFallback) {
+          const sorted = notifications.sort((a, b) => {
+            const timeA = a.createdAt?.toMillis?.() || 0;
+            const timeB = b.createdAt?.toMillis?.() || 0;
+            return timeB - timeA;
+          });
+          callback(sorted.slice(0, 120));
+          return;
+        }
+
+        callback(notifications);
+      },
+      (error) => {
+        const message = error?.message || "";
+        const needsIndex = message.includes("requires an index");
+
+        if (!useFallback && !usingFallback && needsIndex) {
+          if (__DEV__) {
+            console.warn("Notifications index missing. Falling back to basic query.");
+          }
+          usingFallback = true;
+          unsubscribeCurrent();
+          unsubscribeCurrent = subscribe(true);
+          return;
+        }
+
+        console.error("Subscribe Notifications Error:", error);
+        onError?.(error as Error);
+      },
+    );
+
+  unsubscribeCurrent = subscribe(false);
+  return () => unsubscribeCurrent();
 };
 
 /**
@@ -110,5 +144,6 @@ export const markNotificationsAsRead = async (notificationIds: string[], userId:
     await batch.commit();
   } catch (error) {
     console.error("Mark Read Error:", error);
+    throw error;
   }
 };

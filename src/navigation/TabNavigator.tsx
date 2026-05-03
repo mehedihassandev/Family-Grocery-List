@@ -1,11 +1,10 @@
 import React, { useEffect } from "react";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
-import { BarChart3, Home, ShoppingBasket, Users, User as UserIcon } from "lucide-react-native";
+import { Home, ShoppingBasket, Users, User as UserIcon } from "lucide-react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import DashboardScreen from "../screens/DashboardScreen";
 import HomeScreen from "../screens/HomeScreen";
 import MembersScreen from "../screens/MembersScreen";
-import AnalyzeScreen from "../screens/AnalyzeScreen";
 import ProfileScreen from "../screens/ProfileScreen";
 import { useAuthStore } from "../store/useAuthStore";
 import { useNotificationStore } from "../store/useNotificationStore";
@@ -15,16 +14,15 @@ import {
   HomeStackParamList,
   ListStackParamList,
   MembersStackParamList,
-  AnalyzeStackParamList,
   ProfileStackParamList,
 } from "../types";
 import { View } from "react-native";
+import { syncFamilyInviteForOwner } from "../services/family";
 
 const Tab = createBottomTabNavigator<BottomTabNavigatorParamList>();
 const HomeStack = createNativeStackNavigator<HomeStackParamList>();
 const ListStack = createNativeStackNavigator<ListStackParamList>();
 const MembersStack = createNativeStackNavigator<MembersStackParamList>();
-const AnalyzeStack = createNativeStackNavigator<AnalyzeStackParamList>();
 const ProfileStack = createNativeStackNavigator<ProfileStackParamList>();
 
 const HomeStackScreen = () => (
@@ -45,20 +43,34 @@ const MembersStackScreen = () => (
   </MembersStack.Navigator>
 );
 
-const AnalyzeStackScreen = () => (
-  <AnalyzeStack.Navigator screenOptions={{ headerShown: false }}>
-    <AnalyzeStack.Screen name="Analyze" component={AnalyzeScreen} />
-  </AnalyzeStack.Navigator>
-);
-
 const ProfileStackScreen = () => (
   <ProfileStack.Navigator screenOptions={{ headerShown: false }}>
     <ProfileStack.Screen name="Profile" component={ProfileScreen} />
   </ProfileStack.Navigator>
 );
 
-const TAB_ICON_SIZE = 20;
+const TAB_ICON_SIZE = 22;
 const TAB_ICON_STROKE_WIDTH = 2.5;
+
+const TabIcon = ({
+  focused,
+  color,
+  Icon,
+}: {
+  focused: boolean;
+  color: string;
+  Icon: React.ElementType;
+}) => {
+  return (
+    <View
+      className={
+        "items-center justify-center rounded-2xl " + (focused ? "bg-primary-50 px-5 py-1.5" : "")
+      }
+    >
+      <Icon stroke={color} size={TAB_ICON_SIZE} strokeWidth={TAB_ICON_STROKE_WIDTH} />
+    </View>
+  );
+};
 
 /**
  * Main bottom tab navigator
@@ -67,50 +79,60 @@ const TAB_ICON_STROKE_WIDTH = 2.5;
 const TabNavigator = () => {
   const insets = useSafeAreaInsets();
   const tabBarPaddingBottom = Math.max(insets.bottom, 10);
-  const { user } = useAuthStore();
+  const { user, loading, hasHydrated, profileSynced } = useAuthStore();
   const initNotifications = useNotificationStore((state) => state.init);
   const clearNotifications = useNotificationStore((state) => state.clear);
+  const authReady = hasHydrated && !loading;
+  const familyId = authReady && profileSynced ? user?.familyId : null;
 
   useEffect(() => {
-    // Re-initialise or clear the notification listener whenever the family
-    // changes (e.g. user joins/leaves a family while the app is open).
-    if (user?.familyId) {
-      initNotifications(user.familyId);
+    if (familyId) {
+      initNotifications(familyId);
     } else {
       clearNotifications();
     }
-
-    // Cleanup on unmount to prevent persistent listeners after logout
     return () => clearNotifications();
-  }, [clearNotifications, initNotifications, user?.familyId]);
+  }, [clearNotifications, familyId, initNotifications]);
+
+  useEffect(() => {
+    if (!authReady || !profileSynced || !user?.uid || !familyId || user.role !== "owner") {
+      return;
+    }
+    void syncFamilyInviteForOwner(familyId, user.uid).catch((error) => {
+      if (__DEV__) {
+        console.warn("Owner invite sync failed:", error);
+      }
+    });
+  }, [authReady, familyId, profileSynced, user?.role, user?.uid]);
 
   return (
     <Tab.Navigator
-      // When the user leaves a family while focused on a family-only tab,
-      // remount the navigator so it cleanly resets to the available routes.
-      key={user?.familyId ? "family-tabs" : "no-family-tabs"}
+      key={familyId ? "family-tabs" : "no-family-tabs"}
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: "#3DB87A",
+        tabBarActiveTintColor: "#10B981",
         tabBarInactiveTintColor: "#9AA3AF",
+        tabBarShowLabel: true,
         tabBarStyle: {
           position: "absolute",
           bottom: 0,
           left: 0,
           right: 0,
           backgroundColor: "#FFFFFF",
-          height: 60 + tabBarPaddingBottom,
+          height: 64 + tabBarPaddingBottom,
           paddingBottom: tabBarPaddingBottom,
-          paddingTop: 12,
+          paddingTop: 8,
           borderTopWidth: 1,
           borderTopColor: "#E8EBF0",
-          elevation: 0,
+          elevation: 10,
+          shadowColor: "#000",
+          shadowOffset: { width: 0, height: -4 },
+          shadowOpacity: 0.05,
+          shadowRadius: 10,
         },
         tabBarLabelStyle: {
           fontSize: 10,
-          fontWeight: "600",
-          textTransform: "uppercase",
-          letterSpacing: 0.4,
+          fontWeight: "700",
           marginTop: 4,
         },
       }}
@@ -119,36 +141,22 @@ const TabNavigator = () => {
         name="HomeStack"
         component={HomeStackScreen}
         options={{
-          title: "Home",
+          title: "Dashboard",
           tabBarIcon: ({ color, focused }) => (
-            <View className="items-center">
-              {focused && (
-                <View className="absolute -top-[12px] h-[3px] w-5 rounded-full bg-primary-500" />
-              )}
-              <Home stroke={color} size={TAB_ICON_SIZE} strokeWidth={TAB_ICON_STROKE_WIDTH} />
-            </View>
+            <TabIcon focused={focused} color={color} Icon={Home} />
           ),
         }}
       />
 
-      {user?.familyId ? (
+      {familyId ? (
         <>
           <Tab.Screen
             name="ListStack"
             component={ListStackScreen}
             options={{
-              title: "List",
+              title: "Groceries",
               tabBarIcon: ({ color, focused }) => (
-                <View className="items-center">
-                  {focused && (
-                    <View className="absolute -top-[12px] h-[3px] w-5 rounded-full bg-primary-500" />
-                  )}
-                  <ShoppingBasket
-                    stroke={color}
-                    size={TAB_ICON_SIZE}
-                    strokeWidth={TAB_ICON_STROKE_WIDTH}
-                  />
-                </View>
+                <TabIcon focused={focused} color={color} Icon={ShoppingBasket} />
               ),
             }}
           />
@@ -156,33 +164,9 @@ const TabNavigator = () => {
             name="MembersStack"
             component={MembersStackScreen}
             options={{
-              title: "Members",
+              title: "Family",
               tabBarIcon: ({ color, focused }) => (
-                <View className="items-center">
-                  {focused && (
-                    <View className="absolute -top-[12px] h-[3px] w-5 rounded-full bg-primary-500" />
-                  )}
-                  <Users stroke={color} size={TAB_ICON_SIZE} strokeWidth={TAB_ICON_STROKE_WIDTH} />
-                </View>
-              ),
-            }}
-          />
-          <Tab.Screen
-            name="AnalyzeStack"
-            component={AnalyzeStackScreen}
-            options={{
-              title: "Analyze",
-              tabBarIcon: ({ color, focused }) => (
-                <View className="items-center">
-                  {focused && (
-                    <View className="absolute -top-[12px] h-[3px] w-5 rounded-full bg-primary-500" />
-                  )}
-                  <BarChart3
-                    stroke={color}
-                    size={TAB_ICON_SIZE}
-                    strokeWidth={TAB_ICON_STROKE_WIDTH}
-                  />
-                </View>
+                <TabIcon focused={focused} color={color} Icon={Users} />
               ),
             }}
           />
@@ -195,12 +179,7 @@ const TabNavigator = () => {
         options={{
           title: "Profile",
           tabBarIcon: ({ color, focused }) => (
-            <View className="items-center">
-              {focused && (
-                <View className="absolute -top-[12px] h-[3px] w-5 rounded-full bg-primary-500" />
-              )}
-              <UserIcon stroke={color} size={TAB_ICON_SIZE} strokeWidth={TAB_ICON_STROKE_WIDTH} />
-            </View>
+            <TabIcon focused={focused} color={color} Icon={UserIcon} />
           ),
         }}
       />

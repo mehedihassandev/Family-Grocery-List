@@ -17,7 +17,7 @@ interface IProgressBarProps {
  */
 const ProgressBar = ({
   progress,
-  color = "#3DB87A",
+  color = "#10B981",
   backgroundColor = "#F0F2F5",
   height = 8,
   label,
