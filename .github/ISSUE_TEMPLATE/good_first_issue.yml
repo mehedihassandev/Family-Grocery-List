@@ -1,0 +1,55 @@
+name: "🧩 Good First Issue Candidate"
+description: "Create a beginner-friendly task for new contributors."
+title: "[Good First Issue]: "
+labels: ["good first issue", "help wanted"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use this template for maintainers to define beginner-friendly issues.
+
+  - type: input
+    id: summary
+    attributes:
+      label: Task summary
+      placeholder: "Implement ... in ... without changing ..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: context
+    attributes:
+      label: Why this is a good first issue
+      placeholder: "Explain scope and why it is safe for newcomers."
+    validations:
+      required: true
+
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance criteria
+      placeholder: |
+        - [ ] Behavior ...
+        - [ ] Tests updated ...
+        - [ ] Docs updated ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: files
+    attributes:
+      label: Suggested files/areas
+      placeholder: "src/... , docs/... , .github/..."
+    validations:
+      required: false
+
+  - type: textarea
+    id: setup
+    attributes:
+      label: Setup/verification commands
+      placeholder: |
+        npm run lint
+        npm run type-check
+        npm run test
+    validations:
+      required: false
