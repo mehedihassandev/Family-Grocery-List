@@ -35,3 +35,6 @@ jobs:
 
       - name: Typecheck
         run: yarn -s tsc -p tsconfig.json --noEmit
+
+      - name: Test
+        run: yarn test

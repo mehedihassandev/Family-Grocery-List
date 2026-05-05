@@ -29,6 +29,7 @@ Family Grocery List is a React Native app (Expo + native projects) where family 
 - [Tech Stack](#tech-stack)
 - [Features](#features)
 - [Architecture](#architecture)
+- [Architecture Notes](#architecture-notes)
 - [Project Structure](#project-structure)
 - [Getting Started](#getting-started)
 - [Environment Variables](#environment-variables)
@@ -38,6 +39,7 @@ Family Grocery List is a React Native app (Expo + native projects) where family 
 - [Auth and Navigation Flow](#auth-and-navigation-flow)
 - [Open Source and Contributing](#open-source-and-contributing)
 - [Commit Message Rules](#commit-message-rules)
+- [Release and Changelog](#release-and-changelog)
 - [Troubleshooting](#troubleshooting)
 - [Security Notes](#security-notes)
 - [Privacy and Support](#privacy-and-support)
@@ -78,6 +80,10 @@ flowchart LR
   Services --> Auth[Firebase Auth]
   Services --> DB[Cloud Firestore]
 ```
+
+## Architecture Notes
+
+- Detailed architecture and contributor-facing system map: [docs/architecture.md](./docs/architecture.md)
 
 ## Project Structure
 
@@ -339,6 +345,12 @@ Enforcement:
 ```bash
 npm run prepare
 ```
+
+## Release and Changelog
+
+- Versioning follows Semantic Versioning.
+- Pushing version tags (for example `v1.1.0`) triggers the release workflow in `.github/workflows/release.yml`.
+- Ongoing release notes are tracked in [CHANGELOG.md](./CHANGELOG.md).
 
 ## Troubleshooting
 
