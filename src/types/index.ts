@@ -37,8 +37,17 @@ export interface IFamily {
   name: string;
   inviteCode: string;
   ownerId: string;
-  createdAt: any;
+  createdAt: TFirestoreDateValue;
 }
+
+interface IFirestoreTimestampLike {
+  toDate?: () => Date;
+  toMillis?: () => number;
+  seconds?: number;
+  nanoseconds?: number;
+}
+
+export type TFirestoreDateValue = (Date & IFirestoreTimestampLike) | IFirestoreTimestampLike | null;
 
 export interface IGroceryItem {
   id: string;
@@ -53,8 +62,8 @@ export interface IGroceryItem {
     uid?: string;
     name: string;
   } | null;
-  dueDate?: any | null;
-  reminderAt?: any | null;
+  dueDate?: TFirestoreDateValue;
+  reminderAt?: TFirestoreDateValue;
   unitPrice?: number | null;
   estimatedTotal?: number | null;
   status: "pending" | "completed";
@@ -68,9 +77,9 @@ export interface IGroceryItem {
     name: string;
     photoURL?: string;
   } | null;
-  createdAt: any;
-  updatedAt: any;
-  completedAt?: any | null;
+  createdAt: TFirestoreDateValue;
+  updatedAt: TFirestoreDateValue;
+  completedAt?: TFirestoreDateValue;
 }
 
 export type NotificationType = "item_added" | "item_completed" | "urgent_item";
@@ -195,5 +204,5 @@ export interface IAppNotification {
   itemId?: string;
   itemName?: string;
   readBy: string[];
-  createdAt: any;
+  createdAt: TFirestoreDateValue;
 }

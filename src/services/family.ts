@@ -223,7 +223,7 @@ export const createFamily = async (userId: string, familyName: string) => {
         name: normalizedFamilyName,
         inviteCode,
         ownerId: userId,
-        createdAt: serverTimestamp(),
+        createdAt: serverTimestamp() as unknown as IFamily["createdAt"],
       };
 
       try {

@@ -1,7 +1,6 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { NavigationContainer } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
-import BootSplash from "react-native-bootsplash";
 
 import { useAuthStore } from "../store/useAuthStore";
 import { listenToAuthChanges } from "../services/auth";
@@ -10,22 +9,10 @@ import { RootNavigatorParamList, ERootRoutes } from "../types";
 import AuthenticatedNavigator from "./AuthenticatedNavigator";
 import UnAuthenticatedNavigator from "./UnAuthenticatedNavigator";
 import { navigationRef } from "./navigationRef";
-import { ActivityIndicator, View } from "react-native";
+import { LoadingScreen } from "../screens";
 
 const Stack = createNativeStackNavigator<RootNavigatorParamList>();
-
-const LoadingScreen = () => (
-  <View
-    style={{
-      flex: 1,
-      justifyContent: "center",
-      alignItems: "center",
-      backgroundColor: "#f5f7f4",
-    }}
-  >
-    <ActivityIndicator size="large" color="#10B981" />
-  </View>
-);
+const MIN_LOADING_SCREEN_MS = 800;
 
 /**
  * Root Navigator Component
@@ -34,7 +21,8 @@ const LoadingScreen = () => (
  */
 const Navigator = () => {
   const { user, loading, hasHydrated } = useAuthStore();
-  const isAppReady = hasHydrated && !loading;
+  const [minDelayPassed, setMinDelayPassed] = useState(false);
+  const isAppReady = hasHydrated && !loading && minDelayPassed;
 
   useEffect(() => {
     // Subscribe to Firebase auth state; unsubscribe on unmount
@@ -42,15 +30,16 @@ const Navigator = () => {
     return () => unsubscribe();
   }, []);
 
+  useEffect(() => {
+    const timeout = setTimeout(() => {
+      setMinDelayPassed(true);
+    }, MIN_LOADING_SCREEN_MS);
+
+    return () => clearTimeout(timeout);
+  }, []);
+
   return (
-    <NavigationContainer
-      ref={navigationRef}
-      onReady={() => {
-        // Only hide the splash screen when navigation is fully mounted.
-        // This avoids white flicker on startup.
-        void BootSplash.hide({ fade: true });
-      }}
-    >
+    <NavigationContainer ref={navigationRef}>
       <Stack.Navigator screenOptions={{ headerShown: false }}>
         {!isAppReady ? (
           <Stack.Screen name={ERootRoutes.LOADING} component={LoadingScreen} />

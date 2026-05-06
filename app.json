@@ -13,21 +13,14 @@
     ],
     "orientation": "portrait",
     "icon": "./assets/icon.png",
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#59AC77"
+    },
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
     "plugins": [
-      [
-        "react-native-bootsplash",
-        {
-          "logo": "./assets/branding/bootsplash-logo.svg",
-          "logoWidth": 134,
-          "background": "#59AC77",
-          "assetsOutput": "assets/bootsplash",
-          "android": {
-            "darkContentBarsStyle": true
-          }
-        }
-      ],
       "expo-font"
     ],
     "ios": {

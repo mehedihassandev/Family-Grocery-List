@@ -48,7 +48,7 @@ export const createNotification = async (
       itemId: itemDetails.id,
       itemName: itemDetails.name,
       readBy: [],
-      createdAt: serverTimestamp(),
+      createdAt: serverTimestamp() as unknown as IAppNotification["createdAt"],
     };
 
     await setDoc(notifRef, newNotif);
