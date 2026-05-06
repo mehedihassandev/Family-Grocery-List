@@ -42,17 +42,22 @@ interface IGrocerySection {
   data: IGroceryItem[];
 }
 
-const STATUS_FILTERS: { key: TStatusFilter; label: string }[] = [
+interface IFilterOption<T extends string> {
+  key: T;
+  label: string;
+}
+
+const STATUS_FILTERS: IFilterOption<TStatusFilter>[] = [
   { key: "all", label: "All" },
   { key: "pending", label: "Pending" },
   { key: "completed", label: "Completed" },
 ];
-const DUE_FILTERS: { key: TDueFilter; label: string }[] = [
+const DUE_FILTERS: IFilterOption<TDueFilter>[] = [
   { key: "all", label: "All Due" },
   { key: "overdue", label: "Overdue" },
   { key: "due_soon", label: "Due Soon" },
 ];
-const ASSIGNEE_FILTERS: { key: TAssigneeFilter; label: string }[] = [
+const ASSIGNEE_FILTERS: IFilterOption<TAssigneeFilter>[] = [
   { key: "all", label: "All Assignee" },
   { key: "assigned", label: "Assigned" },
   { key: "unassigned", label: "Unassigned" },
@@ -68,6 +73,35 @@ interface IUndoState {
   itemName: string;
   familyId: string;
 }
+
+const FilterChipRow = <T extends string>({
+  options,
+  selectedKey,
+  onSelect,
+  className = "mb-2",
+}: {
+  options: IFilterOption<T>[];
+  selectedKey: T;
+  onSelect: (key: T) => void;
+  className?: string;
+}) => (
+  <ScrollView
+    horizontal
+    showsHorizontalScrollIndicator={false}
+    className={className}
+    contentContainerStyle={{ paddingRight: 12 }}
+  >
+    {options.map((option) => (
+      <Chip
+        key={option.key}
+        label={option.label}
+        selected={selectedKey === option.key}
+        onPress={() => onSelect(option.key)}
+        className="mr-2"
+      />
+    ))}
+  </ScrollView>
+);
 
 /**
  * Maps Firebase error messages to user-friendly strings
@@ -461,38 +495,16 @@ const HomeScreen = ({ navigation }: ListStackScreenProps<"List">) => {
                     />
                   ))}
                 </ScrollView>
-                <ScrollView
-                  horizontal
-                  showsHorizontalScrollIndicator={false}
-                  className="mb-2"
-                  contentContainerStyle={{ paddingRight: 12 }}
-                >
-                  {DUE_FILTERS.map((option) => (
-                    <Chip
-                      key={option.key}
-                      label={option.label}
-                      selected={dueFilter === option.key}
-                      onPress={() => setDueFilter(option.key)}
-                      className="mr-2"
-                    />
-                  ))}
-                </ScrollView>
-                <ScrollView
-                  horizontal
-                  showsHorizontalScrollIndicator={false}
-                  className="mb-2"
-                  contentContainerStyle={{ paddingRight: 12 }}
-                >
-                  {ASSIGNEE_FILTERS.map((option) => (
-                    <Chip
-                      key={option.key}
-                      label={option.label}
-                      selected={assigneeFilter === option.key}
-                      onPress={() => setAssigneeFilter(option.key)}
-                      className="mr-2"
-                    />
-                  ))}
-                </ScrollView>
+                <FilterChipRow
+                  options={DUE_FILTERS}
+                  selectedKey={dueFilter}
+                  onSelect={setDueFilter}
+                />
+                <FilterChipRow
+                  options={ASSIGNEE_FILTERS}
+                  selectedKey={assigneeFilter}
+                  onSelect={setAssigneeFilter}
+                />
               </Animated.View>
 
               <View className="flex-row items-center justify-between mt-4 mb-2">
@@ -515,7 +527,7 @@ const HomeScreen = ({ navigation }: ListStackScreenProps<"List">) => {
                 item={item}
                 onToggle={handleToggle}
                 onPress={(currentItem) =>
-                  navigation.navigate(ERootRoutes.ITEM_DETAIL as any, { itemId: currentItem.id })
+                  navigation.navigate(ERootRoutes.ITEM_DETAIL, { itemId: currentItem.id })
                 }
                 currentUserId={user?.uid}
               />

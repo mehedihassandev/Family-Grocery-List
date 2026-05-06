@@ -16,6 +16,8 @@ allprojects {
   repositories {
     google()
     mavenCentral()
+    // AsyncStorage v3 ships local Android artifacts under node_modules.
+    maven { url("$rootDir/../node_modules/@react-native-async-storage/async-storage/android/local_repo") }
     maven { url 'https://www.jitpack.io' }
   }
 }

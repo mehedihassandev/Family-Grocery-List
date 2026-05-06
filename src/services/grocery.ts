@@ -84,8 +84,8 @@ export const addGroceryItem = async (
       estimatedTotal: toNumberOrNull(item.estimatedTotal),
       status: "pending",
       addedBy: user,
-      createdAt: serverTimestamp(),
-      updatedAt: serverTimestamp(),
+      createdAt: serverTimestamp() as unknown as IGroceryItem["createdAt"],
+      updatedAt: serverTimestamp() as unknown as IGroceryItem["updatedAt"],
     };
 
     await setDoc(itemRef, newItem);
@@ -206,8 +206,8 @@ export const toggleItemCompletion = async (
           uid: user.uid,
           name: user.name,
         },
-        createdAt: serverTimestamp(),
-        updatedAt: serverTimestamp(),
+        createdAt: serverTimestamp() as unknown as IGroceryItem["createdAt"],
+        updatedAt: serverTimestamp() as unknown as IGroceryItem["updatedAt"],
       };
 
       await setDoc(recurrenceRef, nextItem);

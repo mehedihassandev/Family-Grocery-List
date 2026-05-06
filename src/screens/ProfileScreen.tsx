@@ -18,7 +18,26 @@ import { useTextFormatter } from "../hooks";
 import { AppHeader, Card, StatusModal } from "../components/ui";
 import { ERootRoutes, ETabRoutes } from "../navigation/routes";
 
-const getFamilyActionErrorMessage = (error: any, fallback: string) => {
+type TStatusModalType = "success" | "error" | "warning" | "confirm";
+
+interface IStatusModalState {
+  visible: boolean;
+  title: string;
+  message: string;
+  type: TStatusModalType;
+}
+
+interface IMenuItemProps {
+  icon: React.ComponentType<{ stroke?: string; size?: number; strokeWidth?: number }>;
+  title: string;
+  onPress: () => void;
+  isDestructive?: boolean;
+  showChevron?: boolean;
+  rightElement?: React.ReactNode;
+  loading?: boolean;
+}
+
+const getFamilyActionErrorMessage = (error: unknown, fallback: string) => {
   const rawMessage = error instanceof Error ? error.message : "";
   const normalized = rawMessage.toLowerCase();
   if (normalized.includes("permission-denied") || normalized.includes("insufficient permissions")) {
@@ -32,7 +51,7 @@ const ProfileScreen = ({ navigation }: ProfileStackScreenProps<"Profile">) => {
   const { toInitials } = useTextFormatter();
   const [leavingFamily, setLeavingFamily] = useState(false);
   const [confirmLeaveModal, setConfirmLeaveModal] = useState(false);
-  const [statusModal, setStatusModal] = useState<any>({
+  const [statusModal, setStatusModal] = useState<IStatusModalState>({
     visible: false,
     title: "",
     message: "",
@@ -76,7 +95,7 @@ const ProfileScreen = ({ navigation }: ProfileStackScreenProps<"Profile">) => {
 
   const handleStatusModalClose = () => {
     const wasSuccess = statusModal.type === "success";
-    setStatusModal((prev: any) => ({ ...prev, visible: false }));
+    setStatusModal((prev) => ({ ...prev, visible: false }));
     if (wasSuccess) {
       navigation.navigate(ETabRoutes.HOME);
     }
@@ -98,7 +117,7 @@ const ProfileScreen = ({ navigation }: ProfileStackScreenProps<"Profile">) => {
     showChevron = true,
     rightElement,
     loading = false,
-  }: any) => (
+  }: IMenuItemProps) => (
     <TouchableOpacity
       activeOpacity={0.7}
       onPress={onPress}

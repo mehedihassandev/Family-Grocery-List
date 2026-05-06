@@ -1,5 +1,5 @@
 import "./src/styles/global.css";
-import React from "react";
+import React, { useEffect } from "react";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import Navigator from "./src/navigation";
@@ -14,13 +14,13 @@ import {
   DMMono_500Medium 
 } from '@expo-google-fonts/dm-mono';
 
-import * as SplashScreen from 'expo-splash-screen';
+import * as SplashScreen from "expo-splash-screen";
 
 import { QueryClientProvider } from "@tanstack/react-query";
 import { queryClient } from "./src/lib/react-query";
 
 // Keep the splash screen visible while we fetch resources
-SplashScreen.preventAutoHideAsync();
+void SplashScreen.preventAutoHideAsync();
 
 /**
  * Main application component
@@ -28,25 +28,31 @@ SplashScreen.preventAutoHideAsync();
  * Navigation logic is centralized in src/navigation/index.tsx.
  */
 export default function App() {
-    const [fontsLoaded, fontError] = useFonts({
-        DMSans_400Regular,
-        DMSans_500Medium,
-        DMSans_700Bold,
-        DMMono_400Regular,
-        DMMono_500Medium,
-    });
+  const [fontsLoaded, fontError] = useFonts({
+    DMSans_400Regular,
+    DMSans_500Medium,
+    DMSans_700Bold,
+    DMMono_400Regular,
+    DMMono_500Medium,
+  });
 
-    if (!fontsLoaded && !fontError) {
-        return null;
+  useEffect(() => {
+    if (fontsLoaded || fontError) {
+      void SplashScreen.hideAsync();
     }
+  }, [fontsLoaded, fontError]);
 
-    return (
-        <GestureHandlerRootView style={{ flex: 1 }}>
-            <QueryClientProvider client={queryClient}>
-                <SafeAreaProvider>
-                    <Navigator />
-                </SafeAreaProvider>
-            </QueryClientProvider>
-        </GestureHandlerRootView>
-    );
+  if (!fontsLoaded && !fontError) {
+    return null;
+  }
+
+  return (
+    <GestureHandlerRootView style={{ flex: 1, backgroundColor: "#59AC77" }}>
+      <QueryClientProvider client={queryClient}>
+        <SafeAreaProvider>
+          <Navigator />
+        </SafeAreaProvider>
+      </QueryClientProvider>
+    </GestureHandlerRootView>
+  );
 }

@@ -1,4 +1,4 @@
-import { IGroceryItem, Priority } from "../../types";
+import { IGroceryItem, Priority, TFirestoreDateValue } from "../../types";
 
 export const GROCERY_CATEGORIES = [
   "Beauty",
@@ -26,8 +26,8 @@ export interface IGroceryItemModel {
   note: string;
   recurrence_frequency: "none" | "weekly" | "monthly";
   assignee_name: string | null;
-  due_date: unknown | null;
-  reminder_at: unknown | null;
+  due_date: TFirestoreDateValue;
+  reminder_at: TFirestoreDateValue;
   unit_price: number | null;
   estimated_total: number | null;
   status: GroceryStatus;
@@ -36,9 +36,9 @@ export interface IGroceryItemModel {
   created_by_name: string;
   completed_by: string | null;
   completed_by_name: string | null;
-  created_at: unknown;
-  updated_at: unknown;
-  completed_at: unknown | null;
+  created_at: TFirestoreDateValue;
+  updated_at: TFirestoreDateValue;
+  completed_at: TFirestoreDateValue;
 }
 
 interface IFirestoreTimestampLike {

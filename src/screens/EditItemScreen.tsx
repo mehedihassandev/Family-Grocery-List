@@ -87,8 +87,6 @@ const EditItemScreen = ({
         setDueDateInput(item.dueDate.toDate().toISOString().slice(0, 10));
       } else if (item.dueDate instanceof Date) {
         setDueDateInput(item.dueDate.toISOString().slice(0, 10));
-      } else if (typeof item.dueDate === "string") {
-        setDueDateInput(item.dueDate.slice(0, 10));
       } else {
         setDueDateInput("");
       }
@@ -96,8 +94,6 @@ const EditItemScreen = ({
         setReminderAtInput(item.reminderAt.toDate().toISOString().slice(0, 10));
       } else if (item.reminderAt instanceof Date) {
         setReminderAtInput(item.reminderAt.toISOString().slice(0, 10));
-      } else if (typeof item.reminderAt === "string") {
-        setReminderAtInput(item.reminderAt.slice(0, 10));
       } else {
         setReminderAtInput("");
       }
