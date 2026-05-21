@@ -4414,10 +4414,10 @@ expo-constants@~55.0.15, expo-constants@~55.0.16:
   dependencies:
     "@expo/env" "~2.1.2"
 
-expo-crypto@~55.0.14:
-  version "55.0.14"
-  resolved "https://registry.yarnpkg.com/expo-crypto/-/expo-crypto-55.0.14.tgz#2a6b03f4d57c50b68b9524dbc7bd88f510032d0d"
-  integrity sha512-TfAADBGZNNv9OOmdKFJCz54wDj87ufxtzQNSY+Roycpm8e5tuCnDIL7EjqUOmNTGH99Jj8ftPGFt4KGG2Ii2fg==
+expo-crypto@~55.0.14, expo-crypto@~55.0.15:
+  version "55.0.15"
+  resolved "https://registry.yarnpkg.com/expo-crypto/-/expo-crypto-55.0.15.tgz#77ad63c227282013943df8f9037150c6731d827c"
+  integrity sha512-nlxLguQyJM4MhDDERL30WZkq68/BujOcAp4QdGk+1pZmUmG1p2M8cF7GeFwYvWwjH0DVsIRtRh4ukeTvOZVTPg==
 
 expo-dev-client@~55.0.28:
   version "55.0.32"
