@@ -93,7 +93,7 @@ npm run prepare
 Manual check (optional):
 
 ```bash
-npm run commitlint
+yarn commitlint-check
 ```
 
 ## Releases and Versioning

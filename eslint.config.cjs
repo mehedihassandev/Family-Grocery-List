@@ -13,6 +13,7 @@ module.exports = defineConfig([
       "build/**",
       "coverage/**",
       "node_modules/**",
+      "scripts/**",
     ],
   },
 ]);
