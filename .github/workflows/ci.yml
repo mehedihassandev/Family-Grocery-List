@@ -27,6 +27,16 @@ jobs:
       - name: Install dependencies
         run: yarn install --frozen-lockfile
 
+      # Why this exists:
+      # React Native and Expo projects suffer from major instability if third-party libraries
+      # are not matched with the specific versions approved by the current Expo SDK release.
+      # This step verifies that package.json versions are strictly compatible with Expo SDK 55
+      # and that no peer dependency or React Native mismatches exist before merging.
+      - name: Expo Compatibility Check
+        run: |
+          yarn expo install --check
+          yarn expo-doctor
+
       - name: Lint
         run: yarn lint
 

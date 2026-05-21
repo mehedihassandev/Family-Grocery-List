@@ -8,16 +8,16 @@ updates:
     open-pull-requests-limit: 5
 
     # Why this exists:
-    # Expo and React Native projects are extremely sensitive to package versions.
-    # A single version mismatch of a native module or core library can break compilation,
-    # crash autolinking, or cause runtime failures. These rules protect the application
-    # by ensuring Dependabot does not suggest updates that conflict with the Expo SDK 55 release.
+    # Core framework packages (React, React Native, Expo) must stay aligned with
+    # the Expo SDK 55 release level. Upgrading these directly will break the framework foundation.
+    # All other community and native packages are allowed to be updated by Dependabot,
+    # as their compatibility is dynamically verified and auto-aligned by our CI workflows.
     ignore:
       # Why this exists:
-      # The core React, React Native, and Expo packages must stay at the exact versions
-      # aligned with the Expo SDK 55 release. Upgrading these directly will break compatibility.
+      # Core framework modules are locked to the specific Expo SDK release.
+      # Upgrading these individually will break autolinking and build scripts.
       # Tricky logic:
-      # We use "*" wildcard to ignore ALL updates for these core libraries.
+      # We use "*" wildcard to ignore ALL updates for these core packages.
       - dependency-name: "react"
         versions: ["*"]
       - dependency-name: "react-native"
@@ -30,28 +30,6 @@ updates:
         versions: ["*"]
       - dependency-name: "babel-preset-expo"
         versions: ["*"]
-
-      # Why this exists:
-      # Expo SDK modules (like expo-font, expo-splash-screen) are pinned to specific SDK-compatible versions.
-      # Dependabot must never update them, as doing so bypasses 'npx expo install' safety checks.
-      # Tricky logic:
-      # We use 'expo-*' glob wildcard to capture all standard Expo packages.
-      - dependency-name: "expo-*"
-        versions: ["*"]
-
-      # Why this exists:
-      # React Native third-party packages with native Android/iOS bindings (like reanimated, gesture-handler, svg)
-      # have tight compilation dependencies on specific React Native and Gradle versions.
-      # We lock major and minor updates of these libraries, but allow patch releases for critical security/bug fixes.
-      # Tricky logic:
-      # We use globs ('react-native-*', '@react-native-*/*', '@react-navigation/*') to catch all community packages
-      # and native-linked dependencies, and restrict update-types to semver-major and semver-minor.
-      - dependency-name: "react-native-*"
-        update-types: ["version-update:semver-major", "version-update:semver-minor"]
-      - dependency-name: "@react-native-*/*"
-        update-types: ["version-update:semver-major", "version-update:semver-minor"]
-      - dependency-name: "@react-navigation/*"
-        update-types: ["version-update:semver-major", "version-update:semver-minor"]
 
   - package-ecosystem: "github-actions"
     directory: "/"

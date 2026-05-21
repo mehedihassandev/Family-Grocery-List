@@ -1,0 +1,86 @@
+name: Dependabot Expo Compatibility Autoupdate
+
+on:
+  pull_request:
+    branches: ["main"]
+
+# Why this exists:
+# This workflow runs only on Dependabot pull requests.
+# It checks if Dependabot's proposed updates are compatible with our Expo SDK 55 version.
+# If they are incompatible, it automatically runs 'yarn expo install --fix' to align them
+# with the Expo SDK, commits the corrected versions, and pushes them back to the PR branch.
+# This ensures that packages are updated where possible, but always kept 100% compatible
+# to prevent build and runtime crashes.
+# Tricky logic:
+# By checking out with ${{ secrets.GITHUB_TOKEN }} and setting permissions, the action
+# has the necessary write privileges to commit the automatic alignment fix back to the
+# Dependabot PR branch directly, converting a failing/unstable update into a stable green PR.
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  align-compatibility:
+    name: Align Expo Dependency Compatibility
+    if: github.actor == 'dependabot[bot]'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v6
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          ref: ${{ github.head_ref }}
+
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: "20"
+          cache: "yarn"
+
+      # Why this exists:
+      # Dependabot PR branches only contain the upgraded package.json, so we must install
+      # the full dependency tree first to allow Expo's CLI and Doctor utilities to evaluate
+      # structural compatibility in a fully resolved node_modules workspace.
+      - name: Install Dependencies
+        run: yarn install
+
+      # Why this exists:
+      # If Dependabot upgrades a package to a version that is incompatible with Expo SDK 55,
+      # 'expo install --fix' automatically downgrades/pins the package back to the approved
+      # compatible version constraint.
+      # Tricky logic:
+      # We re-run 'yarn install' immediately afterwards to ensure the lockfile (yarn.lock) is
+      # synchronized with the package.json modifications.
+      - name: Run Expo Install Fix
+        id: expo_fix
+        run: |
+          yarn expo install --fix
+          yarn install
+
+      # Why this exists:
+      # We verify if 'expo install --fix' made any alterations to package.json or yarn.lock.
+      # If no changes were made, the proposed upgrade is 100% compatible as-is.
+      - name: Check for Changes
+        id: git_status
+        run: |
+          git status --porcelain
+          if [ -n "$(git status --porcelain)" ]; then
+            echo "changed=true" >> $GITHUB_OUTPUT
+          else
+            echo "changed=false" >> $GITHUB_OUTPUT
+          fi
+
+      # Why this exists:
+      # If changes were made, we automatically commit the aligned versions back to the PR.
+      # Tricky logic:
+      # We push directly back to the head reference branch of the pull request using HEAD:${{ github.head_ref }}.
+      - name: Commit and Push Compatible Versions
+        if: steps.git_status.outputs.changed == 'true'
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git add package.json yarn.lock
+          git commit -m "chore(deps): auto-align dependency version with Expo SDK 55"
+          git push origin HEAD:${{ github.head_ref }}
