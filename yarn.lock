@@ -4456,10 +4456,10 @@ expo-file-system@~55.0.19:
   resolved "https://registry.yarnpkg.com/expo-file-system/-/expo-file-system-55.0.19.tgz#7a714ad1b3bbcc41bdc0c0942dbd131f15a6c472"
   integrity sha512-c4smCbMqELLI3YQrGpw21MwZIREXM2e53vQD/+KWQcae1q+hgw8J2TroEqcQ/jVOtFpZYVvyVfgu4HDKNEKmNw==
 
-expo-font@~55.0.6, expo-font@~55.0.7:
-  version "55.0.7"
-  resolved "https://registry.yarnpkg.com/expo-font/-/expo-font-55.0.7.tgz#f89a5d9a71618d88abd4aa0d76f74070f803ff79"
-  integrity sha512-oH39Xb+3i6Y69b7YRP+P+5WLx7621t+ep/RAgLwJJYpTjs7CnSohUG+873rEtqsTAuQGi63ms7x9ZeHj1E9LYw==
+expo-font@~55.0.7, expo-font@~55.0.8:
+  version "55.0.8"
+  resolved "https://registry.yarnpkg.com/expo-font/-/expo-font-55.0.8.tgz#e961905054c2246ca74f82489d9885da948b381a"
+  integrity sha512-WyP75pnKqhLNktYwDn3xKAUNt5rLihRDv8XWGhhz6VEhVqypixpT86NA3uGtiDTlM3gGjhrYCY7o7ypXgCUOZg==
   dependencies:
     fontfaceobserver "^2.1.0"
 

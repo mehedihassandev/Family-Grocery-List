@@ -43,7 +43,7 @@
     "expo-auth-session": "~55.0.15",
     "expo-crypto": "~55.0.14",
     "expo-dev-client": "~55.0.28",
-    "expo-font": "~55.0.6",
+    "expo-font": "~55.0.8",
     "expo-linear-gradient": "~55.0.13",
     "expo-splash-screen": "~55.0.19",
     "expo-status-bar": "~55.0.5",
