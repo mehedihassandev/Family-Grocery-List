@@ -1,8 +1,325 @@
 pluginManagement {
+  // We need to mutate the system environment map to include typical Node.js installation paths across all major platforms.
+  // This is because Android Studio, when launched as a GUI app on macOS/Linux/Windows, does not inherit the terminal's
+  // PATH variable (which includes version managers like NVM, FNM, ASDF, or package managers like Brew, Snaps, Scoop, etc.).
+  // By updating the environment map in the JVM process directly, all subsequent child processes spawned
+  // by subprojects (like react-native-svg) will correctly locate the 'node' binary.
+  try {
+    String osName = System.getProperty("os.name").toLowerCase()
+    boolean isWindows = osName.contains("win")
+    boolean isMac = osName.contains("mac")
+    
+    List<File> searchDirs = []
+    
+    // macOS and Linux Paths
+    if (isMac || osName.contains("nix") || osName.contains("nux")) {
+      searchDirs.add(new File("/opt/homebrew/bin"))
+      searchDirs.add(new File("/usr/local/bin"))
+      searchDirs.add(new File("/usr/bin"))
+      searchDirs.add(new File("/bin"))
+      searchDirs.add(new File("/snap/bin"))
+      
+      String userHome = System.getProperty("user.home")
+      if (userHome) {
+        // NVM (Node Version Manager)
+        File nvmDir = new File(userHome, ".nvm/versions/node")
+        if (nvmDir.exists() && nvmDir.isDirectory()) {
+          nvmDir.listFiles()?.each { verDir ->
+            if (verDir.isDirectory()) {
+              searchDirs.add(new File(verDir, "bin"))
+            }
+          }
+        }
+        
+        // FNM (Fast Node Manager) - macOS
+        File fnmMacDir = new File(userHome, "Library/Application Support/fnm/node-versions")
+        if (fnmMacDir.exists() && fnmMacDir.isDirectory()) {
+          fnmMacDir.listFiles()?.each { verDir ->
+            if (verDir.isDirectory()) {
+              searchDirs.add(new File(verDir, "installation"))
+            }
+          }
+        }
+        
+        // FNM (Fast Node Manager) - Linux
+        File fnmLinuxDir = new File(userHome, ".local/share/fnm/node-versions")
+        if (fnmLinuxDir.exists() && fnmLinuxDir.isDirectory()) {
+          fnmLinuxDir.listFiles()?.each { verDir ->
+            if (verDir.isDirectory()) {
+              searchDirs.add(new File(verDir, "installation"))
+            }
+          }
+        }
+        
+        // ASDF Node.js plugin
+        File asdfDir = new File(userHome, ".asdf/installs/nodejs")
+        if (asdfDir.exists() && asdfDir.isDirectory()) {
+          asdfDir.listFiles()?.each { verDir ->
+            if (verDir.isDirectory()) {
+              searchDirs.add(new File(verDir, "bin"))
+            }
+          }
+        }
+      }
+    }
+    
+    // Windows Paths
+    if (isWindows) {
+      searchDirs.add(new File("C:\\Program Files\\nodejs"))
+      searchDirs.add(new File("C:\\Program Files (x86)\\nodejs"))
+      
+      String userHome = System.getProperty("user.home")
+      if (userHome) {
+        searchDirs.add(new File(userHome, "AppData\\Roaming\\npm"))
+        
+        // NVM for Windows
+        File nvmWinDir = new File(userHome, "AppData\\Roaming\\nvm")
+        if (nvmWinDir.exists() && nvmWinDir.isDirectory()) {
+          nvmWinDir.listFiles()?.each { verDir ->
+            if (verDir.isDirectory()) {
+              searchDirs.add(verDir)
+            }
+          }
+        }
+        
+        // Scoop on Windows
+        searchDirs.add(new File(userHome, "scoop\\apps\\nodejs\\current"))
+        
+        // FNM for Windows
+        File fnmWinDir = new File(userHome, "AppData\\Local\\fnm\\node-versions")
+        if (fnmWinDir.exists() && fnmWinDir.isDirectory()) {
+          fnmWinDir.listFiles()?.each { verDir ->
+            if (verDir.isDirectory()) {
+              searchDirs.add(new File(verDir, "installation"))
+            }
+          }
+        }
+      }
+      
+      // Chocolatey on Windows
+      searchDirs.add(new File("C:\\tools\\nodejs"))
+    }
+    
+    List<String> validPaths = []
+    searchDirs.each { dir ->
+      if (dir.exists() && dir.isDirectory()) {
+        validPaths.add(dir.absolutePath)
+      }
+    }
+    
+    if (!validPaths.isEmpty()) {
+      String currentPath = System.getenv("PATH") ?: ""
+      String pathSeparator = File.pathSeparator
+      String additionalPaths = validPaths.unique().join(pathSeparator)
+      
+      // Prepend valid paths to the PATH environment to give them resolution priority
+      String newPath = currentPath ? "${additionalPaths}${pathSeparator}${currentPath}" : additionalPaths
+      
+      Class<?> pe = Class.forName("java.lang.ProcessEnvironment")
+      Class<?> variableClass = Class.forName("java.lang.ProcessEnvironment$Variable")
+      Class<?> valueClass = Class.forName("java.lang.ProcessEnvironment$Value")
+      
+      java.lang.reflect.Method varValueOf = variableClass.getDeclaredMethod("valueOf", String.class)
+      varValueOf.setAccessible(true)
+      java.lang.reflect.Method valValueOf = valueClass.getDeclaredMethod("valueOf", String.class)
+      valValueOf.setAccessible(true)
+      
+      java.lang.reflect.Field envField = pe.getDeclaredField("theEnvironment")
+      envField.setAccessible(true)
+      Map env = (Map) envField.get(null)
+      
+      Object pathVar = varValueOf.invoke(null, "PATH")
+      Object pathVal = valValueOf.invoke(null, newPath)
+      env.put(pathVar, pathVal)
+      
+      try {
+        java.lang.reflect.Field ciEnvField = pe.getDeclaredField("theCaseInsensitiveEnvironment")
+        ciEnvField.setAccessible(true)
+        Map ciEnv = (Map) ciEnvField.get(null)
+        ciEnv.put(pathVar, pathVal)
+      } catch (Throwable ignored) {}
+    }
+  } catch (Throwable ignored) {
+    // Silent fallback if JDK environment restricts reflection
+  }
+
+  // We need to resolve the correct Node.js executable path because GUI editors (like Android Studio)
+  // do not inherit standard user profile path modifications on macOS, Linux, or Windows.
+  // By resolving the absolute path of Node.js and writing it directly to local.properties,
+  // we ensure that the top-level project and all subprojects (including third-party modules like react-native-svg)
+  // always execute the correct Node binary without failing.
+  def nodeExecutable = "node"
+  try {
+    def localPropertiesFile = new File(rootDir, "local.properties")
+    if (localPropertiesFile.exists()) {
+      def properties = new Properties()
+      localPropertiesFile.withInputStream { instr ->
+        properties.load(instr)
+      }
+      nodeExecutable = properties.getProperty("expo.nodeExecutable") ?: properties.getProperty("node") ?: "node"
+    }
+
+    // Tricky logic: if 'nodeExecutable' is "node" or points to a non-existent path, we perform
+    // a deep scan of typical installation paths across macOS, Linux, and Windows to find the binary.
+    if (nodeExecutable == "node" || !(new File(nodeExecutable).exists())) {
+      String osName = System.getProperty("os.name").toLowerCase()
+      boolean isWindows = osName.contains("win")
+      boolean isMac = osName.contains("mac")
+      
+      // Tricky logic: check for both Unix native executable name and Windows script wrappers
+      def binNames = isWindows ? ["node.exe", "node.cmd", "node.bat"] : ["node"]
+      List<File> searchDirs = []
+      
+      // Include system environment PATH directories for direct discovery
+      def systemPath = System.getenv("PATH")
+      if (systemPath) {
+        systemPath.split(File.pathSeparator).each { pathDir ->
+          if (pathDir) {
+            searchDirs.add(new File(pathDir))
+          }
+        }
+      }
+      
+      // Standard package manager and version manager folders on macOS and Linux
+      if (isMac || osName.contains("nix") || osName.contains("nux")) {
+        searchDirs.add(new File("/opt/homebrew/bin"))
+        searchDirs.add(new File("/usr/local/bin"))
+        searchDirs.add(new File("/usr/bin"))
+        searchDirs.add(new File("/bin"))
+        searchDirs.add(new File("/usr/sbin"))
+        searchDirs.add(new File("/sbin"))
+        searchDirs.add(new File("/snap/bin"))
+        searchDirs.add(new File("/var/lib/snapd/snap/bin"))
+        
+        String userHome = System.getProperty("user.home")
+        if (userHome) {
+          searchDirs.add(new File(userHome, ".volta/bin"))
+          
+          // NVM (Node Version Manager) paths
+          File nvmDir = new File(userHome, ".nvm/versions/node")
+          if (nvmDir.exists() && nvmDir.isDirectory()) {
+            nvmDir.listFiles()?.each { verDir ->
+              if (verDir.isDirectory()) {
+                searchDirs.add(new File(verDir, "bin"))
+              }
+            }
+          }
+          
+          // FNM (Fast Node Manager) macOS paths
+          File fnmMacDir = new File(userHome, "Library/Application Support/fnm/node-versions")
+          if (fnmMacDir.exists() && fnmMacDir.isDirectory()) {
+            fnmMacDir.listFiles()?.each { verDir ->
+              if (verDir.isDirectory()) {
+                searchDirs.add(new File(verDir, "installation"))
+              }
+            }
+          }
+          
+          // FNM (Fast Node Manager) Linux paths
+          File fnmLinuxDir = new File(userHome, ".local/share/fnm/node-versions")
+          if (fnmLinuxDir.exists() && fnmLinuxDir.isDirectory()) {
+            fnmLinuxDir.listFiles()?.each { verDir ->
+              if (verDir.isDirectory()) {
+                searchDirs.add(new File(verDir, "installation"))
+              }
+            }
+          }
+          
+          // ASDF Node.js paths
+          File asdfDir = new File(userHome, ".asdf/installs/nodejs")
+          if (asdfDir.exists() && asdfDir.isDirectory()) {
+            asdfDir.listFiles()?.each { verDir ->
+              if (verDir.isDirectory()) {
+                searchDirs.add(new File(verDir, "bin"))
+              }
+            }
+          }
+        }
+      }
+      
+      // Standard package manager and version manager folders on Windows
+      if (isWindows) {
+        searchDirs.add(new File("C:\\Program Files\\nodejs"))
+        searchDirs.add(new File("C:\\Program Files (x86)\\nodejs"))
+        searchDirs.add(new File("C:\\tools\\nodejs"))
+        
+        String userHome = System.getProperty("user.home")
+        if (userHome) {
+          searchDirs.add(new File(userHome, "AppData\\Roaming\\npm"))
+          searchDirs.add(new File(userHome, "AppData\\Local\\Volta\\bin"))
+          
+          // NVM for Windows
+          File nvmWinDir = new File(userHome, "AppData\\Roaming\\nvm")
+          if (nvmWinDir.exists() && nvmWinDir.isDirectory()) {
+            nvmWinDir.listFiles()?.each { verDir ->
+              if (verDir.isDirectory()) {
+                searchDirs.add(verDir)
+              }
+            }
+          }
+          
+          // FNM for Windows
+          File fnmWinDir = new File(userHome, "AppData\\Local\\fnm\\node-versions")
+          if (fnmWinDir.exists() && fnmWinDir.isDirectory()) {
+            fnmWinDir.listFiles()?.each { verDir ->
+              if (verDir.isDirectory()) {
+                searchDirs.add(new File(verDir, "installation"))
+              }
+            }
+          }
+          
+          // Scoop on Windows
+          searchDirs.add(new File(userHome, "scoop\\apps\\nodejs\\current\\bin"))
+          searchDirs.add(new File(userHome, "scoop\\apps\\nodejs\\current"))
+        }
+      }
+      
+      // Resolve the first found executable file
+      File resolvedFile = null
+      for (File dir : searchDirs.unique()) {
+        if (dir.exists() && dir.isDirectory()) {
+          for (String binName : binNames) {
+            File binFile = new File(dir, binName)
+            if (binFile.exists() && binFile.isFile()) {
+              if (isWindows || binFile.canExecute()) {
+                resolvedFile = binFile
+                break
+              }
+            }
+          }
+        }
+        if (resolvedFile != null) break
+      }
+      
+      if (resolvedFile != null) {
+        nodeExecutable = resolvedFile.absolutePath
+        
+        // Write the resolved path directly into local.properties to share with other scripts
+        def properties = new Properties()
+        if (localPropertiesFile.exists()) {
+          localPropertiesFile.withInputStream { instr ->
+            properties.load(instr)
+          }
+        }
+        
+        // Only perform write operations if values differ to avoid build cache invalidations and unnecessary disk I/O
+        if (properties.getProperty("node") != nodeExecutable || properties.getProperty("expo.nodeExecutable") != nodeExecutable) {
+          properties.setProperty("node", nodeExecutable)
+          properties.setProperty("expo.nodeExecutable", nodeExecutable)
+          localPropertiesFile.withOutputStream { outstr ->
+            properties.store(outstr, "Generated by settings.gradle Node.js automatic finder")
+          }
+        }
+      }
+    }
+  } catch (Throwable ignored) {
+    // TODO: Add logging or alternative notifications in case file read/write fails entirely
+  }
+
   def reactNativeGradlePlugin = new File(
     providers.exec {
       workingDir(rootDir)
-      commandLine("node", "--print", "require.resolve('@react-native/gradle-plugin/package.json', { paths: [require.resolve('react-native/package.json')] })")
+      commandLine(nodeExecutable, "--print", "require.resolve('@react-native/gradle-plugin/package.json', { paths: [require.resolve('react-native/package.json')] })")
     }.standardOutput.asText.get().trim()
   ).getParentFile().absolutePath
   includeBuild(reactNativeGradlePlugin)
@@ -10,7 +327,7 @@ pluginManagement {
   def expoPluginsPath = new File(
     providers.exec {
       workingDir(rootDir)
-      commandLine("node", "--print", "require.resolve('expo-modules-autolinking/package.json', { paths: [require.resolve('expo/package.json')] })")
+      commandLine(nodeExecutable, "--print", "require.resolve('expo-modules-autolinking/package.json', { paths: [require.resolve('expo/package.json')] })")
     }.standardOutput.asText.get().trim(),
     "../android/expo-gradle-plugin"
   ).absolutePath
@@ -20,6 +337,23 @@ pluginManagement {
 plugins {
   id("com.facebook.react.settings")
   id("expo-autolinking-settings")
+}
+
+// Why this exists:
+// When Android Studio is launched as a GUI application on macOS, it lacks the standard shell environment PATH variable.
+// During project configuration, autolinked libraries like 'react-native-svg' evaluate early and try to resolve
+// the react-native package directory. If it isn't defined in the root project's extra properties, they fall back
+// to executing the hardcoded string "node", which fails with "command 'node' not found".
+// By registering a 'beforeProject' listener inside 'settings.gradle', we guarantee that the root project's
+// 'REACT_NATIVE_NODE_MODULES_DIR' is injected before ANY subproject starts evaluation, completely avoiding
+// the hazardous shell "node" execution fallback.
+// Tricky logic:
+// We use the Gradle build lifecycle listener 'beforeProject' which is evaluated immediately before any project is configured.
+// This is early enough to propagate the value to all subsequent subproject evaluations.
+gradle.beforeProject { proj ->
+  if (proj == proj.rootProject) {
+    proj.ext.set("REACT_NATIVE_NODE_MODULES_DIR", new File(proj.rootDir, "../node_modules/react-native"))
+  }
 }
 
 extensions.configure(com.facebook.react.ReactSettingsExtension) { ex ->

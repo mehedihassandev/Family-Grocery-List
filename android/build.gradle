@@ -12,6 +12,15 @@ buildscript {
   }
 }
 
+ext {
+  // We define this property globally in the root project extension so that all autolinked packages
+  // (such as react-native-svg) can immediately resolve the react-native package directory
+  // without running the 'node' CLI process during configuration sync. This completely bypasses
+  // issues where Gradle sync fails inside GUI editors (like Android Studio on macOS) due to missing PATH values.
+  REACT_NATIVE_NODE_MODULES_DIR = file("${rootDir}/../node_modules/react-native")
+}
+
+
 allprojects {
   repositories {
     google()
