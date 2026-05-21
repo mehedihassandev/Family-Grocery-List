@@ -588,6 +588,94 @@ class SettingsManager(
   patchFile(file5, target5, replacement5);
 
   patchReanimated();
+  patchKotlinMetadataVersionChecks();
+  patchExpoLibraryTargetSdk();
+  patchWorklets();
+  patchAsyncStorage();
+
+  // Patch library build.gradle files to comment out com.facebook.react and fix compile/min/target SDK versions for AGP 9.0+
+  patchLibraryBuildGradle('react-native-gesture-handler/android/build.gradle');
+  patchLibraryBuildGradle('react-native-reanimated/android/build.gradle');
+  patchLibraryBuildGradle('react-native-safe-area-context/android/build.gradle');
+  patchLibraryBuildGradle('react-native-screens/android/build.gradle');
+  patchLibraryBuildGradle('react-native-svg/android/build.gradle');
+  patchLibraryBuildGradle('@react-native-google-signin/google-signin/android/build.gradle');
+}
+
+/**
+ * Bypasses Kotlin metadata compiler compatibility checks across custom build subprojects.
+ * Why this exists:
+ * Newer Gradle versions (like Gradle 9.4.1) ship with a newer built-in Kotlin Standard Library (2.3.0).
+ * Since third-party plugins (like expo-modules-autolinking and react-native-gradle-plugin) are compiled
+ * with older Kotlin compiler plugins (e.g. 2.1.20), they fail during compilation with metadata binary
+ * incompatibility warnings ("Class 'kotlin.Lazy' was compiled with an incompatible version of Kotlin").
+ * Adding the '-Xskip-metadata-version-check' compiler argument instructs the compiler to proceed
+ * with compiling the code despite differences in Kotlin metadata version, resolving the build failure safely.
+ */
+function patchKotlinMetadataVersionChecks() {
+  // Patch File 1: node_modules/expo-modules-autolinking/android/expo-gradle-plugin/build.gradle.kts
+  const file1 = path.join(rootDir, 'node_modules/expo-modules-autolinking/android/expo-gradle-plugin/build.gradle.kts');
+  const target1 = `plugins {
+  kotlin("jvm") version "2.1.20" apply false
+  id("java-gradle-plugin")
+}`;
+  const replacement1 = `plugins {
+  kotlin("jvm") version "2.1.20" apply false
+  id("java-gradle-plugin")
+}
+
+allprojects {
+  tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach {
+    compilerOptions {
+      freeCompilerArgs.add("-Xskip-metadata-version-check")
+    }
+  }
+}`;
+  patchFile(file1, target1, replacement1);
+
+  // Patch File 2: node_modules/@react-native/gradle-plugin/build.gradle.kts
+  const file2 = path.join(rootDir, 'node_modules/@react-native/gradle-plugin/build.gradle.kts');
+  const target2 = `allprojects { tasks.withType<com.ncorti.ktfmt.gradle.tasks.KtfmtCheckTask>() { enabled = false } }`;
+  const replacement2 = `allprojects { tasks.withType<com.ncorti.ktfmt.gradle.tasks.KtfmtCheckTask>() { enabled = false } }
+
+allprojects {
+  tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach {
+    compilerOptions {
+      freeCompilerArgs.add("-Xskip-metadata-version-check")
+    }
+  }
+}`;
+  patchFile(file2, target2, replacement2);
+
+  // Patch File 3: node_modules/expo-modules-core/expo-module-gradle-plugin/build.gradle.kts
+  const file3 = path.join(rootDir, 'node_modules/expo-modules-core/expo-module-gradle-plugin/build.gradle.kts');
+  const target3 = `tasks.withType<KotlinCompile> {
+  compilerOptions {
+    jvmTarget.set(JvmTarget.JVM_11)
+  }
+}`;
+  const replacement3 = `tasks.withType<KotlinCompile> {
+  compilerOptions {
+    jvmTarget.set(JvmTarget.JVM_11)
+    freeCompilerArgs.add("-Xskip-metadata-version-check")
+  }
+}`;
+  patchFile(file3, target3, replacement3);
+
+  // Patch File 4: node_modules/expo-dev-launcher/expo-dev-launcher-gradle-plugin/build.gradle.kts
+  const file4 = path.join(rootDir, 'node_modules/expo-dev-launcher/expo-dev-launcher-gradle-plugin/build.gradle.kts');
+  const target4 = `tasks.withType<KotlinCompile> {
+  compilerOptions {
+    jvmTarget.set(JvmTarget.JVM_11)
+  }
+}`;
+  const replacement4 = `tasks.withType<KotlinCompile> {
+  compilerOptions {
+    jvmTarget.set(JvmTarget.JVM_11)
+    freeCompilerArgs.add("-Xskip-metadata-version-check")
+  }
+}`;
+  patchFile(file4, target4, replacement4);
 }
 
 /**
@@ -708,6 +796,226 @@ def resolveNodeExecutable() {
   }
 }
 
+/**
+ * Patches the expo-module-gradle-plugin to remove the library targetSdk assignment.
+ * Why this exists:
+ * In Android Gradle Plugin 9.0+, targetSdk is completely removed from LibraryDefaultConfig
+ * since targetSdkVersion has no effect on libraries and is only valid for applications.
+ * Invoking setTargetSdk(Integer) on modern AGP environments throws a LibraryDefaultConfig
+ * method/property missing exception, causing evaluation failures for all Expo module libraries.
+ * Skipping the targetSdk assignment for libraries prevents this runtime failure.
+ */
+function patchExpoLibraryTargetSdk() {
+  const filePath = path.join(
+    rootDir,
+    'node_modules/expo-modules-core/expo-module-gradle-plugin/src/main/kotlin/expo/modules/plugin/android/AndroidLibraryExtension.kt'
+  );
+  const target = `internal fun LibraryExtension.applySDKVersions(compileSdk: Int, minSdk: Int, targetSdk: Int) {
+  this.compileSdk = compileSdk
+  defaultConfig {
+    this@defaultConfig.minSdk = minSdk
+    this@defaultConfig.targetSdk = targetSdk
+  }
+}`;
+  const replacement = `internal fun LibraryExtension.applySDKVersions(compileSdk: Int, minSdk: Int, targetSdk: Int) {
+  this.compileSdk = compileSdk
+  defaultConfig {
+    this@defaultConfig.minSdk = minSdk
+    // Why this exists:
+    // targetSdk is completely removed from LibraryDefaultConfig in AGP 9.0+,
+    // and setting it causes method missing exceptions at runtime.
+    // this@defaultConfig.targetSdk = targetSdk
+  }
+}`;
+  patchFile(filePath, target, replacement);
+}
+
+/**
+ * Patches the react-native-worklets build.gradle file to apply com.facebook.react after com.android.library.
+ * Why this exists:
+ * In modern Gradle and AGP 9.0+, applying the React Native plugin before the Android Library plugin
+ * causes DSL finalization errors because the Android Gradle Plugin extension has not yet been registered
+ * when the com.facebook.react plugin is evaluated. Moving com.facebook.react to be after com.android.library
+ * resolves this sequence mismatch cleanly.
+ */
+function patchWorklets() {
+  const filePath = path.join(rootDir, 'node_modules/react-native-worklets/android/build.gradle');
+  if (!fs.existsSync(filePath)) {
+    console.warn(`[patch-expo-autolinking] File does not exist: ${filePath}`);
+    return;
+  }
+
+  let content = fs.readFileSync(filePath, 'utf8');
+
+  // Check if we already patched/commented it out
+  if (content.includes('// apply plugin: "com.facebook.react"')) {
+    console.log(`[patch-expo-autolinking] Already patched: react-native-worklets build.gradle`);
+    return;
+  }
+
+  // Comment out apply plugin: "com.facebook.react"
+  // Why this exists:
+  // In AGP 9.0+, applying the React Native plugin inside library projects is unsupported
+  // and throws a "too late to call finalizeDsl" exception. Since react-native-worklets does not
+  // define any custom react { ... } configuration block, the com.facebook.react plugin is
+  // completely redundant and can be safely commented out.
+  const oldApply1 = `if (isNewArchitectureEnabled()) {
+    apply plugin: "com.facebook.react"
+}`;
+  const oldApply2 = `if (isNewArchitectureEnabled()) {
+    apply plugin: 'com.facebook.react'
+}`;
+  const oldApply3 = `apply plugin: "com.facebook.react"`;
+
+  const commentBlock = `// Why this exists:
+// In AGP 9.0+, applying the React Native plugin inside library projects is unsupported
+// and throws a "too late to call finalizeDsl" exception. Since react-native-worklets does not
+// define any custom react { ... } configuration block, it is commented out.
+// if (isNewArchitectureEnabled()) {
+//     apply plugin: "com.facebook.react"
+// }`;
+
+  let modified = false;
+  if (content.includes(oldApply1)) {
+    content = content.replace(oldApply1, commentBlock);
+    modified = true;
+  } else if (content.includes(oldApply2)) {
+    content = content.replace(oldApply2, commentBlock);
+    modified = true;
+  } else if (content.includes(oldApply3)) {
+    content = content.replace(oldApply3, '// apply plugin: "com.facebook.react"');
+    modified = true;
+  }
+
+  if (modified) {
+    fs.writeFileSync(filePath, content, 'utf8');
+    console.log(`[patch-expo-autolinking] Successfully patched: react-native-worklets build.gradle`);
+  } else {
+    console.warn(`[patch-expo-autolinking] Could not find any com.facebook.react plugin application in worklets build.gradle`);
+  }
+}
+
+/**
+ * Patches the @react-native-async-storage/async-storage build.gradle file.
+ * Why this exists:
+ * 1. In AGP 9.0+, applying the com.facebook.react plugin inside library subprojects
+ *    is unsupported and triggers a DSL finalization sequence mismatch.
+ * 2. AGP 9.0+ completely removes compileSdkVersion, minSdkVersion, and targetSdkVersion DSL.
+ *    Replacing compileSdkVersion/minSdkVersion with compileSdk/minSdk and commenting out targetSdkVersion
+ *    (which is completely ignored for libraries) keeps the build fully functional and compliant.
+ */
+function patchAsyncStorage() {
+  const filePath = path.join(rootDir, 'node_modules/@react-native-async-storage/async-storage/android/build.gradle');
+  if (!fs.existsSync(filePath)) {
+    console.warn(`[patch-expo-autolinking] File does not exist: ${filePath}`);
+    return;
+  }
+
+  let content = fs.readFileSync(filePath, 'utf8');
+
+  // Check if already patched
+  if (content.includes('compileSdk project.ext.AsyncStorageConfig.compileSdkVersion')) {
+    console.log(`[patch-expo-autolinking] Already patched: @react-native-async-storage/async-storage build.gradle`);
+    return;
+  }
+
+  // 1. Comment out com.facebook.react application
+  const oldApply = `if (isNewArchitectureEnabled) {
+    apply plugin: "com.facebook.react"
+}`;
+  const commentBlock = `// Why this exists:
+// In AGP 9.0+, applying the React Native plugin inside library projects is unsupported
+// and throws a "too late to call finalizeDsl" exception.
+// if (isNewArchitectureEnabled) {
+//     apply plugin: "com.facebook.react"
+// }`;
+  if (content.includes(oldApply)) {
+    content = content.replace(oldApply, commentBlock);
+  }
+
+  // 2. Replace compileSdkVersion, minSdkVersion, and targetSdkVersion with AGP 9.0+ equivalents
+  content = content.replace(
+    'compileSdkVersion project.ext.AsyncStorageConfig.compileSdkVersion',
+    'compileSdk project.ext.AsyncStorageConfig.compileSdkVersion'
+  );
+
+  content = content.replace(
+    'minSdkVersion project.ext.AsyncStorageConfig.minSdkVersion',
+    'minSdk project.ext.AsyncStorageConfig.minSdkVersion'
+  );
+
+  content = content.replace(
+    'targetSdkVersion project.ext.AsyncStorageConfig.targetSdkVersion',
+    '// targetSdkVersion project.ext.AsyncStorageConfig.targetSdkVersion'
+  );
+
+  fs.writeFileSync(filePath, content, 'utf8');
+  console.log(`[patch-expo-autolinking] Successfully patched: @react-native-async-storage/async-storage build.gradle`);
+}
+
+/**
+ * Patches a library's build.gradle file to comment out the com.facebook.react plugin application
+ * and replace compileSdkVersion/minSdkVersion/targetSdkVersion with AGP 9.0+ modern equivalents.
+ * Why this exists:
+ * 1. In AGP 9.0+, applying the com.facebook.react plugin inside library projects is unsupported
+ *    and triggers a "too late to call finalizeDsl" exception because library evaluation is already finalized.
+ * 2. compileSdkVersion, minSdkVersion, and targetSdkVersion are deprecated and removed in AGP 9.0+ DSL.
+ *    Replacing compileSdkVersion and minSdkVersion with compileSdk and minSdk respectively, and commenting
+ *    out targetSdkVersion (since libraries do not use targetSdk) satisfies the AGP 9.0+ requirements.
+ * @param {string} relativeBuildGradlePath - The relative path to the library's build.gradle file under node_modules
+ */
+function patchLibraryBuildGradle(relativeBuildGradlePath) {
+  const filePath = path.join(rootDir, 'node_modules', relativeBuildGradlePath);
+  if (!fs.existsSync(filePath)) {
+    console.warn(`[patch-expo-autolinking] File does not exist: ${filePath}`);
+    return;
+  }
+
+  let content = fs.readFileSync(filePath, 'utf8');
+  let modified = false;
+
+  // 1. Comment out com.facebook.react plugin application
+  const regexReactPlugin = /if\s*\(\s*isNewArchitectureEnabled\(?\)?\s*\)\s*\{\s*apply\s+plugin:\s*['"]com\.facebook\.react['"]\s*\}/g;
+  if (regexReactPlugin.test(content)) {
+    content = content.replace(regexReactPlugin, (match) => {
+      return `// Why this exists:
+// In AGP 9.0+, applying the React Native plugin inside library projects is unsupported
+// and throws a "too late to call finalizeDsl" exception.
+// ${match.split('\n').join('\n// ')}`;
+    });
+    modified = true;
+  }
+
+  // Standalone check
+  const regexStandaloneReact = /apply\s+plugin:\s*['"]com\.facebook\.react['"]/g;
+  if (regexStandaloneReact.test(content)) {
+    content = content.replace(regexStandaloneReact, '// apply plugin: "com.facebook.react"');
+    modified = true;
+  }
+
+  // 2. Replace compileSdkVersion, minSdkVersion, targetSdkVersion with AGP 9.0+ equivalents
+  if (content.includes('compileSdkVersion ')) {
+    content = content.replace(/compileSdkVersion\s+/g, 'compileSdk ');
+    modified = true;
+  }
+  if (content.includes('minSdkVersion ')) {
+    content = content.replace(/minSdkVersion\s+/g, 'minSdk ');
+    modified = true;
+  }
+  if (content.includes('targetSdkVersion ')) {
+    content = content.replace(/targetSdkVersion\s+/g, '// targetSdkVersion ');
+    modified = true;
+  }
+
+  if (modified) {
+    fs.writeFileSync(filePath, content, 'utf8');
+    console.log(`[patch-expo-autolinking] Successfully patched: ${relativeBuildGradlePath}`);
+  } else {
+    console.log(`[patch-expo-autolinking] Already patched or no matching patterns in: ${relativeBuildGradlePath}`);
+  }
+}
+
 run();
+
 
 
