@@ -4,122 +4,124 @@
 
 React Native + Expo grocery collaboration app with Firebase auth/data, Zustand state, NativeWind styling, and TanStack Query hooks for async data flows.
 
-## Scope
+## Scope & Philosophy
 
 - Use these rules for all new code and refactors.
 - Keep legacy behavior working; migrate incrementally.
 - Prefer extending existing project patterns over introducing new architecture styles.
 
-## Verified App Structure
+## Project Structure & Architecture
 
-- Main app code is under `src/`.
-- Shared types and navigation types are in `src/types`.
-- Domain-specific modeling also exists in feature folders (for example `src/features/grocery/model.ts`).
-- Hooks are in `src/hooks` (including `src/hooks/queries` for TanStack Query hooks).
-- Reusable components are in `src/components`, with `src/components/ui` and `src/components/skeletons` already used.
-- Screens currently live in `src/screens` (mostly flat, with some feature subfolders like `src/screens/Dashboard`).
-- Navigation is in `src/navigation`.
-- Data access and API/service logic is in `src/services`.
-- Global app state (Zustand) is in `src/store`.
-- App constants are in `src/constants`.
-- Shared utility functions are in `src/utils`.
-- Theme tokens are in `src/theme`; NativeWind global styles are in `src/styles/global.css`.
+```
+src/
+├── components/          # Reusable UI components
+│   ├── skeletons/       # Reusable loading skeleton components
+│   └── ui/              # Reusable presentational components (e.g., RhfTextfield, Buttons)
+├── constants/           # App-level constants (e.g., query-keys.ts)
+├── features/            # Feature-specific domains (e.g., auth, family, grocery)
+│   └── <feature>/       # Feature folders containing domain models, helpers, or hooks
+├── hooks/               # Custom hooks
+│   └── queries/         # TanStack Query custom hooks
+├── navigation/          # React Navigation setup and route registrations
+├── screens/             # App screens (with co-located screen-specific subfiles/folders)
+├── services/            # API, Firestore, and network service layers
+├── store/               # Global state (Zustand + storage persistence)
+├── styles/              # Global styling configurations (e.g., global.css)
+├── theme/               # Colors and global design tokens
+├── types/               # App-wide shared TypeScript declarations and navigation types
+└── utils/               # Pure helper utilities and React Hook Form schemas
+```
 
-## Mandatory Rules
+## Mandatory Coding Rules
 
-1. Put shared interfaces/enums in `src/types`; keep feature-specific models inside feature folders (`src/features/*`).
-2. Keep local-only types co-located (or in `src/types` when broadly reused).
-3. Place custom hooks in `src/hooks`; query hooks belong in `src/hooks/queries`.
-4. Place reusable presentational components in `src/components/ui`; use existing `src/components` structure before creating new top-level UI folders.
-5. Place skeleton/loading variants in `src/components/skeletons` when they are reusable.
-6. Keep screens in `src/screens`; if a feature needs multiple support files, create/extend a feature subfolder under `src/screens/<Feature>/`.
-7. Keep support files (`styles.ts`, local helpers, constants) co-located with their screen when they are screen-specific.
-8. Put app-level constants in `src/constants`.
-9. Keep network/data-access calls in `src/services` (or existing service subfolders). Do not call Firebase/network APIs directly in screen components.
-10. Add shared query keys in `src/constants/query-keys.ts` before using them in query hooks.
-11. Use TanStack Query + service layer for async server/stateful data fetching.
-12. Put generic pure helpers in `src/utils`; do not create a new top-level `helper` folder.
-13. Use existing RHF patterns/components (`src/components/ui/RhfTextfield.tsx`) and keep form schemas/models in `src/utils` unless a feature folder already owns them.
-14. Keep navigation changes type-safe:
-    - update param types in `src/types/index.ts`
-    - register routes/enums in `src/navigation/routes.ts`
-    - wire navigators in `src/navigation/*Navigator.tsx`
-15. Keep global persisted state in `src/store` using existing Zustand + persist patterns.
-16. Prefer theme tokens from `src/theme` and NativeWind classes; avoid hardcoded values and avoid inline styles unless truly dynamic.
-17. Keep user-facing error messages clear and explicit; do not silently swallow failures.
-18. Keep filenames portable and clean (no spaces, no trailing whitespace).
-19. Add or update tests when behavior changes; follow existing `*.test.ts`/`*.test.tsx` co-located patterns.
-20. Follow existing import style in the file/module (the repo currently uses relative imports broadly; do not introduce inconsistent alias conventions).
+### 1. Code Placement & Organization
+
+- **Shared vs. Local Types**: Put shared interfaces/enums in `src/types`. Keep feature-specific models inside feature folders (`src/features/*`). Keep local-only types co-located with their files.
+- **Custom Hooks**: Place custom hooks in `src/hooks`. Query hooks belong specifically in `src/hooks/queries`.
+- **UI Components**: Place reusable presentational components in `src/components/ui`. Reusable skeleton/loading variants belong in `src/components/skeletons`. Use the existing `src/components` hierarchy before creating new top-level UI folders.
+- **Screens**: Keep screens in `src/screens`. If a screen requires multiple support files (like local helpers, screen-specific constants, or styles), co-locate them in the screen's directory or screen subfolder.
+- **Constants & Utilities**: Put app-level constants in `src/constants`. Place generic, pure helper utilities in `src/utils` (do not create a top-level `helper` folder).
+
+### 2. Data Flow & State Management
+
+- **Service Layer**: Keep network/data-access calls in `src/services` (or its subfolders). **Never** call Firebase or external API endpoints directly within screen components.
+- **Asynchronous Queries**: Use TanStack Query combined with the service layer for async server/stateful data fetching. Add shared query keys in `src/constants/query-keys.ts` before using them in query hooks.
+- **Global State**: Keep global persisted state in `src/store` using existing Zustand + persist patterns.
+- **Forms**: Use existing React Hook Form (RHF) patterns and components (e.g., `src/components/ui/RhfTextfield.tsx`). Keep form validation schemas/models in `src/utils` unless a feature folder owns them.
+
+### 3. Navigation & Styling
+
+- **Type-Safe Navigation**: Ensure all navigation changes are type-safe:
+  1. Update param types in `src/types/index.ts`
+  2. Register routes/enums in `src/navigation/routes.ts`
+  3. Wire navigators in `src/navigation/*Navigator.tsx`
+- **Styling Best Practices**: Prefer theme tokens from `src/theme` and NativeWind classes. Avoid hardcoded styles and inline styles unless styling values are truly dynamic.
+
+### 4. Code Hygiene & Styling
+
+- **Error Handling**: Keep user-facing error messages clear and explicit. Do not silently swallow failures.
+- **File Naming**: Keep filenames portable, clean, and consistent (no spaces, no trailing whitespace).
+- **Imports**: Match the existing import style in surrounding files for consistency. The repository uses relative imports broadly; do not introduce inconsistent alias conventions.
+
+---
 
 ## Do / Don't Examples
 
-### File placement
+### File Placement & Access
 
-- **Do:** put Firestore operations in `src/services/family.ts`.
-- **Don't:** call `firebase/firestore` directly inside `src/screens/*`.
+- **Do:** Put Firestore queries in `src/services/family.ts`.
+- **Don't:** Import `firebase/firestore` directly inside `src/screens/*`.
+- **Do:** Put new query hooks in `src/hooks/queries/useXxxQueries.ts`.
+- **Don't:** Create ad-hoc data-fetching logic inside screen components.
+- **Do:** Put shared route params in `src/types/index.ts` and route enums in `src/navigation/routes.ts`.
+- **Don't:** Hardcode route-name strings in multiple files.
+- **Do:** Put shared presentational controls in `src/components/ui`.
+- **Don't:** Duplicate button/input primitives across screen folders.
 
-- **Do:** put new query hooks in `src/hooks/queries/useXxxQueries.ts`.
-- **Don't:** create ad-hoc fetch logic in screen components.
+### Import Style
 
-- **Do:** put shared route params in `src/types/index.ts` and route enums in `src/navigation/routes.ts`.
-- **Don't:** hardcode route-name strings in multiple files.
+- **Do:** Match existing relative import style in surrounding files for consistency.
+- **Don't:** Mix alias and relative imports inconsistently within the same module.
 
-- **Do:** put shared presentational controls in `src/components/ui`.
-- **Don't:** duplicate button/input primitives across screen folders.
-
-### Import style
-
-- **Do:** match existing import style in surrounding files for consistency.
-- **Don't:** mix alias and relative imports inconsistently within the same module.
-
-### Testing
-
-- **Do:** update or add a nearby `*.test.ts`/`*.test.tsx` when logic changes.
-- **Don't:** merge behavior changes without covering the changed code path.
+---
 
 ## Placement Priority
 
-When there is a conflict, follow this order:
-1. existing project convention
-2. these AGENTS.md rules
-3. local module consistency
+When conflicts arise, resolve them using this priority hierarchy:
+
+1. Existing project conventions
+2. These `AGENTS.md` rules
+3. Local module consistency
+
+---
 
 ## Setup & Run Commands
 
-- Install dependencies: `npm install` (or `yarn install` if using yarn locally)
-- Start Metro: `npm run start`
-- Run Android app: `npm run android`
-- Run iOS app: `npm run ios`
+- **Install dependencies:** `npm install` (or `yarn install` if using yarn locally)
+- **Start Metro bundler:** `npm run start`
+- **Run Android app:** `npm run android`
+- **Run iOS app:** `npm run ios`
 
-## Validation Commands
-
-- Lint: `npm run lint`
-- Lint fix: `npm run lint:fix`
-- Format check: `npm run format`
-- Format fix: `npm run format:fix`
-- Test: `npm run test`
-- Type check: `npm run type-check`
-
-## Testing Instructions
-
-- Run `npm run test` for the full Vitest suite.
-- For changed behavior, add/update nearby `*.test.ts`/`*.test.tsx` files and keep tests co-located by feature/service.
-- Run `npm run lint` and `npm run type-check` for code changes before finalizing.
+---
 
 ## TypeScript & Code Style
 
 - TypeScript strict mode is enabled; keep new code strict-compliant.
-- Do not introduce `any`, unsafe casts, or `@ts-ignore` unless unavoidable with inline rationale.
+- Do not introduce `any`, unsafe casts, or `@ts-ignore` unless unavoidable (requires inline explanation).
 - Prefer explicit types for public APIs (service results, hook return values, exported component props).
 - Follow existing ESLint/Prettier formatting and import ordering.
 - Do not leave `console.log` in committed code.
 
+---
+
 ## Security & Reliability
 
 - Never hardcode credentials, API keys, tokens, or secrets in source files.
-- Do not log sensitive auth/session data.
+- Do not log sensitive authentication/session data.
 - Surface API/service errors with actionable messages instead of silent fallbacks.
 - For auth/provider changes, follow `GOOGLE_SIGNIN_SETUP.md` and existing Firebase config patterns.
+
+---
 
 ## Commit Conventions
 

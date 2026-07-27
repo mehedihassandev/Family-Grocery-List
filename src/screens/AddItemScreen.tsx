@@ -9,7 +9,7 @@ import {
 } from "react-native";
 import { X, Check } from "lucide-react-native";
 import { Priority, Category, AuthenticatedStackNavigatorScreenProps, ERootRoutes } from "../types";
-import { useAddGroceryItem } from "../hooks/queries/useGroceryQueries";
+import { useAddGroceryItemBackend } from "../hooks";
 import { addCustomCategory, subscribeToCategories, ICustomCategory } from "../services/categories";
 import { GROCERY_CATEGORIES } from "../features/grocery";
 import { InputField, PrimaryButton, Chip, StatusModal, LoadingOverlay } from "../components/ui";
@@ -22,7 +22,7 @@ const RECURRENCE_OPTIONS: ("none" | "weekly" | "monthly")[] = ["none", "weekly",
 
 /**
  * Add Item Screen
- * Why: To provide a robust screen for adding groceries that maintains correct navigation context.
+ * Why: To provide a robust screen for adding groceries via Python backend API.
  */
 const AddItemScreen = ({
   navigation,
@@ -47,8 +47,8 @@ const AddItemScreen = ({
   const [newCatInput, setNewCatInput] = useState("");
   const [showAddCat, setShowAddCat] = useState(false);
 
-  // TanStack Query Hook
-  const addMutation = useAddGroceryItem();
+  // TanStack Query Hook for Python Backend API
+  const addMutation = useAddGroceryItemBackend(familyId);
 
   const [showSuccess, setShowSuccess] = useState(false);
   const [statusModal, setStatusModal] = useState<{
@@ -185,24 +185,17 @@ const AddItemScreen = ({
 
     addMutation.mutate(
       {
-        familyId,
-        item: {
-          name: name.trim(),
-          category,
-          priority,
-          quantity: quantity.trim(),
-          notes: notes.trim(),
-          recurrenceFrequency,
-          assignee: assigneeName.trim() ? { name: assigneeName.trim() } : null,
-          dueDate,
-          reminderAt,
-          unitPrice,
-          estimatedTotal,
-        },
-        user: {
-          uid: user?.uid || "",
-          name: user?.displayName || "Anonymous",
-        },
+        name: name.trim(),
+        category,
+        priority,
+        quantity: quantity.trim(),
+        notes: notes.trim(),
+        recurrenceFrequency,
+        assignee: assigneeName.trim() ? { name: assigneeName.trim() } : null,
+        dueDate,
+        reminderAt,
+        unitPrice,
+        estimatedTotal,
       },
       {
         onSuccess: () => {

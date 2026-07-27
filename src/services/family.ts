@@ -1,3 +1,4 @@
+import axios, { isAxiosError } from "axios";
 import {
   collection,
   doc,
@@ -120,12 +121,10 @@ async function getFirestoreConfigurationIssue(): Promise<string | null> {
   const probeUrl = `https://firestore.googleapis.com/v1/projects/${projectId}/databases/(default)/documents/families?pageSize=1&key=${apiKey}`;
 
   try {
-    const response = await withProbeTimeout(fetch(probeUrl));
-    if (response.ok) {
-      return null;
-    }
-
-    const payload = (await response.json()) as {
+    await withProbeTimeout(axios.get(probeUrl));
+    return null;
+  } catch (error) {
+    let payload: {
       error?: {
         code?: number;
         message?: string;
@@ -138,7 +137,11 @@ async function getFirestoreConfigurationIssue(): Promise<string | null> {
           };
         }[];
       };
-    };
+    } = {};
+
+    if (isAxiosError(error) && error.response) {
+      payload = (error.response.data as typeof payload) || {};
+    }
 
     const errorBody = payload.error;
     const details = errorBody?.details ?? [];
@@ -160,10 +163,6 @@ async function getFirestoreConfigurationIssue(): Promise<string | null> {
 
     if (errorBody?.message) {
       return errorBody.message;
-    }
-  } catch (error) {
-    if (__DEV__) {
-      console.warn("[FamilyService] Firestore probe failed:", error);
     }
   }
 

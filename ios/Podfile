@@ -162,5 +162,25 @@ target 'FamilyGroceryList' do
         end
       end
     end
+
+    # Ensure jsi.h does not fail compiling under older C++ standards or swift bridging context
+    # where non-const std::string::data() might not be available.
+    # We replace buffer.data() with &buffer[0] in toString().
+    Dir.glob(File.join(installer.sandbox.root.to_s, '**/jsi/jsi.h')).each do |jsi_h|
+      if File.exist?(jsi_h)
+        jsi_h_contents = File.read(jsi_h)
+        if jsi_h_contents.include?('buffer.data()')
+          patched_jsi_h = jsi_h_contents.gsub(
+            /std::snprintf\(\s*buffer\.data\(\),/,
+            "std::snprintf(\n        &buffer[0],"
+          )
+          if patched_jsi_h != jsi_h_contents
+            File.chmod(0o644, jsi_h) rescue nil
+            File.write(jsi_h, patched_jsi_h)
+            puts "[Podfile] Patched buffer.data() to &buffer[0] in: #{jsi_h}"
+          end
+        end
+      end
+    end
   end
 end

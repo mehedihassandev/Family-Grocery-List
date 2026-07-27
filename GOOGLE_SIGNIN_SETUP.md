@@ -69,11 +69,12 @@ EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID=...
 
 If you use `.env`, restart Metro after saving the file.
 
-For the debug Android build signed by `android/app/google-oauth-debug.keystore`, the SHA-1 is:
+For the debug Android build signed by `android/app/debug.keystore`, the SHA-1 fingerprint is:
 
 ```text
-5E:77:BB:47:F7:3A:3C:02:27:7B:BA:AA:4D:D3:19:43:5A:38:7F:2B
+5E:8F:16:06:2E:A3:CD:2C:4A:0D:54:78:76:BA:A6:F3:8C:AB:F6:25
 ```
+
 
 ## 4. Install And Run
 

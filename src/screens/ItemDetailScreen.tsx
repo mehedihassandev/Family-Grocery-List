@@ -19,15 +19,15 @@ import {
 } from "lucide-react-native";
 import { AuthenticatedStackNavigatorScreenProps, ERootRoutes } from "../types";
 import { GroceryPriority } from "../features/grocery";
-import { useDateFormatter } from "../hooks";
+import { useDateFormatter, useGroceryItemBackend } from "../hooks";
 import { Card, Chip, PriorityBadge } from "../components/ui";
-import { useGroceryItem } from "../hooks/queries/useGroceryQueries";
+import { useAuthStore } from "../store/useAuthStore";
 
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 /**
  * Item Detail Screen
- * Why: To provide a robust view of item details that maintains correct navigation context.
+ * Why: To provide a robust view of item details via Python backend API.
  */
 const ItemDetailScreen = ({
   route,
@@ -36,9 +36,10 @@ const ItemDetailScreen = ({
   const insets = useSafeAreaInsets();
   const { toDateLabel } = useDateFormatter();
   const { itemId } = route.params;
+  const { user } = useAuthStore();
 
-  // TanStack Query Hook
-  const { data: item, isLoading: loading } = useGroceryItem(itemId);
+  // TanStack Query Hook for Python Backend API
+  const { data: item, isLoading: loading } = useGroceryItemBackend(user?.familyId, itemId);
 
   if (loading) {
     return (

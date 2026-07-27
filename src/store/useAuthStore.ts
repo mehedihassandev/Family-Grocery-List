@@ -9,6 +9,7 @@ interface IAuthState {
   hasHydrated: boolean;
   profileSynced: boolean;
   setUser: (user: IUser | null) => void;
+  updateUserFamily: (familyId: string | null, role?: "owner" | "member") => void;
   setLoading: (loading: boolean) => void;
   setHasHydrated: (hasHydrated: boolean) => void;
   setProfileSynced: (profileSynced: boolean) => void;
@@ -26,6 +27,16 @@ export const useAuthStore = create<IAuthState>()(
       hasHydrated: false,
       profileSynced: false,
       setUser: (user) => set({ user }),
+      updateUserFamily: (familyId, role) =>
+        set((state) => ({
+          user: state.user
+            ? {
+                ...state.user,
+                familyId,
+                role: role || state.user.role,
+              }
+            : null,
+        })),
       setLoading: (loading) => set({ loading }),
       setHasHydrated: (hasHydrated) => set({ hasHydrated }),
       setProfileSynced: (profileSynced) => set({ profileSynced }),

@@ -11,28 +11,24 @@ import {
   AlertTriangle,
 } from "lucide-react-native";
 import { useAuthStore } from "../store/useAuthStore";
-import { useGroceryList } from "../hooks/queries/useGroceryQueries";
-import { useDateFormatter } from "../hooks";
+import { useFamilyGroceryItemsBackend, useDateFormatter } from "../hooks";
 import { AppHeader, Card, DonutChart, ProgressBar } from "../components/ui";
 import NotificationModal from "../components/NotificationModal";
 
 const getDataErrorMessage = (error: Error) => {
   const message = error.message || "";
-  if (message.includes("permission-denied")) {
-    return "Missing Firestore permission for analytics query.";
+  if (message.includes("status 500")) {
+    return "Backend server error (500). Please check backend deployment.";
   }
-  if (message.includes("requires an index")) {
-    return "Firestore index required. Create index from Firebase Console link.";
+  if (message.includes("401") || message.includes("403")) {
+    return "Authentication failed. Please sign in again.";
   }
-  if (message.includes("unavailable")) {
-    return "Network unavailable. Retry when connection is stable.";
-  }
-  return "Could not load analytics. Check internet and retry.";
+  return message || "Could not load analytics. Check internet and retry.";
 };
 
 /**
  * Premium Analytics Screen
- * Why: To provide a consistent, high-fidelity experience for tracking grocery habits.
+ * Why: To provide a consistent, high-fidelity experience for tracking grocery habits via Python backend API.
  * Fix: Re-implemented DonutChart using react-native-gifted-charts for stability and animation.
  * Note: Enforces a single light theme.
  */
@@ -45,8 +41,8 @@ const AnalyzeScreen = ({ navigation }: AnalyzeStackScreenProps<"Analyze">) => {
     return new Date(now.getFullYear(), now.getMonth(), 1);
   });
 
-  // TanStack Query Hook
-  const { data: items = [], error: analyticsError } = useGroceryList(user?.familyId);
+  // TanStack Query Hook for Python Backend API
+  const { data: items = [], error: analyticsError } = useFamilyGroceryItemsBackend(user?.familyId);
   const analyticsErrorMessage = analyticsError
     ? getDataErrorMessage(analyticsError as Error)
     : null;
@@ -83,7 +79,7 @@ const AnalyzeScreen = ({ navigation }: AnalyzeStackScreenProps<"Analyze">) => {
     let overdue = 0;
     let dueSoon = 0;
     monthlyItems.forEach((item) => {
-      const due = item.dueDate?.toDate ? item.dueDate.toDate() : item.dueDate;
+      const due = item.dueDate ? new Date(item.dueDate as unknown as string | Date) : null;
       if (!(due instanceof Date) || Number.isNaN(due.getTime())) {
         return;
       }

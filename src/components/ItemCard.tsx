@@ -94,11 +94,11 @@ const ItemCard = ({ item, onToggle, onPress }: IItemCardProps) => {
             </View>
 
             <View className="h-7 w-7 rounded-full bg-primary-600 border-2 border-white items-center justify-center overflow-hidden shadow-sm ml-2">
-              {item.addedBy.photoURL ? (
+              {item.addedBy?.photoURL ? (
                 <Image source={{ uri: item.addedBy.photoURL }} className="h-full w-full" />
               ) : (
                 <Text className="text-white text-[10px] font-bold">
-                  {toInitial(item.addedBy.name)}
+                  {toInitial(item.addedBy?.name || "U")}
                 </Text>
               )}
             </View>
