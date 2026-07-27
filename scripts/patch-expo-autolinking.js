@@ -590,16 +590,7 @@ class SettingsManager(
   patchReanimated();
   patchKotlinMetadataVersionChecks();
   patchExpoLibraryTargetSdk();
-  patchWorklets();
-  patchAsyncStorage();
-
-  // Patch library build.gradle files to comment out com.facebook.react and fix compile/min/target SDK versions for AGP 9.0+
-  patchLibraryBuildGradle('react-native-gesture-handler/android/build.gradle');
-  patchLibraryBuildGradle('react-native-reanimated/android/build.gradle');
-  patchLibraryBuildGradle('react-native-safe-area-context/android/build.gradle');
-  patchLibraryBuildGradle('react-native-screens/android/build.gradle');
-  patchLibraryBuildGradle('react-native-svg/android/build.gradle');
-  patchLibraryBuildGradle('@react-native-google-signin/google-signin/android/build.gradle');
+  patchJsiHeader();
 }
 
 /**
@@ -831,191 +822,46 @@ function patchExpoLibraryTargetSdk() {
 }
 
 /**
- * Patches the react-native-worklets build.gradle file to apply com.facebook.react after com.android.library.
- * Why this exists:
- * In modern Gradle and AGP 9.0+, applying the React Native plugin before the Android Library plugin
- * causes DSL finalization errors because the Android Gradle Plugin extension has not yet been registered
- * when the com.facebook.react plugin is evaluated. Moving com.facebook.react to be after com.android.library
- * resolves this sequence mismatch cleanly.
+ * Patches the react-native JSI header jsi.h to fix compatibility with older C++ standards.
+ * Specifically, C++14/C++11 compilers do not have non-const std::string::data(), so we replace
+ * buffer.data() with &buffer[0] in toString().
  */
-function patchWorklets() {
-  const filePath = path.join(rootDir, 'node_modules/react-native-worklets/android/build.gradle');
+function patchJsiHeader() {
+  const filePath = path.join(rootDir, 'node_modules/react-native/ReactCommon/jsi/jsi/jsi.h');
   if (!fs.existsSync(filePath)) {
     console.warn(`[patch-expo-autolinking] File does not exist: ${filePath}`);
     return;
   }
 
   let content = fs.readFileSync(filePath, 'utf8');
+  const target = `  std::string toString() const {
+    std::string buffer(36, ' ');
+    std::snprintf(
+        buffer.data(),
+        buffer.size() + 1,`;
+  const replacement = `  std::string toString() const {
+    std::string buffer(36, ' ');
+    std::snprintf(
+        &buffer[0],
+        buffer.size() + 1,`;
 
-  // Check if we already patched/commented it out
-  if (content.includes('// apply plugin: "com.facebook.react"')) {
-    console.log(`[patch-expo-autolinking] Already patched: react-native-worklets build.gradle`);
+  if (content.includes(replacement)) {
+    console.log(`[patch-expo-autolinking] Already patched: react-native jsi.h`);
     return;
   }
 
-  // Comment out apply plugin: "com.facebook.react"
-  // Why this exists:
-  // In AGP 9.0+, applying the React Native plugin inside library projects is unsupported
-  // and throws a "too late to call finalizeDsl" exception. Since react-native-worklets does not
-  // define any custom react { ... } configuration block, the com.facebook.react plugin is
-  // completely redundant and can be safely commented out.
-  const oldApply1 = `if (isNewArchitectureEnabled()) {
-    apply plugin: "com.facebook.react"
-}`;
-  const oldApply2 = `if (isNewArchitectureEnabled()) {
-    apply plugin: 'com.facebook.react'
-}`;
-  const oldApply3 = `apply plugin: "com.facebook.react"`;
-
-  const commentBlock = `// Why this exists:
-// In AGP 9.0+, applying the React Native plugin inside library projects is unsupported
-// and throws a "too late to call finalizeDsl" exception. Since react-native-worklets does not
-// define any custom react { ... } configuration block, it is commented out.
-// if (isNewArchitectureEnabled()) {
-//     apply plugin: "com.facebook.react"
-// }`;
-
-  let modified = false;
-  if (content.includes(oldApply1)) {
-    content = content.replace(oldApply1, commentBlock);
-    modified = true;
-  } else if (content.includes(oldApply2)) {
-    content = content.replace(oldApply2, commentBlock);
-    modified = true;
-  } else if (content.includes(oldApply3)) {
-    content = content.replace(oldApply3, '// apply plugin: "com.facebook.react"');
-    modified = true;
-  }
-
-  if (modified) {
-    fs.writeFileSync(filePath, content, 'utf8');
-    console.log(`[patch-expo-autolinking] Successfully patched: react-native-worklets build.gradle`);
-  } else {
-    console.warn(`[patch-expo-autolinking] Could not find any com.facebook.react plugin application in worklets build.gradle`);
-  }
-}
-
-/**
- * Patches the @react-native-async-storage/async-storage build.gradle file.
- * Why this exists:
- * 1. In AGP 9.0+, applying the com.facebook.react plugin inside library subprojects
- *    is unsupported and triggers a DSL finalization sequence mismatch.
- * 2. AGP 9.0+ completely removes compileSdkVersion, minSdkVersion, and targetSdkVersion DSL.
- *    Replacing compileSdkVersion/minSdkVersion with compileSdk/minSdk and commenting out targetSdkVersion
- *    (which is completely ignored for libraries) keeps the build fully functional and compliant.
- */
-function patchAsyncStorage() {
-  const filePath = path.join(rootDir, 'node_modules/@react-native-async-storage/async-storage/android/build.gradle');
-  if (!fs.existsSync(filePath)) {
-    console.warn(`[patch-expo-autolinking] File does not exist: ${filePath}`);
+  if (!content.includes(target)) {
+    console.warn(`[patch-expo-autolinking] Target not found in react-native jsi.h`);
     return;
   }
 
-  let content = fs.readFileSync(filePath, 'utf8');
-
-  // Check if already patched
-  if (content.includes('compileSdk project.ext.AsyncStorageConfig.compileSdkVersion')) {
-    console.log(`[patch-expo-autolinking] Already patched: @react-native-async-storage/async-storage build.gradle`);
-    return;
-  }
-
-  // 1. Comment out com.facebook.react application
-  const oldApply = `if (isNewArchitectureEnabled) {
-    apply plugin: "com.facebook.react"
-}`;
-  const commentBlock = `// Why this exists:
-// In AGP 9.0+, applying the React Native plugin inside library projects is unsupported
-// and throws a "too late to call finalizeDsl" exception.
-// if (isNewArchitectureEnabled) {
-//     apply plugin: "com.facebook.react"
-// }`;
-  if (content.includes(oldApply)) {
-    content = content.replace(oldApply, commentBlock);
-  }
-
-  // 2. Replace compileSdkVersion, minSdkVersion, and targetSdkVersion with AGP 9.0+ equivalents
-  content = content.replace(
-    'compileSdkVersion project.ext.AsyncStorageConfig.compileSdkVersion',
-    'compileSdk project.ext.AsyncStorageConfig.compileSdkVersion'
-  );
-
-  content = content.replace(
-    'minSdkVersion project.ext.AsyncStorageConfig.minSdkVersion',
-    'minSdk project.ext.AsyncStorageConfig.minSdkVersion'
-  );
-
-  content = content.replace(
-    'targetSdkVersion project.ext.AsyncStorageConfig.targetSdkVersion',
-    '// targetSdkVersion project.ext.AsyncStorageConfig.targetSdkVersion'
-  );
-
+  content = content.replace(target, replacement);
   fs.writeFileSync(filePath, content, 'utf8');
-  console.log(`[patch-expo-autolinking] Successfully patched: @react-native-async-storage/async-storage build.gradle`);
-}
-
-/**
- * Patches a library's build.gradle file to comment out the com.facebook.react plugin application
- * and replace compileSdkVersion/minSdkVersion/targetSdkVersion with AGP 9.0+ modern equivalents.
- * Why this exists:
- * 1. In AGP 9.0+, applying the com.facebook.react plugin inside library projects is unsupported
- *    and triggers a "too late to call finalizeDsl" exception because library evaluation is already finalized.
- * 2. compileSdkVersion, minSdkVersion, and targetSdkVersion are deprecated and removed in AGP 9.0+ DSL.
- *    Replacing compileSdkVersion and minSdkVersion with compileSdk and minSdk respectively, and commenting
- *    out targetSdkVersion (since libraries do not use targetSdk) satisfies the AGP 9.0+ requirements.
- * @param {string} relativeBuildGradlePath - The relative path to the library's build.gradle file under node_modules
- */
-function patchLibraryBuildGradle(relativeBuildGradlePath) {
-  const filePath = path.join(rootDir, 'node_modules', relativeBuildGradlePath);
-  if (!fs.existsSync(filePath)) {
-    console.warn(`[patch-expo-autolinking] File does not exist: ${filePath}`);
-    return;
-  }
-
-  let content = fs.readFileSync(filePath, 'utf8');
-  let modified = false;
-
-  // 1. Comment out com.facebook.react plugin application
-  const regexReactPlugin = /if\s*\(\s*isNewArchitectureEnabled\(?\)?\s*\)\s*\{\s*apply\s+plugin:\s*['"]com\.facebook\.react['"]\s*\}/g;
-  if (regexReactPlugin.test(content)) {
-    content = content.replace(regexReactPlugin, (match) => {
-      return `// Why this exists:
-// In AGP 9.0+, applying the React Native plugin inside library projects is unsupported
-// and throws a "too late to call finalizeDsl" exception.
-// ${match.split('\n').join('\n// ')}`;
-    });
-    modified = true;
-  }
-
-  // Standalone check
-  const regexStandaloneReact = /apply\s+plugin:\s*['"]com\.facebook\.react['"]/g;
-  if (regexStandaloneReact.test(content)) {
-    content = content.replace(regexStandaloneReact, '// apply plugin: "com.facebook.react"');
-    modified = true;
-  }
-
-  // 2. Replace compileSdkVersion, minSdkVersion, targetSdkVersion with AGP 9.0+ equivalents
-  if (content.includes('compileSdkVersion ')) {
-    content = content.replace(/compileSdkVersion\s+/g, 'compileSdk ');
-    modified = true;
-  }
-  if (content.includes('minSdkVersion ')) {
-    content = content.replace(/minSdkVersion\s+/g, 'minSdk ');
-    modified = true;
-  }
-  if (content.includes('targetSdkVersion ')) {
-    content = content.replace(/targetSdkVersion\s+/g, '// targetSdkVersion ');
-    modified = true;
-  }
-
-  if (modified) {
-    fs.writeFileSync(filePath, content, 'utf8');
-    console.log(`[patch-expo-autolinking] Successfully patched: ${relativeBuildGradlePath}`);
-  } else {
-    console.log(`[patch-expo-autolinking] Already patched or no matching patterns in: ${relativeBuildGradlePath}`);
-  }
+  console.log(`[patch-expo-autolinking] Successfully patched: react-native jsi.h`);
 }
 
 run();
+
 
 
 

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { MembersStackScreenProps, IUser } from "../types";
 import { View, Text, FlatList, Image, TouchableOpacity, Share, StatusBar } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -9,11 +9,10 @@ import {
   useFamilyMembers,
   useRemoveMember,
   useLeaveFamily,
-} from "../hooks/queries/useFamilyQueries";
-import { syncFamilyInviteForOwner } from "../services/family";
+  useTextFormatter,
+} from "../hooks";
 import { AppHeader, Card, StatusModal, LoadingOverlay } from "../components/ui";
 import NotificationModal from "../components/NotificationModal";
-import { useTextFormatter } from "../hooks";
 
 /**
  * Maps family-related operation errors to user-friendly messages
@@ -64,15 +63,9 @@ const MembersScreen = ({ navigation }: MembersStackScreenProps<"Members">) => {
   const myRole = myMember?.role ?? user?.role;
   const isOwner = myRole === "owner";
 
-  useEffect(() => {
-    if (!user?.uid || !family?.id || !isOwner) return;
-
-    void syncFamilyInviteForOwner(family.id, user.uid).catch((error) => {
-      if (__DEV__) {
-        console.warn("Invite sync failed:", error);
-      }
-    });
-  }, [family?.id, isOwner, user?.uid]);
+  const rawFamily = family as unknown as Record<string, string> | null;
+  const inviteCodeToDisplay =
+    family?.inviteCode || rawFamily?.invite_code || rawFamily?.code || "------";
 
   /**
    * Opens the system share sheet with the family invite code
@@ -81,7 +74,7 @@ const MembersScreen = ({ navigation }: MembersStackScreenProps<"Members">) => {
     if (!family) return;
     try {
       await Share.share({
-        message: `Join our family grocery list! Use invite code: ${family.inviteCode}`,
+        message: `Join our family grocery list! Use invite code: ${inviteCodeToDisplay}`,
       });
     } catch (error) {
       setStatusModal({
@@ -200,7 +193,7 @@ const MembersScreen = ({ navigation }: MembersStackScreenProps<"Members">) => {
                 Family Code
               </Text>
               <Text className="text-[28px] font-black tracking-[4px] text-text-primary">
-                {family?.inviteCode || "------"}
+                {inviteCodeToDisplay}
               </Text>
             </View>
             <TouchableOpacity

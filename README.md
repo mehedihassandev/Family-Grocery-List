@@ -33,6 +33,7 @@ Family Grocery List is a React Native app (Expo + native projects) where family 
 - [Project Structure](#project-structure)
 - [Getting Started](#getting-started)
 - [Environment Variables](#environment-variables)
+- [Optional Python Data Backend](#optional-python-data-backend)
 - [Firebase and Google Setup](#firebase-and-google-setup)
 - [Available Scripts](#available-scripts)
 - [Firestore Data Model](#firestore-data-model)
@@ -56,6 +57,7 @@ Family Grocery List is a React Native app (Expo + native projects) where family 
 | State            | Zustand + persisted AsyncStorage                   |
 | Navigation       | React Navigation v7 (Native Stack + Bottom Tabs)   |
 | Backend          | Firebase Authentication + Firestore                |
+| Data API         | Python + FastAPI + Firebase Admin (optional)       |
 | Auth providers   | Email/Password, Google OAuth (`expo-auth-session`) |
 
 ## Features
@@ -100,6 +102,7 @@ flowchart LR
 |  |- styles/            # NativeWind global css
 |  |- theme/             # Design tokens
 |  |- types/             # Shared TS types
+|- backend/              # Optional Python data API
 |- android/              # Native Android project
 |- ios/                  # Native iOS project
 |- GOOGLE_SIGNIN_SETUP.md
@@ -170,6 +173,8 @@ EXPO_PUBLIC_FIREBASE_MEASUREMENT_ID=G-XXXXXXXXXX
 EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID=123456789012-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx.apps.googleusercontent.com
 EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID=123456789012-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx.apps.googleusercontent.com
 EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID=123456789012-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx.apps.googleusercontent.com
+
+EXPO_PUBLIC_DATA_API_BASE_URL=http://127.0.0.1:8000
 ```
 
 ### Variable reference
@@ -186,12 +191,35 @@ EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID=123456789012-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx.a
 | `EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID`         | Yes                   | Google Cloud OAuth client (Web)             |
 | `EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID`     | Yes (Android runtime) | Google Cloud OAuth client (Android)         |
 | `EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID`         | Yes (iOS runtime)     | Google Cloud OAuth client (iOS)             |
+| `EXPO_PUBLIC_DATA_API_BASE_URL`            | Optional              | Python data API base URL                    |
 
 Notes:
 
 - Keep project numbers aligned: Google client IDs must match `EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID`.
 - Restart Metro after changing `.env`.
 - Never commit real `.env` values.
+
+## Optional Python Data Backend
+
+The `backend/` folder contains a FastAPI service for server-side data work. It verifies Firebase ID tokens with Firebase Admin SDK, checks that the user belongs to the requested family, then reads Firestore.
+
+```bash
+cd backend
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -e ".[dev]"
+uvicorn app.main:app --reload
+```
+
+Set backend env in `backend/.env`:
+
+```env
+FIREBASE_PROJECT_ID=your-project-id
+FIREBASE_SERVICE_ACCOUNT_JSON=/absolute/path/to/firebase-service-account.json
+ALLOWED_ORIGINS=http://localhost:8081,http://localhost:19006
+```
+
+Mobile integration lives in `src/services/dataBackend.ts` and `src/hooks/queries/useDataBackendQueries.ts`. Protected API calls send the current Firebase ID token as a bearer token.
 
 ## Firebase and Google Setup
 

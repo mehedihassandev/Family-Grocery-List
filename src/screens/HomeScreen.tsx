@@ -24,7 +24,7 @@ import {
   ChevronUp,
 } from "lucide-react-native";
 import { useAuthStore } from "../store/useAuthStore";
-import { useGroceryList, useToggleItemCompletion } from "../hooks/queries/useGroceryQueries";
+import { useFamilyGroceryItemsBackend, useToggleItemCompletionBackend } from "../hooks";
 import { IGroceryItem, ListStackScreenProps } from "../types";
 import ItemCard from "../components/ItemCard";
 import EmptyState from "../components/EmptyState";
@@ -65,7 +65,6 @@ const ASSIGNEE_FILTERS: IFilterOption<TAssigneeFilter>[] = [
 
 const ALL_CATEGORY = "All";
 const SEARCH_PLACEHOLDER = "Search items, categories, notes";
-const PERMISSION_ERROR_LABEL = "Missing Firestore permission for this query.";
 const UNDO_DURATION_MS = 5000;
 
 interface IUndoState {
@@ -104,23 +103,22 @@ const FilterChipRow = <T extends string>({
 );
 
 /**
- * Maps Firebase error messages to user-friendly strings
- * @param error - The error object from Firestore
+ * Maps Data API error messages to user-friendly strings
  */
-const getFirebaseErrorMessage = (error: Error) => {
+const getDataApiErrorMessage = (error: Error) => {
   const message = error.message || "";
-  if (message.includes("permission-denied")) {
-    return PERMISSION_ERROR_LABEL;
+  if (message.includes("status 500")) {
+    return "Backend server error (500). Please check backend deployment.";
   }
-  if (message.includes("requires an index")) {
-    return "Firestore index required. Create index from console link.";
+  if (message.includes("401") || message.includes("403")) {
+    return "Authentication failed. Please sign in again.";
   }
-  return "Could not load grocery items. Check internet and retry.";
+  return message || "Could not load grocery items. Check internet and retry.";
 };
 
 /**
  * Main grocery list screen
- * Why: To allow users to view, search, filter, and manage grocery items in their family list.
+ * Why: To allow users to view, search, filter, and manage grocery items in their family list via Python backend API.
  */
 const HomeScreen = ({ navigation }: ListStackScreenProps<"List">) => {
   const { user } = useAuthStore();
@@ -140,28 +138,18 @@ const HomeScreen = ({ navigation }: ListStackScreenProps<"List">) => {
   const categoryAnimation = useRef(new Animated.Value(0)).current;
   const undoTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // TanStack Query Hooks
+  // TanStack Query Hooks for Python Backend API
   const {
     data: items = [],
     isLoading: loading,
     error: queryError,
     refetch,
-  } = useGroceryList(user?.familyId);
-  const toggleMutation = useToggleItemCompletion();
+  } = useFamilyGroceryItemsBackend(user?.familyId);
+  const toggleMutation = useToggleItemCompletionBackend(user?.familyId);
 
-  const listError = queryError ? getFirebaseErrorMessage(queryError as Error) : null;
+  const listError = queryError ? getDataApiErrorMessage(queryError as Error) : null;
 
   const sortedItems = useMemo(() => sortLegacyGroceryItemsForHome(items), [items]);
-
-  // const viewingItem = useMemo(
-  //   () => (viewingItemId ? (items.find((item) => item.id === viewingItemId) ?? null) : null),
-  //   [items, viewingItemId],
-  // );
-
-  // const editingItem = useMemo(
-  //   () => (editingItemId ? (items.find((item) => item.id === editingItemId) ?? null) : null),
-  //   [items, editingItemId],
-  // );
 
   const filteredItems = useMemo(() => {
     const query = searchQuery.trim().toLowerCase();
@@ -169,7 +157,7 @@ const HomeScreen = ({ navigation }: ListStackScreenProps<"List">) => {
     const dueSoon = new Date();
     dueSoon.setDate(dueSoon.getDate() + 3);
 
-    return sortedItems.filter((item) => {
+    return sortedItems.filter((item: IGroceryItem) => {
       if (statusFilter !== "all" && item.status !== statusFilter) {
         return false;
       }
@@ -186,8 +174,16 @@ const HomeScreen = ({ navigation }: ListStackScreenProps<"List">) => {
       }
 
       if (dueFilter !== "all") {
-        const dueDate = item.dueDate?.toDate ? item.dueDate.toDate() : item.dueDate;
-        if (!(dueDate instanceof Date) || Number.isNaN(dueDate.getTime())) {
+        const rawDue: unknown = item.dueDate;
+        let dueDate: Date | null = null;
+        if (rawDue && typeof rawDue === "object" && "toDate" in rawDue) {
+          dueDate = (rawDue as { toDate: () => Date }).toDate();
+        } else if (rawDue instanceof Date) {
+          dueDate = rawDue;
+        } else if (typeof rawDue === "string" || typeof rawDue === "number") {
+          dueDate = new Date(rawDue);
+        }
+        if (!dueDate || Number.isNaN(dueDate.getTime())) {
           return false;
         }
         if (dueFilter === "overdue" && dueDate >= now) {
@@ -218,17 +214,20 @@ const HomeScreen = ({ navigation }: ListStackScreenProps<"List">) => {
   }, [sortedItems, statusFilter, activeCategory, assigneeFilter, dueFilter, searchQuery]);
 
   const sections = useMemo<IGrocerySection[]>(() => {
-    const pending = filteredItems.filter((item) => item.status === "pending");
-    const completed = filteredItems.filter((item) => item.status === "completed");
+    const pending = filteredItems.filter((item: IGroceryItem) => item.status === "pending");
+    const completed = filteredItems.filter((item: IGroceryItem) => item.status === "completed");
     const output: IGrocerySection[] = [];
 
     if (statusFilter !== "completed" && pending.length > 0) {
-      const grouped = pending.reduce<Record<string, IGroceryItem[]>>((acc, item) => {
-        const cat = item.category || "Uncategorized";
-        if (!acc[cat]) acc[cat] = [];
-        acc[cat].push(item);
-        return acc;
-      }, {});
+      const grouped = pending.reduce<Record<string, IGroceryItem[]>>(
+        (acc: Record<string, IGroceryItem[]>, item: IGroceryItem) => {
+          const cat = item.category || "Uncategorized";
+          if (!acc[cat]) acc[cat] = [];
+          acc[cat].push(item);
+          return acc;
+        },
+        {},
+      );
 
       Object.keys(grouped)
         .sort()
@@ -265,25 +264,8 @@ const HomeScreen = ({ navigation }: ListStackScreenProps<"List">) => {
     const isCompleting = item.status === "pending";
 
     toggleMutation.mutate({
-      item: {
-        id: item.id,
-        name: item.name,
-        status: item.status,
-        familyId: item.familyId,
-        category: item.category,
-        priority: item.priority,
-        notes: item.notes,
-        quantity: item.quantity,
-        recurrenceFrequency: item.recurrenceFrequency,
-        assignee: item.assignee,
-        dueDate: item.dueDate,
-        unitPrice: item.unitPrice,
-        estimatedTotal: item.estimatedTotal,
-      },
-      user: {
-        uid: user.uid,
-        name: user.displayName,
-      },
+      itemId: item.id,
+      currentStatus: item.status,
     });
 
     if (isCompleting) {
@@ -310,11 +292,15 @@ const HomeScreen = ({ navigation }: ListStackScreenProps<"List">) => {
     }
   };
 
-  const filteredCompletedCount = filteredItems.filter((item) => item.status === "completed").length;
+  const filteredCompletedCount = filteredItems.filter(
+    (item: IGroceryItem) => item.status === "completed",
+  ).length;
   const visibleCount = filteredItems.length;
 
-  const categoryOptions = useMemo(() => {
-    const fromItems = Array.from(new Set(sortedItems.map((item) => item.category).filter(Boolean)));
+  const categoryOptions = useMemo<string[]>(() => {
+    const fromItems = Array.from(
+      new Set(sortedItems.map((item: IGroceryItem) => item.category).filter(Boolean)),
+    );
     const merged = [...GROCERY_CATEGORIES, ...fromItems].filter(
       (category, index, self) => self.indexOf(category) === index,
     );
@@ -339,16 +325,8 @@ const HomeScreen = ({ navigation }: ListStackScreenProps<"List">) => {
     }
 
     toggleMutation.mutate({
-      item: {
-        id: undoState.itemId,
-        name: undoState.itemName,
-        status: "completed",
-        familyId: undoState.familyId,
-      },
-      user: {
-        uid: user.uid,
-        name: user.displayName,
-      },
+      itemId: undoState.itemId,
+      currentStatus: "completed",
     });
     setUndoState(null);
   };

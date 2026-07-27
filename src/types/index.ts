@@ -6,9 +6,10 @@ import type { BottomTabScreenProps } from "@react-navigation/bottom-tabs";
 import type { CompositeScreenProps } from "@react-navigation/native";
 import { ERootRoutes, ETabRoutes } from "../navigation/routes";
 
+export * from "./apiModels";
 export { ERootRoutes, ETabRoutes };
 
-export type Priority = "Urgent" | "Medium" | "Low";
+export type Priority = "Urgent" | "High" | "Medium" | "Low";
 
 export type Category =
   | "Beauty"
@@ -23,23 +24,6 @@ export type Category =
   | "Medicine"
   | "Other";
 
-export interface IUser {
-  uid: string;
-  email: string;
-  displayName: string;
-  photoURL: string;
-  familyId: string | null;
-  role: "owner" | "member";
-}
-
-export interface IFamily {
-  id: string;
-  name: string;
-  inviteCode: string;
-  ownerId: string;
-  createdAt: TFirestoreDateValue;
-}
-
 interface IFirestoreTimestampLike {
   toDate?: () => Date;
   toMillis?: () => number;
@@ -48,39 +32,6 @@ interface IFirestoreTimestampLike {
 }
 
 export type TFirestoreDateValue = (Date & IFirestoreTimestampLike) | IFirestoreTimestampLike | null;
-
-export interface IGroceryItem {
-  id: string;
-  familyId: string;
-  name: string;
-  category: string;
-  priority: Priority;
-  notes?: string;
-  quantity?: string;
-  recurrenceFrequency?: "none" | "weekly" | "monthly";
-  assignee?: {
-    uid?: string;
-    name: string;
-  } | null;
-  dueDate?: TFirestoreDateValue;
-  reminderAt?: TFirestoreDateValue;
-  unitPrice?: number | null;
-  estimatedTotal?: number | null;
-  status: "pending" | "completed";
-  addedBy: {
-    uid: string;
-    name: string;
-    photoURL?: string;
-  };
-  completedBy?: {
-    uid: string;
-    name: string;
-    photoURL?: string;
-  } | null;
-  createdAt: TFirestoreDateValue;
-  updatedAt: TFirestoreDateValue;
-  completedAt?: TFirestoreDateValue;
-}
 
 export type NotificationType = "item_added" | "item_completed" | "urgent_item";
 

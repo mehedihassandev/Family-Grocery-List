@@ -13,8 +13,7 @@ import { Users, Plus, ArrowLeft, LogOut } from "lucide-react-native";
 import { FirebaseError } from "firebase/app";
 import { signOut } from "../services/auth";
 import { useAuthStore } from "../store/useAuthStore";
-import { useCreateFamily, useJoinFamily } from "../hooks/queries/useFamilyQueries";
-import { useTextFormatter } from "../hooks";
+import { useCreateFamily, useJoinFamily, useTextFormatter } from "../hooks";
 import { goToAuthenticatedRoot } from "../navigation/navigationRef";
 import { LoadingOverlay, RhfTextfield, StatusModal } from "../components/ui";
 

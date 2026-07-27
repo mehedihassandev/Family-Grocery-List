@@ -1,3 +1,4 @@
+import axios, { isAxiosError } from "axios";
 import * as Google from "expo-auth-session/providers/google";
 import * as WebBrowser from "expo-web-browser";
 import { GoogleSignin, statusCodes } from "@react-native-google-signin/google-signin";
@@ -595,40 +596,41 @@ export const exchangeGoogleCodeForTokens = async ({
     throw new Error("Google PKCE code verifier is missing.");
   }
 
-  const response = await withTimeout(
-    fetch("https://oauth2.googleapis.com/token", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/x-www-form-urlencoded",
-      },
-      body: encodeFormBody({
-        client_id: clientId,
-        grant_type: "authorization_code",
-        code,
-        redirect_uri: redirectUri,
-        code_verifier: codeVerifier,
-      }),
-    }),
-    AUTH_OPERATION_TIMEOUT_MS,
-    "Timed out while exchanging Google authorization code.",
-  );
-
   let payload: Record<string, unknown> = {};
 
   try {
-    payload = (await response.json()) as Record<string, unknown>;
-  } catch {
-    payload = {};
-  }
+    const response = await withTimeout(
+      axios.post<Record<string, unknown>>(
+        "https://oauth2.googleapis.com/token",
+        encodeFormBody({
+          client_id: clientId,
+          grant_type: "authorization_code",
+          code,
+          redirect_uri: redirectUri,
+          code_verifier: codeVerifier,
+        }),
+        {
+          headers: {
+            "Content-Type": "application/x-www-form-urlencoded",
+          },
+        },
+      ),
+      AUTH_OPERATION_TIMEOUT_MS,
+      "Timed out while exchanging Google authorization code.",
+    );
+    payload = response.data || {};
+  } catch (error) {
+    if (isAxiosError(error) && error.response) {
+      payload = (error.response.data as Record<string, unknown>) || {};
+      const details =
+        typeof payload.error_description === "string"
+          ? payload.error_description
+          : typeof payload.error === "string"
+            ? payload.error
+            : `Status ${error.response.status}`;
 
-  if (!response.ok) {
-    const details =
-      typeof payload.error_description === "string"
-        ? payload.error_description
-        : typeof payload.error === "string"
-          ? payload.error
-          : `HTTP ${response.status}`;
-    throw new Error(`Google token exchange failed: ${details}`);
+      throw new Error(`Google token exchange failed: ${details}`);
+    }
   }
 
   return {
@@ -724,7 +726,7 @@ export const listenToAuthChanges = () => {
 
     try {
       if (firebaseUser) {
-        setProfileSynced(false);
+        setProfileSynced(true);
         // 1. Set initial basic info from Auth (fastest UI update)
         setUser(mapFirebaseUserToAppUser(firebaseUser));
 

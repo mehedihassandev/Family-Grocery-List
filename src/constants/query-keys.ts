@@ -7,5 +7,8 @@ export const QUERY_KEYS = {
   FAMILY_MEMBERS: "familyMembers",
   GROCERY_LIST: "groceryList",
   GROCERY_ITEM: "groceryItem",
+  DATA_GROCERY_SUMMARY: "dataGrocerySummary",
+  DATA_GROCERY_ITEMS: "dataGroceryItems",
   NOTIFICATIONS: "notifications",
+  USER_PROFILE: "userProfile",
 } as const;

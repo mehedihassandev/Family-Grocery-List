@@ -16,9 +16,13 @@ import {
   AlertTriangle,
 } from "lucide-react-native";
 import { useAuthStore } from "../store/useAuthStore";
-import { useFamilyDetails, useFamilyMembers } from "../hooks/queries/useFamilyQueries";
-import { useGroceryList } from "../hooks/queries/useGroceryQueries";
-import { useDateFormatter, useTextFormatter } from "../hooks";
+import {
+  useFamilyDetails,
+  useFamilyMembers,
+  useFamilyGroceryItemsBackend,
+  useDateFormatter,
+  useTextFormatter,
+} from "../hooks";
 import { Card, ShortcutCard, ProgressBar, DonutChart, PriorityBadge } from "../components/ui";
 import NotificationModal from "../components/NotificationModal";
 import { useNotificationStore } from "../store/useNotificationStore";
@@ -26,7 +30,7 @@ import { ERootRoutes, ETabRoutes } from "../navigation/routes";
 
 /**
  * Premium Dashboard Screen
- * Why: To provide a high-fidelity, visually stunning overview of the family's grocery status.
+ * Why: To provide a high-fidelity, visually stunning overview of the family's grocery status via Python backend API.
  * Fix: Re-implemented DonutChart using react-native-gifted-charts for stability and animation.
  * Note: Enforces a single light theme.
  */
@@ -39,7 +43,7 @@ const DashboardScreen = ({ navigation }: HomeStackScreenProps<"Home">) => {
   // TanStack Query Hooks
   const { data: family } = useFamilyDetails(user?.familyId);
   const { data: members = [] } = useFamilyMembers(user?.familyId);
-  const { data: items = [] } = useGroceryList(user?.familyId);
+  const { data: items = [] } = useFamilyGroceryItemsBackend(user?.familyId);
 
   const familyName = family?.name || "Our Family";
 
@@ -433,7 +437,7 @@ const DashboardScreen = ({ navigation }: HomeStackScreenProps<"Home">) => {
                           </Text>
                         </Text>
                         <Text className="text-text-muted text-[12px] mt-1 font-medium">
-                          Added by {nextItem.addedBy.name}
+                          Added by {nextItem.addedBy?.name || "Member"}
                         </Text>
                       </View>
                       <PriorityBadge priority={nextItem.priority} />
@@ -618,11 +622,11 @@ const DashboardScreen = ({ navigation }: HomeStackScreenProps<"Home">) => {
                       <View className="flex-row items-center mt-4">
                         <View className="h-6 w-6 rounded-full bg-primary-600 items-center justify-center mr-2">
                           <Text className="text-white text-[10px] font-bold">
-                            {toInitial(item.addedBy.name)}
+                            {toInitial(item.addedBy?.name || "U")}
                           </Text>
                         </View>
                         <Text className="text-text-muted text-[12px] font-medium">
-                          {item.addedBy.name} · {toRelativeTime(item.createdAt)}
+                          {item.addedBy?.name || "Member"} · {toRelativeTime(item.createdAt)}
                         </Text>
                       </View>
                     </View>

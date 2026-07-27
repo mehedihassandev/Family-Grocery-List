@@ -11,10 +11,10 @@ import {
 import { X, Check, Trash2 } from "lucide-react-native";
 import { AuthenticatedStackNavigatorScreenProps, Category, Priority, ERootRoutes } from "../types";
 import {
-  useGroceryItem,
-  useUpdateGroceryItem,
-  useDeleteGroceryItem,
-} from "../hooks/queries/useGroceryQueries";
+  useGroceryItemBackend,
+  useUpdateGroceryItemBackend,
+  useDeleteGroceryItemBackend,
+} from "../hooks";
 import { addCustomCategory, ICustomCategory, subscribeToCategories } from "../services/categories";
 import { GROCERY_CATEGORIES } from "../features/grocery";
 import { InputField, PrimaryButton, Chip, LoadingOverlay, StatusModal } from "../components/ui";
@@ -28,7 +28,7 @@ const RECURRENCE_OPTIONS: ("none" | "weekly" | "monthly")[] = ["none", "weekly",
 
 /**
  * Edit Item Screen
- * Why: To provide a robust editing experience that maintains correct navigation context.
+ * Why: To provide a robust editing experience via Python backend API.
  */
 const EditItemScreen = ({
   route,
@@ -56,10 +56,10 @@ const EditItemScreen = ({
   const [newCatInput, setNewCatInput] = useState("");
   const [showAddCat, setShowAddCat] = useState(false);
 
-  // TanStack Query Hooks
-  const { data: item, isLoading: initialLoading } = useGroceryItem(itemId);
-  const updateMutation = useUpdateGroceryItem();
-  const deleteMutation = useDeleteGroceryItem();
+  // TanStack Query Hooks for Python Backend API
+  const { data: item, isLoading: initialLoading } = useGroceryItemBackend(familyId, itemId);
+  const updateMutation = useUpdateGroceryItemBackend(familyId);
+  const deleteMutation = useDeleteGroceryItemBackend(familyId);
 
   const [statusModal, setStatusModal] = useState<{
     visible: boolean;
@@ -80,23 +80,37 @@ const EditItemScreen = ({
       setCategory(item.category || "Other");
       setPriority(item.priority || "Medium");
       setQuantity(item.quantity || "");
-      setNotes(item.notes || "");
-      setRecurrenceFrequency(item.recurrenceFrequency || "none");
+      setRecurrenceFrequency(
+        item.recurrenceFrequency === "weekly" || item.recurrenceFrequency === "monthly"
+          ? item.recurrenceFrequency
+          : "none",
+      );
       setAssigneeName(item.assignee?.name || "");
-      if (item.dueDate?.toDate) {
-        setDueDateInput(item.dueDate.toDate().toISOString().slice(0, 10));
-      } else if (item.dueDate instanceof Date) {
-        setDueDateInput(item.dueDate.toISOString().slice(0, 10));
+
+      const rawDueDate: unknown = item.dueDate;
+      if (rawDueDate && typeof rawDueDate === "object" && "toDate" in rawDueDate) {
+        setDueDateInput((rawDueDate as { toDate: () => Date }).toDate().toISOString().slice(0, 10));
+      } else if (rawDueDate instanceof Date) {
+        setDueDateInput(rawDueDate.toISOString().slice(0, 10));
+      } else if (typeof rawDueDate === "string") {
+        setDueDateInput(rawDueDate.slice(0, 10));
       } else {
         setDueDateInput("");
       }
-      if (item.reminderAt?.toDate) {
-        setReminderAtInput(item.reminderAt.toDate().toISOString().slice(0, 10));
-      } else if (item.reminderAt instanceof Date) {
-        setReminderAtInput(item.reminderAt.toISOString().slice(0, 10));
+
+      const rawReminderAt: unknown = item.reminderAt;
+      if (rawReminderAt && typeof rawReminderAt === "object" && "toDate" in rawReminderAt) {
+        setReminderAtInput(
+          (rawReminderAt as { toDate: () => Date }).toDate().toISOString().slice(0, 10),
+        );
+      } else if (rawReminderAt instanceof Date) {
+        setReminderAtInput(rawReminderAt.toISOString().slice(0, 10));
+      } else if (typeof rawReminderAt === "string") {
+        setReminderAtInput(rawReminderAt.slice(0, 10));
       } else {
         setReminderAtInput("");
       }
+
       setUnitPriceInput(
         typeof item.unitPrice === "number" && Number.isFinite(item.unitPrice)
           ? String(item.unitPrice)
@@ -208,7 +222,7 @@ const EditItemScreen = ({
     updateMutation.mutate(
       {
         itemId: item.id,
-        updates: {
+        payload: {
           name: name.trim(),
           category,
           priority,

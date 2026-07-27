@@ -79,3 +79,16 @@ yarn-error.log
 .env.*
 !.env.example
 env.log
+
+# Python data backend
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+.venv/
+backend/.env
+backend/*.egg-info/
+
+# Graphify
+graphify-out/
+
