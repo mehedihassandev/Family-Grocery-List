@@ -8,7 +8,7 @@ import {
   Platform,
 } from "react-native";
 import { X, Check } from "lucide-react-native";
-import { Priority, Category, AuthenticatedStackNavigatorScreenProps, ERootRoutes } from "../types";
+import { Priority, Category, AuthenticatedStackNavigatorScreenProps, ROUTES } from "../types";
 import { useAddGroceryItemBackend } from "../hooks";
 import { addCustomCategory, subscribeToCategories, ICustomCategory } from "../services/categories";
 import { GROCERY_CATEGORIES } from "../features/grocery";
@@ -33,7 +33,7 @@ const MEAL_TYPES: ("General" | "Breakfast" | "Lunch" | "Dinner" | "Snacks")[] = 
  */
 const AddItemScreen = ({
   navigation,
-}: AuthenticatedStackNavigatorScreenProps<ERootRoutes.ADD_ITEM>) => {
+}: AuthenticatedStackNavigatorScreenProps<typeof ROUTES.ADD_ITEM>) => {
   const { user } = useAuthStore();
   const familyId = user?.familyId || "";
 

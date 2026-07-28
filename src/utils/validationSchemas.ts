@@ -100,3 +100,13 @@ export const formSchemaMap: {
 export const getValidationSchema = <T extends EFormModelKey>(
   formKey: T,
 ): yup.ObjectSchema<TFormModelMap[T]> => formSchemaMap[formKey];
+
+// ---------------------------------------------------------------------------
+// Profile — Edit Profile
+// ---------------------------------------------------------------------------
+
+export const editProfileSchema = yup.object({
+  displayName: yup.string().required("Name is required").min(2, "Name is too short"),
+});
+
+export type EditProfileFormValues = yup.InferType<typeof editProfileSchema>;

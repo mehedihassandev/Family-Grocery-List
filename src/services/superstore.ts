@@ -16,7 +16,7 @@ import {
   IPriceAlert,
   ICreatePriceAlertPayload,
 } from "../types/superstore";
-import { IGroceryItem } from "../models/grocery";
+import { IGroceryItem } from "../types";
 
 /**
  * Superstore Service

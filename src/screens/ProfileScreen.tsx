@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { ProfileStackScreenProps } from "../types";
+import { ProfileStackScreenProps, ROUTES } from "../types";
 import {
   View,
   Text,
@@ -17,7 +17,6 @@ import { signOut } from "../services/auth";
 import { leaveFamily } from "../services/family";
 import { useTextFormatter } from "../hooks";
 import { AppHeader, Card, StatusModal } from "../components/ui";
-import { ERootRoutes } from "../navigation/routes";
 
 type TStatusModalType = "success" | "error" | "warning" | "confirm";
 
@@ -207,7 +206,7 @@ const ProfileScreen = ({ navigation }: ProfileStackScreenProps) => {
               </View>
               <TouchableOpacity
                 activeOpacity={0.7}
-                onPress={() => navigation.navigate(ERootRoutes.EDIT_PROFILE)}
+                onPress={() => navigation.navigate(ROUTES.EDIT_PROFILE)}
                 className="h-10 w-10 items-center justify-center rounded-full bg-white border border-border"
               >
                 <Edit3 stroke="#4A5568" size={18} strokeWidth={2.5} />
@@ -220,12 +219,12 @@ const ProfileScreen = ({ navigation }: ProfileStackScreenProps) => {
             <MenuItem
               icon={Shield}
               title="Privacy & Security"
-              onPress={() => navigation.navigate(ERootRoutes.PRIVACY_SECURITY)}
+              onPress={() => navigation.navigate(ROUTES.PRIVACY_SECURITY)}
             />
             <MenuItem
               icon={HelpCircle}
               title="Help & Support"
-              onPress={() => navigation.navigate(ERootRoutes.HELP_SUPPORT)}
+              onPress={() => navigation.navigate(ROUTES.HELP_SUPPORT)}
             />
           </Card>
 

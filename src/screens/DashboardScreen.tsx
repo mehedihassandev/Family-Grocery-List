@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from "react";
-import { HomeStackScreenProps } from "../types";
+import { HomeStackScreenProps, ROUTES } from "../types";
 import { ScrollView, StatusBar, Text, View, TouchableOpacity, Image, Share } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import {
@@ -26,7 +26,6 @@ import {
 import { Card, ShortcutCard, ProgressBar, DonutChart, PriorityBadge } from "../components/ui";
 import { RecipePacksModal } from "../components/RecipePacksModal";
 import { useNotificationStore } from "../store/useNotificationStore";
-import { ERootRoutes } from "../navigation/routes";
 
 /**
  * Premium Compact Dashboard Screen
@@ -148,7 +147,7 @@ const DashboardScreen = ({ navigation, onTabChange }: HomeStackScreenProps) => {
           </View>
         </View>
         <TouchableOpacity
-          onPress={() => navigation.navigate(ERootRoutes.NOTIFICATIONS)}
+          onPress={() => navigation.navigate(ROUTES.NOTIFICATIONS)}
           className="h-11 w-11 rounded-2xl bg-white items-center justify-center border border-border shadow-xs"
         >
           <Bell size={20} stroke="#10B981" />
@@ -287,7 +286,7 @@ const DashboardScreen = ({ navigation, onTabChange }: HomeStackScreenProps) => {
                   <ShortcutCard
                     icon={Plus}
                     label="Add Item"
-                    onPress={() => navigation.navigate(ERootRoutes.ADD_ITEM)}
+                    onPress={() => navigation.navigate(ROUTES.ADD_ITEM)}
                     iconBgColor="bg-emerald-50/80"
                     iconColor="#059669"
                   />
@@ -301,7 +300,7 @@ const DashboardScreen = ({ navigation, onTabChange }: HomeStackScreenProps) => {
                   <ShortcutCard
                     icon={Users}
                     label="Family"
-                    onPress={() => (navigation as any).navigate("Family")}
+                    onPress={() => (navigation as any).navigate(ROUTES.FAMILY)}
                     iconBgColor="bg-amber-50/80"
                     iconColor="#D97706"
                   />
@@ -323,7 +322,7 @@ const DashboardScreen = ({ navigation, onTabChange }: HomeStackScreenProps) => {
                 {nextItem ? (
                   <TouchableOpacity
                     activeOpacity={0.9}
-                    onPress={() => (navigation as any).navigate("Groceries")}
+                    onPress={() => (navigation as any).navigate(ROUTES.GROCERIES)}
                   >
                     <Card className="border-primary-100 bg-primary-50/20 p-4 border-2">
                       <View className="flex-row items-center justify-between mb-1">
@@ -427,7 +426,7 @@ const DashboardScreen = ({ navigation, onTabChange }: HomeStackScreenProps) => {
               </Text>
 
               <TouchableOpacity
-                onPress={() => navigation.navigate(ERootRoutes.FAMILY_SETUP)}
+                onPress={() => navigation.navigate(ROUTES.FAMILY_SETUP)}
                 activeOpacity={0.8}
                 className="w-[85%] rounded-2xl bg-primary-600 py-3 items-center"
               >

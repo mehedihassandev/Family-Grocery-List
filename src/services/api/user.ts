@@ -1,6 +1,6 @@
 import { apiClient } from "./config";
 import { API_ENDPOINTS } from "./endpoints";
-import { IUser } from "../../models/user";
+import { IUser } from "../../types";
 
 const normalizeUserResponse = (data: unknown): IUser => {
   if (!data || typeof data !== "object") return data as IUser;

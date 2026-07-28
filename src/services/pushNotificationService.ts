@@ -2,7 +2,7 @@ import { Platform } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import type { QueryClient } from "@tanstack/react-query";
 import { registerDeviceTokenApi, removeDeviceTokenApi } from "./api/notification";
-import { IDeviceTokenRequest } from "../models/notification";
+import { IDeviceTokenRequest } from "../types";
 import { QUERY_KEYS } from "../constants/query-keys";
 
 const TOKEN_STORAGE_KEY = "@family_grocery_fcm_token";
@@ -108,10 +108,22 @@ class PushNotificationService {
         console.log("[PushNotificationService] 🔍 Attempting to fetch push token...");
       }
 
+      // Try to get EAS projectId dynamically
+      let projectId: string | undefined;
+      try {
+        // eslint-disable-next-line @typescript-eslint/no-require-imports -- optional dynamic import
+        const Constants = require("expo-constants").default;
+        projectId = Constants?.expoConfig?.extra?.eas?.projectId ?? Constants?.easConfig?.projectId;
+      } catch {
+        // expo-constants is unavailable
+      }
+
       // Step 1: Try Expo Push Token (works on simulator with Expo Go)
       if (typeof Notifications.getExpoPushTokenAsync === "function") {
         try {
-          const expoTokenData = await Notifications.getExpoPushTokenAsync();
+          const expoTokenData = await Notifications.getExpoPushTokenAsync(
+            projectId ? { projectId } : undefined,
+          );
           token = expoTokenData?.data || null;
           if (__DEV__ && token) {
             console.log("\n🔔 ======================== EXPO PUSH TOKEN ========================");
@@ -121,10 +133,15 @@ class PushNotificationService {
           }
         } catch (expoErr) {
           if (__DEV__) {
-            console.warn(
-              "[PushNotificationService] ⚠️ getExpoPushTokenAsync failed (expected on bare simulator):",
-              expoErr,
-            );
+            const errMessage = expoErr instanceof Error ? expoErr.message : String(expoErr);
+            const isMissingProjectId = errMessage.includes("projectId");
+            if (isMissingProjectId) {
+              console.log(
+                "[PushNotificationService] ℹ️ getExpoPushTokenAsync skipped: No projectId configured (expected in bare dev/simulator).",
+              );
+            } else {
+              console.warn("[PushNotificationService] ⚠️ getExpoPushTokenAsync failed:", expoErr);
+            }
           }
         }
       }

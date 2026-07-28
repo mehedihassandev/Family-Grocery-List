@@ -9,7 +9,7 @@ import {
   ActivityIndicator,
 } from "react-native";
 import { X, Check, Trash2 } from "lucide-react-native";
-import { AuthenticatedStackNavigatorScreenProps, Category, Priority, ERootRoutes } from "../types";
+import { AuthenticatedStackNavigatorScreenProps, Category, Priority, ROUTES } from "../types";
 import {
   useGroceryItemBackend,
   useUpdateGroceryItemBackend,
@@ -33,7 +33,7 @@ const RECURRENCE_OPTIONS: ("none" | "weekly" | "monthly")[] = ["none", "weekly",
 const EditItemScreen = ({
   route,
   navigation,
-}: AuthenticatedStackNavigatorScreenProps<ERootRoutes.EDIT_ITEM>) => {
+}: AuthenticatedStackNavigatorScreenProps<typeof ROUTES.EDIT_ITEM>) => {
   const insets = useSafeAreaInsets();
   const { itemId } = route.params;
   const { user } = useAuthStore();

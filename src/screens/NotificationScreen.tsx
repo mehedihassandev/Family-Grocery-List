@@ -11,7 +11,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Bell, Check, ShoppingBag, AlertCircle, Inbox, CheckCheck } from "lucide-react-native";
 
-import { ERootRoutes } from "../types";
+import { ROUTES } from "../types";
 import { useAuthStore } from "../store/useAuthStore";
 import {
   useNotificationsQuery,
@@ -65,7 +65,7 @@ const NotificationScreen = ({ navigation }: any) => {
 
     const itemId = notif.data?.itemId;
     if (itemId) {
-      navigation.navigate(ERootRoutes.ITEM_DETAIL, { itemId });
+      navigation.navigate(ROUTES.ITEM_DETAIL, { itemId });
     }
   };
 

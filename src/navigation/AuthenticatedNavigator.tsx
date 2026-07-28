@@ -1,7 +1,6 @@
 import React from "react";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
-import { AuthenticatedStackNavigatorParamList } from "../types";
-import { ERootRoutes } from "./routes";
+import { AuthenticatedStackNavigatorParamList, ROUTES } from "../types";
 
 import TabNavigator from "./TabNavigator";
 import {
@@ -12,7 +11,7 @@ import {
   ItemDetailScreen,
   EditItemScreen,
   AddItemScreen,
-  AnalyzeScreen,
+  AnalyticsScreen,
   NotificationScreen,
 } from "../screens";
 
@@ -27,20 +26,20 @@ const AuthenticatedNavigator = () => {
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
       {/* Root Bottom Tab Navigator */}
-      <Stack.Screen name="Root" component={TabNavigator} />
+      <Stack.Screen name={ROUTES.ROOT} component={TabNavigator} />
 
       {/* Secondary Screens */}
-      <Stack.Screen name={ERootRoutes.FAMILY_SETUP} component={FamilySetupScreen} />
-      <Stack.Screen name={ERootRoutes.EDIT_PROFILE} component={EditProfileScreen} />
-      <Stack.Screen name={ERootRoutes.PRIVACY_SECURITY} component={PrivacySecurityScreen} />
-      <Stack.Screen name={ERootRoutes.HELP_SUPPORT} component={HelpSupportScreen} />
-      <Stack.Screen name={ERootRoutes.ANALYZE} component={AnalyzeScreen} />
-      <Stack.Screen name={ERootRoutes.NOTIFICATIONS} component={NotificationScreen} />
+      <Stack.Screen name={ROUTES.FAMILY_SETUP} component={FamilySetupScreen} />
+      <Stack.Screen name={ROUTES.EDIT_PROFILE} component={EditProfileScreen} />
+      <Stack.Screen name={ROUTES.PRIVACY_SECURITY} component={PrivacySecurityScreen} />
+      <Stack.Screen name={ROUTES.HELP_SUPPORT} component={HelpSupportScreen} />
+      <Stack.Screen name={ROUTES.ANALYZE} component={AnalyticsScreen} />
+      <Stack.Screen name={ROUTES.NOTIFICATIONS} component={NotificationScreen} />
 
       {/* Modal Overlay Screens */}
-      <Stack.Screen name={ERootRoutes.ITEM_DETAIL} component={ItemDetailScreen} />
-      <Stack.Screen name={ERootRoutes.EDIT_ITEM} component={EditItemScreen} />
-      <Stack.Screen name={ERootRoutes.ADD_ITEM} component={AddItemScreen} />
+      <Stack.Screen name={ROUTES.ITEM_DETAIL} component={ItemDetailScreen} />
+      <Stack.Screen name={ROUTES.EDIT_ITEM} component={EditItemScreen} />
+      <Stack.Screen name={ROUTES.ADD_ITEM} component={AddItemScreen} />
     </Stack.Navigator>
   );
 };

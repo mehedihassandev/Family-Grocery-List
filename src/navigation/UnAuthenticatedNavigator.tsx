@@ -1,7 +1,6 @@
 import React from "react";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
-import { UnAuthenticatedStackNavigatorParamList } from "../types";
-import { ERootRoutes } from "./routes";
+import { UnAuthenticatedStackNavigatorParamList, ROUTES } from "../types";
 
 import LoginScreen from "../screens/LoginScreen";
 
@@ -14,7 +13,7 @@ const Stack = createNativeStackNavigator<UnAuthenticatedStackNavigatorParamList>
 const UnAuthenticatedNavigator = () => {
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
-      <Stack.Screen name={ERootRoutes.LOGIN} component={LoginScreen} />
+      <Stack.Screen name={ROUTES.LOGIN} component={LoginScreen} />
     </Stack.Navigator>
   );
 };

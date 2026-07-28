@@ -3,7 +3,7 @@ import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { useQueryClient } from "@tanstack/react-query";
 
 import { useAuthStore } from "../store/useAuthStore";
-import { RootNavigatorParamList } from "../types";
+import { RootNavigatorParamList, ROUTES } from "../types";
 import { pushNotificationService } from "../services/pushNotificationService";
 
 import AuthenticatedNavigator from "./AuthenticatedNavigator";
@@ -48,9 +48,9 @@ const Navigator = () => {
     <>
       <Stack.Navigator screenOptions={{ headerShown: false }}>
         {!isAuthenticated ? (
-          <Stack.Screen name="UnAuthenticatedStack" component={UnAuthenticatedNavigator} />
+          <Stack.Screen name={ROUTES.UNAUTHENTICATED_STACK} component={UnAuthenticatedNavigator} />
         ) : (
-          <Stack.Screen name="AuthenticatedStack" component={AuthenticatedNavigator} />
+          <Stack.Screen name={ROUTES.AUTHENTICATED_STACK} component={AuthenticatedNavigator} />
         )}
       </Stack.Navigator>
     </>

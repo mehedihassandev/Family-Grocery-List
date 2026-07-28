@@ -1,42 +1,7 @@
+import colors from "./colors.json";
+
 export const appTheme = {
-  colors: {
-    primary: {
-      50: "#ECFDF5",
-      100: "#D1FAE5",
-      200: "#A7F3D0",
-      300: "#6EE7B7",
-      400: "#34D399",
-      500: "#10B981",
-      600: "#059669",
-      700: "#047857",
-      800: "#065F46",
-      900: "#064E3B",
-    },
-    secondary: {
-      50: "#F0F9FF",
-      100: "#E0F2FE",
-      200: "#BAE6FD",
-      500: "#0EA5E9",
-      600: "#0284C7",
-      700: "#0369A1",
-    },
-    text: {
-      primary: "#0F172A",
-      secondary: "#475569",
-      muted: "#94A3B8",
-      subtle: "#CBD5E1",
-      inverse: "#FFFFFF",
-    },
-    background: "#F8FAFC",
-    surface: "#ffffff",
-    border: "#E2E8F0",
-    status: {
-      urgent: "#EF4444",
-      medium: "#F59E0B",
-      low: "#10B981",
-      completed: "#94A3B8",
-    },
-  },
+  colors,
   radius: {
     xs: 4,
     sm: 8,

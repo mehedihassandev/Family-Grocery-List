@@ -3,7 +3,7 @@ import { View, Text, ScrollView, Linking, TouchableOpacity } from "react-native"
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Shield, ExternalLink } from "lucide-react-native";
 import { SubHeader, Card } from "../components/ui";
-import { AuthenticatedStackNavigatorScreenProps, ERootRoutes } from "../types";
+import { AuthenticatedStackNavigatorScreenProps, ROUTES } from "../types";
 
 interface IBulletListProps {
   items: string[];
@@ -32,7 +32,7 @@ const BulletList = ({ items }: IBulletListProps) => {
  */
 const PrivacySecurityScreen = ({
   navigation,
-}: AuthenticatedStackNavigatorScreenProps<ERootRoutes.PRIVACY_SECURITY>) => {
+}: AuthenticatedStackNavigatorScreenProps<typeof ROUTES.PRIVACY_SECURITY>) => {
   /**
    * Opens an external URL in the default browser
    * @param url - The URL to open

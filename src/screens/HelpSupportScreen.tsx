@@ -3,7 +3,7 @@ import { View, Text, ScrollView, TouchableOpacity, Linking, Alert } from "react-
 import { SafeAreaView } from "react-native-safe-area-context";
 import { HelpCircle, Bug, ExternalLink, Info } from "lucide-react-native";
 import { SubHeader, Card } from "../components/ui";
-import { AuthenticatedStackNavigatorScreenProps, ERootRoutes } from "../types";
+import { AuthenticatedStackNavigatorScreenProps, ROUTES } from "../types";
 
 interface IBulletListProps {
   items: string[];
@@ -32,7 +32,7 @@ const BulletList = ({ items }: IBulletListProps) => {
  */
 const HelpSupportScreen = ({
   navigation,
-}: AuthenticatedStackNavigatorScreenProps<ERootRoutes.HELP_SUPPORT>) => {
+}: AuthenticatedStackNavigatorScreenProps<typeof ROUTES.HELP_SUPPORT>) => {
   /**
    * Opens an external URL in the default browser
    * @param url - The URL to open

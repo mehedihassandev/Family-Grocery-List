@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { ERootRoutes, MembersStackScreenProps, IUser } from "../types";
+import { FamilyStackScreenProps, IUser, ROUTES } from "../types";
 import {
   View,
   Text,
@@ -43,7 +43,7 @@ const getFamilyActionErrorMessage = (error: unknown, fallback: string) => {
  * Premium Family Members Management Screen
  * Why: To provide a high-fidelity experience for managing family groups with elegant feedback.
  */
-const MembersScreen = ({ navigation }: MembersStackScreenProps) => {
+const FamilyScreen = ({ navigation }: FamilyStackScreenProps) => {
   const { user } = useAuthStore();
   const { toInitial } = useTextFormatter();
 
@@ -210,7 +210,7 @@ const MembersScreen = ({ navigation }: MembersStackScreenProps) => {
       <AppHeader
         title="Family Group"
         eyebrow="Management"
-        onNotificationPress={() => navigation.navigate(ERootRoutes.NOTIFICATIONS)}
+        onNotificationPress={() => navigation.navigate(ROUTES.NOTIFICATIONS)}
       />
 
       <View className="px-6 flex-1 pt-6">
@@ -342,4 +342,4 @@ const MembersScreen = ({ navigation }: MembersStackScreenProps) => {
   );
 };
 
-export default MembersScreen;
+export default FamilyScreen;

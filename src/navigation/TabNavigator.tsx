@@ -6,11 +6,12 @@ import { Home, ShoppingBasket, BarChart3, Users, User as UserIcon } from "lucide
 
 import DashboardScreen from "../screens/DashboardScreen";
 import GroceryListScreen from "../screens/GroceryListScreen";
-import AnalyzeScreen from "../screens/AnalyzeScreen";
-import MembersScreen from "../screens/MembersScreen";
+import AnalyticsScreen from "../screens/AnalyticsScreen";
+import FamilyScreen from "../screens/FamilyScreen";
 import ProfileScreen from "../screens/ProfileScreen";
 import { useAuthStore } from "../store/useAuthStore";
 import { syncFamilyInviteForOwner } from "../services/family";
+import { ROUTES } from "../types";
 
 const Tab = createBottomTabNavigator();
 
@@ -74,7 +75,7 @@ const TabNavigator: React.FC = () => {
       }}
     >
       <Tab.Screen
-        name="Dashboard"
+        name={ROUTES.DASHBOARD}
         component={DashboardScreen as any}
         options={{
           tabBarLabel: "Dashboard",
@@ -82,7 +83,7 @@ const TabNavigator: React.FC = () => {
         }}
       />
       <Tab.Screen
-        name="Groceries"
+        name={ROUTES.GROCERIES}
         component={GroceryListScreen as any}
         options={{
           tabBarLabel: "Groceries",
@@ -90,23 +91,23 @@ const TabNavigator: React.FC = () => {
         }}
       />
       <Tab.Screen
-        name="Analytics"
-        component={AnalyzeScreen as any}
+        name={ROUTES.ANALYTICS}
+        component={AnalyticsScreen as any}
         options={{
           tabBarLabel: "Analytics",
           tabBarIcon: ({ focused }) => <TabIcon focused={focused} Icon={BarChart3} />,
         }}
       />
       <Tab.Screen
-        name="Family"
-        component={MembersScreen as any}
+        name={ROUTES.FAMILY}
+        component={FamilyScreen as any}
         options={{
           tabBarLabel: "Family",
           tabBarIcon: ({ focused }) => <TabIcon focused={focused} Icon={Users} />,
         }}
       />
       <Tab.Screen
-        name="Profile"
+        name={ROUTES.PROFILE}
         component={ProfileScreen as any}
         options={{
           tabBarLabel: "Profile",

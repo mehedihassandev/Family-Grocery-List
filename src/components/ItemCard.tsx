@@ -21,7 +21,9 @@ const ItemCard = ({ item, onToggle, onPress }: IItemCardProps) => {
   const { toRelativeTime } = useDateFormatter();
   const { toInitial } = useTextFormatter();
   const isCompleted = item.status === "completed";
-  const timeAgo = toRelativeTime(item.createdAt);
+  const timeAgo = toRelativeTime(
+    isCompleted ? item.completedAt || item.updatedAt || item.createdAt : item.createdAt,
+  );
 
   return (
     <View className="mb-3">
@@ -34,16 +36,17 @@ const ItemCard = ({ item, onToggle, onPress }: IItemCardProps) => {
       >
         {/* Priority stripe accent */}
         <View
-          style={{
-            width: 4.5,
-            backgroundColor: isCompleted
-              ? "#CBD5E1"
+          className={`w-[4.5px] ${
+            isCompleted
+              ? "bg-handle"
               : item.priority === "Urgent"
-                ? "#EF4444"
-                : item.priority === "Medium"
-                  ? "#F59E0B"
-                  : "#10B981",
-          }}
+                ? "bg-urgent"
+                : item.priority === "High"
+                  ? "bg-danger"
+                  : item.priority === "Medium"
+                    ? "bg-warning"
+                    : "bg-primary-500"
+          }`}
         />
 
         {/* Independent Checkbox Toggle Area */}

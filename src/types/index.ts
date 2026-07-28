@@ -2,10 +2,11 @@ import type {
   NativeStackNavigationProp,
   NativeStackScreenProps,
 } from "@react-navigation/native-stack";
-import { ERootRoutes, ETabRoutes } from "../navigation/routes";
+import { ROUTES, TRouteName } from "../navigation/routes";
 
 export * from "./apiModels";
-export { ERootRoutes, ETabRoutes };
+export { ROUTES };
+export type { TRouteName };
 
 export type Priority = "Urgent" | "High" | "Medium" | "Low";
 
@@ -39,39 +40,40 @@ export type NotificationType = "item_added" | "item_completed" | "urgent_item";
 // import from a single source of truth and type-check route params for free.
 // ---------------------------------------------------------------------------
 
-/** Root (modal) stack — handles the high-level Auth switch */
 export type RootNavigatorParamList = {
   /** Unauthenticated shell — Login, Signup, etc. */
-  UnAuthenticatedStack: undefined;
+  [ROUTES.UNAUTHENTICATED_STACK]: undefined;
   /** Authenticated shell — Hosts the main app content */
-  AuthenticatedStack: undefined;
+  [ROUTES.AUTHENTICATED_STACK]: undefined;
 };
 
 /** Authenticated Stack — Screens available after login */
 export type AuthenticatedStackNavigatorParamList = {
   /** The main tab navigator */
-  Root: undefined;
+  [ROUTES.ROOT]: undefined;
   /** Prompt user to create or join a family after first login */
-  [ERootRoutes.FAMILY_SETUP]: { mode?: "selection" | "create" | "join" } | undefined;
+  [ROUTES.FAMILY_SETUP]: { mode?: "selection" | "create" | "join" } | undefined;
   /** Edit user display name / avatar */
-  [ERootRoutes.EDIT_PROFILE]: undefined;
+  [ROUTES.EDIT_PROFILE]: undefined;
   /** Privacy & security settings */
-  [ERootRoutes.PRIVACY_SECURITY]: undefined;
+  [ROUTES.PRIVACY_SECURITY]: undefined;
   /** Help & support FAQ */
-  [ERootRoutes.HELP_SUPPORT]: undefined;
+  [ROUTES.HELP_SUPPORT]: undefined;
   /** Add a new item */
-  [ERootRoutes.ADD_ITEM]: undefined;
-
-  // New screens that were previously Modals
-  [ERootRoutes.ITEM_DETAIL]: { itemId: string };
-  [ERootRoutes.EDIT_ITEM]: { itemId: string };
-  [ERootRoutes.ANALYZE]: undefined;
-  [ERootRoutes.NOTIFICATIONS]: undefined;
+  [ROUTES.ADD_ITEM]: undefined;
+  /** View item details */
+  [ROUTES.ITEM_DETAIL]: { itemId: string };
+  /** Edit an existing item */
+  [ROUTES.EDIT_ITEM]: { itemId: string };
+  /** Analytics screen (stack entry) */
+  [ROUTES.ANALYZE]: undefined;
+  /** Notification feed */
+  [ROUTES.NOTIFICATIONS]: undefined;
 };
 
 /** Unauthenticated Stack — Screens available before login */
 export type UnAuthenticatedStackNavigatorParamList = {
-  [ERootRoutes.LOGIN]: undefined;
+  [ROUTES.LOGIN]: undefined;
 };
 
 export type RootStackNavigationProp = NativeStackNavigationProp<RootNavigatorParamList>;
@@ -99,10 +101,12 @@ export interface ITabScreenProps {
 
 export type HomeStackScreenProps = ITabScreenProps;
 export type ListStackScreenProps = ITabScreenProps;
-export type MembersStackScreenProps = ITabScreenProps;
+export type FamilyStackScreenProps = ITabScreenProps;
 export type ProfileStackScreenProps = ITabScreenProps;
 
-export type AnalyzeStackScreenProps = AuthenticatedStackNavigatorScreenProps<ERootRoutes.ANALYZE>;
+export type AnalyticsStackScreenProps = AuthenticatedStackNavigatorScreenProps<
+  typeof ROUTES.ANALYZE
+>;
 
 export interface IAppNotification {
   id: string;

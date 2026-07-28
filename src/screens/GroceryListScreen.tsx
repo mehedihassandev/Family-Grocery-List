@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
   RefreshControl,
@@ -11,7 +11,7 @@ import {
 } from "react-native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
-import { ERootRoutes } from "../navigation/routes";
+import { IGroceryItem, ListStackScreenProps, ROUTES } from "../types";
 
 import {
   Plus,
@@ -20,7 +20,6 @@ import {
   ShoppingBasket,
   ChevronDown,
   ChevronUp,
-  Sparkles,
   X,
   CheckCircle2,
   AlertCircle,
@@ -28,12 +27,11 @@ import {
 } from "lucide-react-native";
 import { useAuthStore } from "../store/useAuthStore";
 import { useFamilyGroceryItemsBackend, useToggleItemCompletionBackend } from "../hooks";
-import { IGroceryItem, ListStackScreenProps } from "../types";
+
 import ItemCard from "../components/ItemCard";
 import EmptyState from "../components/EmptyState";
 import { sortLegacyGroceryItemsForHome } from "../features/grocery";
 import { AppHeader, ProgressBar } from "../components/ui";
-import { RecipePacksModal } from "../components/RecipePacksModal";
 
 interface IGrocerySection {
   key: string;
@@ -74,8 +72,6 @@ const GroceryListScreen = ({ navigation, onTabChange }: ListStackScreenProps) =>
   const [searchQuery, setSearchQuery] = useState("");
   const [undoState, setUndoState] = useState<IUndoState | null>(null);
 
-  const [isRecipePacksOpen, setRecipePacksOpen] = useState(false);
-
   const [isRefreshing, setRefreshing] = useState(false);
   const [showCompleted, setShowCompleted] = useState(false);
   const undoTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -92,6 +88,57 @@ const GroceryListScreen = ({ navigation, onTabChange }: ListStackScreenProps) =>
   const listError = queryError ? getDataApiErrorMessage(queryError as Error) : null;
 
   const sortedItems = useMemo(() => sortLegacyGroceryItemsForHome(items), [items]);
+
+  /**
+   * Checks if a completed item was completed within the past 30 days (from today to 30 days back)
+   * Note: toTimestampMs is defined inline here — it has no external deps so moving it
+   * inside the callback is the recommended React fix to avoid a new reference each render.
+   */
+  const isCompletedThisMonth = useCallback(
+    (item: IGroceryItem): boolean => {
+      const toTimestampMs = (value: unknown): number | null => {
+        if (!value) return null;
+        if (value instanceof Date) {
+          const t = value.getTime();
+          return Number.isNaN(t) ? null : t;
+        }
+        if (typeof value === "number") {
+          if (Number.isNaN(value)) return null;
+          return value > 1e11 ? value : value * 1000;
+        }
+        if (typeof value === "string") {
+          const parsed = new Date(value).getTime();
+          if (!Number.isNaN(parsed)) return parsed;
+        }
+        if (typeof value === "object") {
+          const obj = value as any;
+          if (typeof obj.toMillis === "function") {
+            const ms = obj.toMillis();
+            return typeof ms === "number" && !Number.isNaN(ms) ? ms : null;
+          }
+          const seconds = obj.seconds ?? obj._seconds;
+          if (typeof seconds === "number") {
+            const nanos = obj.nanoseconds ?? obj._nanoseconds ?? 0;
+            return seconds * 1000 + Math.floor(nanos / 1_000_000);
+          }
+        }
+        return null;
+      };
+
+      if (item.status !== "completed") return false;
+      const timestampMs =
+        toTimestampMs(item.completedAt) ??
+        toTimestampMs(item.updatedAt) ??
+        toTimestampMs(item.createdAt);
+
+      if (timestampMs === null) return false;
+
+      const now = Date.now();
+      const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
+      return timestampMs >= now - THIRTY_DAYS_MS && timestampMs <= now + 60000;
+    },
+    [], // no external deps — toTimestampMs is pure and inlined above
+  );
 
   // Overall Statistics
   const totalCount = items.length;
@@ -131,7 +178,7 @@ const GroceryListScreen = ({ navigation, onTabChange }: ListStackScreenProps) =>
 
   const sections = useMemo<IGrocerySection[]>(() => {
     const pending = filteredItems.filter((item: IGroceryItem) => item.status === "pending");
-    const completed = filteredItems.filter((item: IGroceryItem) => item.status === "completed");
+    const completedThisMonth = filteredItems.filter(isCompletedThisMonth);
     const output: IGrocerySection[] = [];
 
     if (pending.length > 0) {
@@ -156,16 +203,16 @@ const GroceryListScreen = ({ navigation, onTabChange }: ListStackScreenProps) =>
         });
     }
 
-    if (completed.length > 0 && showCompleted) {
+    if (completedThisMonth.length > 0 && showCompleted) {
       output.push({
         key: "completed",
-        title: "Completed Items",
-        data: completed,
+        title: "Completed Items (This Month)",
+        data: completedThisMonth,
       });
     }
 
     return output;
-  }, [filteredItems, showCompleted]);
+  }, [filteredItems, isCompletedThisMonth, showCompleted]);
 
   /**
    * Toggles the completion status of a grocery item
@@ -204,9 +251,10 @@ const GroceryListScreen = ({ navigation, onTabChange }: ListStackScreenProps) =>
     }
   };
 
-  const filteredCompletedCount = filteredItems.filter(
-    (item: IGroceryItem) => item.status === "completed",
-  ).length;
+  const filteredCompletedThisMonthCount = useMemo(
+    () => filteredItems.filter(isCompletedThisMonth).length,
+    [filteredItems, isCompletedThisMonth],
+  );
   const visibleCount = filteredItems.length;
 
   /**
@@ -248,19 +296,7 @@ const GroceryListScreen = ({ navigation, onTabChange }: ListStackScreenProps) =>
       <AppHeader
         title="Grocery List"
         eyebrow="Family Collaboration"
-        onNotificationPress={() => (navigation as any).navigate(ERootRoutes.NOTIFICATIONS)}
-        right={
-          <TouchableOpacity
-            onPress={() => setRecipePacksOpen(true)}
-            activeOpacity={0.8}
-            className="h-10 px-3 flex-row items-center justify-center rounded-2xl bg-emerald-50 border border-emerald-200/80 shadow-xs"
-          >
-            <Sparkles size={15} stroke="#059669" />
-            <Text className="ml-1.5 text-[11px] font-bold text-emerald-800 uppercase tracking-wider">
-              Bundles
-            </Text>
-          </TouchableOpacity>
-        }
+        onNotificationPress={() => (navigation as any).navigate(ROUTES.NOTIFICATIONS)}
       />
 
       {loading ? (
@@ -295,7 +331,7 @@ const GroceryListScreen = ({ navigation, onTabChange }: ListStackScreenProps) =>
               progressBackgroundColor="#f8faf8"
             />
           }
-          contentContainerStyle={{ paddingBottom: 140 }}
+          contentContainerStyle={{ paddingBottom: 160 }}
           ListHeaderComponent={
             <View className="px-5 pt-4">
               {/* Vibrant Linear Gradient Hero Banner */}
@@ -390,7 +426,7 @@ const GroceryListScreen = ({ navigation, onTabChange }: ListStackScreenProps) =>
                 item={item}
                 onToggle={handleToggle}
                 onPress={(currentItem) =>
-                  (navigation as any).navigate(ERootRoutes.ITEM_DETAIL, { itemId: currentItem.id })
+                  (navigation as any).navigate(ROUTES.ITEM_DETAIL, { itemId: currentItem.id })
                 }
                 currentUserId={user?.uid}
               />
@@ -407,12 +443,12 @@ const GroceryListScreen = ({ navigation, onTabChange }: ListStackScreenProps) =>
               <Text className="mt-2 text-center text-[14px] leading-5 text-slate-500">
                 {searchQuery
                   ? "Try adjusting your search query."
-                  : "Tap '+' below to add your first grocery item!"}
+                  : 'Tap "Add Items" below to add your first grocery item!'}
               </Text>
             </View>
           }
           ListFooterComponent={
-            filteredCompletedCount > 0 ? (
+            filteredCompletedThisMonthCount > 0 ? (
               <View className="px-5 pt-2">
                 <TouchableOpacity
                   onPress={() => setShowCompleted((prev) => !prev)}
@@ -422,7 +458,7 @@ const GroceryListScreen = ({ navigation, onTabChange }: ListStackScreenProps) =>
                   <Text className="mr-2 text-[13px] font-bold text-slate-700">
                     {showCompleted
                       ? "Hide completed items"
-                      : `Show completed (${filteredCompletedCount})`}
+                      : `Show completed this month (${filteredCompletedThisMonthCount})`}
                   </Text>
                   {showCompleted ? (
                     <ChevronUp stroke="#64748B" size={16} strokeWidth={2.5} />
@@ -436,13 +472,13 @@ const GroceryListScreen = ({ navigation, onTabChange }: ListStackScreenProps) =>
         />
       )}
 
-      {/* Vibrant Linear Gradient Floating Add Button */}
+      {/* Vibrant Linear Gradient Floating Add Items Pill Button */}
       <TouchableOpacity
-        onPress={() => (navigation as any).navigate(ERootRoutes.ADD_ITEM)}
+        onPress={() => (navigation as any).navigate(ROUTES.ADD_ITEM)}
         activeOpacity={0.85}
         className="absolute right-6 h-[60px] w-[60px] overflow-hidden rounded-2xl shadow-lg"
         style={{
-          bottom: insets.bottom + 84,
+          bottom: insets.bottom,
           elevation: 10,
           shadowColor: "#059669",
           shadowOpacity: 0.35,
@@ -459,13 +495,13 @@ const GroceryListScreen = ({ navigation, onTabChange }: ListStackScreenProps) =>
         </LinearGradient>
       </TouchableOpacity>
 
-      <RecipePacksModal visible={isRecipePacksOpen} onClose={() => setRecipePacksOpen(false)} />
-
       {undoState ? (
         <View
-          className="absolute left-6 right-6 flex-row items-center justify-between rounded-2xl border border-emerald-200 bg-white px-4 py-3 shadow-xl"
+          className="absolute left-5 right-5 flex-row items-center justify-between rounded-2xl border border-emerald-200 bg-white px-4 py-3 shadow-xl"
           style={{
-            bottom: insets.bottom + 14,
+            bottom: 20,
+            zIndex: 60,
+            elevation: 12,
           }}
         >
           <View className="flex-row items-center flex-1 mr-2">

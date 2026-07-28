@@ -13,7 +13,7 @@ import {
   Wallet,
   Bell,
 } from "lucide-react-native";
-import { AuthenticatedStackNavigatorScreenProps, ERootRoutes } from "../types";
+import { AuthenticatedStackNavigatorScreenProps, ROUTES } from "../types";
 
 import { GroceryPriority } from "../features/grocery";
 import { useDateFormatter, useGroceryItemBackend, useCreatePriceAlert } from "../hooks";
@@ -29,7 +29,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 const ItemDetailScreen = ({
   route,
   navigation,
-}: AuthenticatedStackNavigatorScreenProps<ERootRoutes.ITEM_DETAIL>) => {
+}: AuthenticatedStackNavigatorScreenProps<typeof ROUTES.ITEM_DETAIL>) => {
   const insets = useSafeAreaInsets();
   const { toDateLabel } = useDateFormatter();
   const { itemId } = route.params;
@@ -83,7 +83,7 @@ const ItemDetailScreen = ({
           </View>
           <View className="flex-row items-center gap-3">
             <TouchableOpacity
-              onPress={() => navigation.navigate(ERootRoutes.EDIT_ITEM, { itemId: item.id })}
+              onPress={() => navigation.navigate(ROUTES.EDIT_ITEM, { itemId: item.id })}
               activeOpacity={0.7}
               className="h-11 w-11 items-center justify-center rounded-2xl bg-primary-600 shadow-xs"
             >

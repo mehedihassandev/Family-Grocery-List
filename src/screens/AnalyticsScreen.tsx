@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from "react";
-import { AnalyzeStackScreenProps, ERootRoutes } from "../types";
+import { AnalyticsStackScreenProps, ROUTES } from "../types";
 import { ScrollView, StatusBar, Text, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import {
@@ -47,7 +47,7 @@ const getDataErrorMessage = (error: Error) => {
  * Fix: Re-implemented DonutChart using react-native-gifted-charts for stability and animation.
  * Note: Enforces a single light theme.
  */
-const AnalyzeScreen = ({ navigation }: AnalyzeStackScreenProps) => {
+const AnalyticsScreen = ({ navigation }: AnalyticsStackScreenProps) => {
   const { user } = useAuthStore();
   const { toDate, toMonthYear } = useDateFormatter();
   const [selectedMonth, setSelectedMonth] = useState(() => {
@@ -194,7 +194,7 @@ const AnalyzeScreen = ({ navigation }: AnalyzeStackScreenProps) => {
       <AppHeader
         title="Analytics"
         eyebrow="Overview"
-        onNotificationPress={() => navigation.navigate(ERootRoutes.NOTIFICATIONS)}
+        onNotificationPress={() => navigation.navigate(ROUTES.NOTIFICATIONS)}
       />
 
       <ScrollView
@@ -654,4 +654,4 @@ const AnalyzeScreen = ({ navigation }: AnalyzeStackScreenProps) => {
   );
 };
 
-export default AnalyzeScreen;
+export default AnalyticsScreen;

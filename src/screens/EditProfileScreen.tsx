@@ -3,7 +3,6 @@ import { View, Text, TouchableOpacity, Image, Alert } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Lock, Camera, Check } from "lucide-react-native";
 import { useForm } from "react-hook-form";
-import * as yup from "yup";
 import { yupResolver } from "@hookform/resolvers/yup";
 import {
   SubHeader,
@@ -13,14 +12,12 @@ import {
   LoadingOverlay,
   StatusModal,
 } from "../components/ui";
-import { AuthenticatedStackNavigatorScreenProps, ERootRoutes } from "../types";
+import { AuthenticatedStackNavigatorScreenProps, ROUTES } from "../types";
 import { useAuthStore } from "../store/useAuthStore";
 import { updateUserAccountProfile } from "../services/auth";
 import { useTextFormatter } from "../hooks";
 
-const schema = yup.object().shape({
-  displayName: yup.string().required("Name is required").min(2, "Name is too short"),
-});
+import { editProfileSchema } from "../utils/validationSchemas";
 
 /**
  * Premium Edit Profile Screen
@@ -28,7 +25,7 @@ const schema = yup.object().shape({
  */
 const EditProfileScreen = ({
   navigation,
-}: AuthenticatedStackNavigatorScreenProps<ERootRoutes.EDIT_PROFILE>) => {
+}: AuthenticatedStackNavigatorScreenProps<typeof ROUTES.EDIT_PROFILE>) => {
   const { user } = useAuthStore();
   const { toInitial } = useTextFormatter();
   const [loading, setLoading] = useState(false);
@@ -45,7 +42,7 @@ const EditProfileScreen = ({
   });
 
   const { control, handleSubmit } = useForm({
-    resolver: yupResolver(schema),
+    resolver: yupResolver(editProfileSchema),
     defaultValues: {
       displayName: user?.displayName || "",
     },
