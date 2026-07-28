@@ -89,3 +89,32 @@ export const removeMemberApi = async (
   );
   return response.data;
 };
+
+export const inviteMemberApi = async (
+  familyId: string,
+  email: string,
+): Promise<IMessageResponse> => {
+  if (!familyId || !email.trim()) {
+    throw new Error("Family id and member email are required.");
+  }
+  const response = await apiClient.post<IMessageResponse>(
+    API_ENDPOINTS.families.inviteMember(familyId),
+    { email: email.trim() },
+  );
+  return response.data;
+};
+
+export const updateMemberRoleApi = async (
+  familyId: string,
+  targetUserId: string,
+  role: "owner" | "member" | "admin",
+): Promise<IMessageResponse> => {
+  if (!familyId || !targetUserId || !role) {
+    throw new Error("Family id, user id, and role are required.");
+  }
+  const response = await apiClient.patch<IMessageResponse>(
+    API_ENDPOINTS.families.updateRole(familyId, targetUserId),
+    { role },
+  );
+  return response.data;
+};

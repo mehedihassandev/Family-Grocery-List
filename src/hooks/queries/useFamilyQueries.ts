@@ -6,10 +6,12 @@ import {
   joinFamilyApi,
   leaveFamilyApi,
   removeMemberApi,
-} from "../services/api/family";
-import { IFamily } from "../models/family";
-import { IUser } from "../models/user";
-import { useAuthStore } from "../store/useAuthStore";
+  inviteMemberApi,
+  updateMemberRoleApi,
+} from "../../services/api/family";
+import { IFamily } from "../../models/family";
+import { IUser } from "../../models/user";
+import { useAuthStore } from "../../store/useAuthStore";
 
 // ─── Query Keys ──────────────────────────────────────────────────────────────
 export const FAMILY_QUERY_KEY = "family" as const;
@@ -99,6 +101,33 @@ export const useRemoveMember = () => {
   return useMutation({
     mutationFn: (params: { familyId: string; targetUserId: string; ownerId?: string }) =>
       removeMemberApi(params.familyId, params.targetUserId),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: [FAMILY_MEMBERS_QUERY_KEY, variables.familyId] });
+    },
+  });
+};
+
+export const useInviteMember = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (params: { familyId: string; email: string }) =>
+      inviteMemberApi(params.familyId, params.email),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: [FAMILY_MEMBERS_QUERY_KEY, variables.familyId] });
+    },
+  });
+};
+
+export const useUpdateMemberRole = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (params: {
+      familyId: string;
+      targetUserId: string;
+      role: "owner" | "member" | "admin";
+    }) => updateMemberRoleApi(params.familyId, params.targetUserId, params.role),
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: [FAMILY_MEMBERS_QUERY_KEY, variables.familyId] });
     },

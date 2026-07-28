@@ -28,28 +28,28 @@ const InputField = ({
   return (
     <View className={`w-full ${containerClassName ?? ""}`}>
       {label ? (
-        <Text className="mb-2 ml-1 text-[11px] font-bold uppercase tracking-[0.08em] text-text-muted">
+        <Text className="mb-2 ml-1 text-[12px] font-bold uppercase tracking-[0.08em] text-text-muted">
           {label}
         </Text>
       ) : null}
 
       <View
-        className={`flex-row items-center rounded-md border bg-surface-alt px-4 ${
-          error ? "border-danger" : "border-border"
+        className={`flex-row items-center rounded-2xl border bg-surface-alt px-4 ${
+          error ? "border-danger bg-danger-light/30" : "border-border"
         }`}
       >
         {icon ? icon : null}
         <TextInput
           {...props}
           className={inputClassName}
-          placeholderTextColor={props.placeholderTextColor ?? "#C0C8D2"}
-          style={[styles.input, icon ? { marginLeft: 12 } : null, style]}
+          placeholderTextColor={props.placeholderTextColor ?? "#94A3B8"}
+          style={[styles.input, icon ? { marginLeft: 10 } : null, style]}
         />
         {rightIcon ? rightIcon : null}
       </View>
 
       {error ? (
-        <Text className="mt-1.5 ml-1 text-[12px] font-medium text-urgent">{error}</Text>
+        <Text className="mt-1.5 ml-1 text-[12px] font-bold text-danger-dark">{error}</Text>
       ) : null}
     </View>
   );
@@ -61,7 +61,7 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 15,
     fontWeight: "500",
-    color: "#1A202C",
+    color: "#0F172A",
   },
 });
 

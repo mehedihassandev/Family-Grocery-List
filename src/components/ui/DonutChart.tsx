@@ -70,13 +70,13 @@ const styles = StyleSheet.create({
   totalValue: {
     fontSize: 22,
     fontWeight: "800",
-    color: "#0D1117",
+    color: "#0F172A",
     fontFamily: "DMSans_700Bold",
   },
   totalLabel: {
     fontSize: 10,
     fontWeight: "700",
-    color: "#9AA3AF",
+    color: "#94A3B8",
     letterSpacing: 1,
     marginTop: -2,
     fontFamily: "DMSans_700Bold",

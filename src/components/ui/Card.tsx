@@ -3,16 +3,14 @@ import { View, StyleProp, ViewStyle, StyleSheet } from "react-native";
 
 interface ICardProps {
   children: ReactNode;
-  className?: string; // Kept for compatibility
+  className?: string;
   style?: StyleProp<ViewStyle>;
   padding?: boolean;
 }
 
 /**
- * Standard Card component
- * Why: To maintain consistent layout, radius, and shadows across the app.
- * Improved for a premium look with better radius and shadow.
- * @param props - Component props including children and optional styles
+  Standard Card component with high-fidelity visual styling.
+  Why: Ensures consistent layout, rounded corners, and shadow elevation across the app.
  */
 export const Card = ({ children, className, style, padding = true }: ICardProps) => {
   return (
@@ -26,9 +24,9 @@ const styles = StyleSheet.create({
   card: {
     borderRadius: 24,
     borderWidth: 1,
-    borderColor: "#F0F2F5",
-    backgroundColor: "#ffffff",
-    shadowColor: "#000",
+    borderColor: "#E2E8F0",
+    backgroundColor: "#FFFFFF",
+    shadowColor: "#0F172A",
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.04,
     shadowRadius: 12,
@@ -38,3 +36,5 @@ const styles = StyleSheet.create({
     padding: 20,
   },
 });
+
+export default Card;

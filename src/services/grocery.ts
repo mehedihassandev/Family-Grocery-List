@@ -90,7 +90,7 @@ export const addGroceryItem = async (
 
     await setDoc(itemRef, newItem);
 
-    // Create an "item_added" notification (or "urgent_item" if priority is Urgent)
+    // Create an "item_added" in-app notification (or "urgent_item" if priority is Urgent)
     try {
       await createNotification(
         familyId,

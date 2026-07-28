@@ -29,6 +29,12 @@ export interface IGroceryItem {
   reminderAt?: string | Date | null;
   unitPrice?: number | null;
   estimatedTotal?: number | null;
+
+  // Meal & Consumption fields
+  mealType?: "Breakfast" | "Lunch" | "Dinner" | "Snacks" | "General" | null;
+  servingsCount?: number | null;
+  monthlyUsageFrequency?: number | null;
+  selectedSuperstore?: "Shwapno" | "Meena Bazar" | "Agora" | "Best Price" | null;
 }
 
 export interface IGrocerySummary {

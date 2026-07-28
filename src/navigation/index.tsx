@@ -1,55 +1,59 @@
-import React, { useEffect, useState } from "react";
-import { NavigationContainer } from "@react-navigation/native";
+import React, { useEffect } from "react";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
+import { useQueryClient } from "@tanstack/react-query";
 
 import { useAuthStore } from "../store/useAuthStore";
-import { listenToAuthChanges } from "../services/auth";
-import { RootNavigatorParamList, ERootRoutes } from "../types";
+import { RootNavigatorParamList } from "../types";
+import { pushNotificationService } from "../services/pushNotificationService";
 
 import AuthenticatedNavigator from "./AuthenticatedNavigator";
 import UnAuthenticatedNavigator from "./UnAuthenticatedNavigator";
-import { navigationRef } from "./navigationRef";
-import { LoadingScreen } from "../screens";
 
 const Stack = createNativeStackNavigator<RootNavigatorParamList>();
-const MIN_LOADING_SCREEN_MS = 800;
 
 /**
- * Root Navigator Component
- * Why: To centralize navigation configuration and handle authentication state switching.
- * This component mirrors the structure in the reference project.
+ * Root Centralized Navigator Component
+ * Why: Serves as the root stack navigator for authentication state switching.
+ * Fix: Subscribes only to primitive userId to prevent unnecessary re-rendering of NavigationContainer when user object mutates.
  */
 const Navigator = () => {
-  const { user, loading, hasHydrated } = useAuthStore();
-  const [minDelayPassed, setMinDelayPassed] = useState(false);
-  const isAppReady = hasHydrated && !loading && minDelayPassed;
+  const userId = useAuthStore((state) => state.user?.uid);
+  const familyId = useAuthStore((state) => state.user?.familyId);
+  const isAuthenticated = !!userId;
+  const queryClient = useQueryClient();
 
   useEffect(() => {
-    // Subscribe to Firebase auth state; unsubscribe on unmount
-    const unsubscribe = listenToAuthChanges();
-    return () => unsubscribe();
-  }, []);
+    if (userId) {
+      // Pass queryClient + familyId so the service can invalidate the notification
+      // badge and feed cache immediately when a foreground push arrives.
+      void pushNotificationService.initialize(
+        (data) => {
+          if (data.itemId) {
+            // TODO: handle deep linking here via standard navigation
+          }
+        },
+        queryClient,
+        familyId,
+      );
+    } else {
+      void pushNotificationService.unregisterToken();
+    }
 
-  useEffect(() => {
-    const timeout = setTimeout(() => {
-      setMinDelayPassed(true);
-    }, MIN_LOADING_SCREEN_MS);
-
-    return () => clearTimeout(timeout);
-  }, []);
+    return () => {
+      pushNotificationService.cleanup();
+    };
+  }, [userId, familyId, queryClient]);
 
   return (
-    <NavigationContainer ref={navigationRef}>
+    <>
       <Stack.Navigator screenOptions={{ headerShown: false }}>
-        {!isAppReady ? (
-          <Stack.Screen name={ERootRoutes.LOADING} component={LoadingScreen} />
-        ) : !user ? (
+        {!isAuthenticated ? (
           <Stack.Screen name="UnAuthenticatedStack" component={UnAuthenticatedNavigator} />
         ) : (
           <Stack.Screen name="AuthenticatedStack" component={AuthenticatedNavigator} />
         )}
       </Stack.Navigator>
-    </NavigationContainer>
+    </>
   );
 };
 

@@ -13,3 +13,4 @@ export { default as ProgressBar } from "./ProgressBar";
 export { default as DonutChart } from "./DonutChart";
 export { default as LoadingOverlay } from "./LoadingOverlay";
 export { default as StatusModal } from "./StatusModal";
+export { SuperstoreComparisonCard } from "./SuperstoreComparisonCard";

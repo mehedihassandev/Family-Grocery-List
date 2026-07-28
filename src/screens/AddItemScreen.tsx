@@ -19,6 +19,13 @@ import { SafeAreaView } from "react-native-safe-area-context";
 const CATEGORIES: Category[] = [...GROCERY_CATEGORIES];
 const PRIORITIES: Priority[] = ["Low", "Medium", "Urgent"];
 const RECURRENCE_OPTIONS: ("none" | "weekly" | "monthly")[] = ["none", "weekly", "monthly"];
+const MEAL_TYPES: ("General" | "Breakfast" | "Lunch" | "Dinner" | "Snacks")[] = [
+  "General",
+  "Breakfast",
+  "Lunch",
+  "Dinner",
+  "Snacks",
+];
 
 /**
  * Add Item Screen
@@ -33,6 +40,9 @@ const AddItemScreen = ({
   const [name, setName] = useState("");
   const [category, setCategory] = useState<string>("Other");
   const [priority, setPriority] = useState<Priority>("Medium");
+  const [mealType, setMealType] = useState<"General" | "Breakfast" | "Lunch" | "Dinner" | "Snacks">(
+    "General",
+  );
   const [quantity, setQuantity] = useState("");
   const [notes, setNotes] = useState("");
   const [recurrenceFrequency, setRecurrenceFrequency] = useState<"none" | "weekly" | "monthly">(
@@ -196,10 +206,12 @@ const AddItemScreen = ({
         reminderAt,
         unitPrice,
         estimatedTotal,
+        mealType,
       },
       {
         onSuccess: () => {
           setShowSuccess(true);
+          setMealType("General");
           setAssigneeName("");
           setDueDateInput("");
           setReminderAtInput("");
@@ -258,9 +270,9 @@ const AddItemScreen = ({
           <TouchableOpacity
             onPress={() => navigation.goBack()}
             activeOpacity={0.7}
-            className="h-12 w-12 items-center justify-center rounded-2xl bg-surface-alt border border-border"
+            className="h-11 w-11 items-center justify-center rounded-2xl bg-white border border-border shadow-xs"
           >
-            <X stroke="#748379" size={24} strokeWidth={2.5} />
+            <X stroke="#475569" size={20} strokeWidth={2.5} />
           </TouchableOpacity>
         </View>
 
@@ -322,6 +334,38 @@ const AddItemScreen = ({
                 })}
               </View>
             </View>
+          </View>
+
+          {/* MEAL TYPE SELECTOR */}
+          <View className="mb-6">
+            <Text className="mb-2 ml-1 text-[11px] font-black uppercase tracking-[1.5px] text-text-muted">
+              MEAL TYPE
+            </Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} className="flex-row">
+              {MEAL_TYPES.map((m) => {
+                const isActive = mealType === m;
+                return (
+                  <TouchableOpacity
+                    key={m}
+                    onPress={() => setMealType(m)}
+                    activeOpacity={0.75}
+                    className={`mr-2 px-4 py-2.5 rounded-xl border ${
+                      isActive
+                        ? "bg-emerald-600 border-emerald-600"
+                        : "bg-surface-alt border-border"
+                    }`}
+                  >
+                    <Text
+                      className={`text-xs font-bold ${
+                        isActive ? "text-white" : "text-text-primary"
+                      }`}
+                    >
+                      {m}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
           </View>
 
           <View className="mb-8">

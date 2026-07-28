@@ -4,9 +4,7 @@
  */
 
 export enum ERootRoutes {
-  LOADING = "Loading",
   LOGIN = "Login",
-  MAIN = "Main",
   FAMILY_SETUP = "FamilySetup",
   EDIT_PROFILE = "EditProfile",
   PRIVACY_SECURITY = "PrivacySecurity",
@@ -15,12 +13,12 @@ export enum ERootRoutes {
   ITEM_DETAIL = "ItemDetail",
   EDIT_ITEM = "EditItem",
   ANALYZE = "Analyze",
+  NOTIFICATIONS = "Notifications",
 }
 
 export enum ETabRoutes {
   HOME = "HomeStack",
   LIST = "ListStack",
   MEMBERS = "MembersStack",
-  ANALYZE = "AnalyzeStack",
   PROFILE = "ProfileStack",
 }

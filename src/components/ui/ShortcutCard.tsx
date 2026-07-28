@@ -19,20 +19,27 @@ const ShortcutCard = ({
   icon: Icon,
   label,
   onPress,
-  iconBgColor = "bg-surface-alt",
+  iconBgColor = "bg-slate-50",
   iconColor = "#10B981",
 }: IShortcutCardProps) => {
   return (
-    <View className="items-center">
-      <TouchableOpacity
-        activeOpacity={0.7}
-        onPress={onPress}
-        className={`mb-3 h-[68px] w-[68px] items-center justify-center rounded-[24px] border border-border/50 shadow-sm ${iconBgColor}`}
+    <TouchableOpacity
+      activeOpacity={0.7}
+      onPress={onPress}
+      className="flex-1 items-center justify-center py-1"
+    >
+      <View
+        className={`mb-1.5 h-12 w-12 items-center justify-center rounded-2xl border border-slate-100 shadow-2xs ${iconBgColor}`}
       >
-        <Icon stroke={iconColor} size={26} strokeWidth={2.2} />
-      </TouchableOpacity>
-      <Text className="text-[13px] font-bold text-text-secondary text-center">{label}</Text>
-    </View>
+        <Icon stroke={iconColor} size={20} strokeWidth={2} />
+      </View>
+      <Text
+        className="text-[11px] font-semibold text-slate-600 text-center tracking-tight"
+        numberOfLines={1}
+      >
+        {label}
+      </Text>
+    </TouchableOpacity>
   );
 };
 

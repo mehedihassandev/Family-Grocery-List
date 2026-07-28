@@ -1,41 +1,43 @@
 import React from "react";
-import { StyleSheet, Text, TouchableOpacity, TouchableOpacityProps } from "react-native";
+import { Text, View, TouchableOpacity, TouchableOpacityProps } from "react-native";
 
 interface IChipProps extends TouchableOpacityProps {
   label: string;
+  count?: number;
   selected?: boolean;
 }
 
 /**
  * Reusable Chip component for filters and categories
- * Why: To provide a consistent interactive element for selection.
- * @param props - Component props including label and selection state
+ * Why: To provide a consistent interactive element for selection with vibrant styling matching MEAL TYPE chips.
+ * @param props - Component props including label, optional count, and selection state
  */
-const Chip = ({ label, selected = false, className, ...props }: IChipProps) => {
+const Chip = ({ label, count, selected = false, className, onPress, ...props }: IChipProps) => {
   return (
     <TouchableOpacity
       {...props}
+      onPress={onPress}
       activeOpacity={0.75}
-      className={`rounded-sm border px-4 py-2 ${
-        selected ? "border-primary-500 bg-primary-500" : "border-border-muted bg-surface-muted"
+      className={`px-4 py-2.5 rounded-xl border flex-row items-center ${
+        selected ? "bg-emerald-600 border-emerald-600" : "bg-surface-alt border-border bg-white"
       } ${className ?? ""}`}
-      style={selected ? styles.selectedShadow : undefined}
     >
-      <Text className={`text-[13px] font-semibold ${selected ? "text-white" : "text-text-500"}`}>
+      <Text className={`text-xs font-bold ${selected ? "text-white" : "text-text-primary"}`}>
         {label}
       </Text>
+      {typeof count === "number" && (
+        <View
+          className={`ml-1.5 px-2 py-0.5 rounded-full ${
+            selected ? "bg-white/20 border border-white/30" : "bg-slate-100"
+          }`}
+        >
+          <Text className={`text-[10px] font-bold ${selected ? "text-white" : "text-slate-500"}`}>
+            {count}
+          </Text>
+        </View>
+      )}
     </TouchableOpacity>
   );
 };
-
-const styles = StyleSheet.create({
-  selectedShadow: {
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.08,
-    shadowRadius: 2,
-    elevation: 1,
-  },
-});
 
 export default Chip;

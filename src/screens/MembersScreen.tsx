@@ -1,18 +1,27 @@
 import React, { useState } from "react";
-import { MembersStackScreenProps, IUser } from "../types";
-import { View, Text, FlatList, Image, TouchableOpacity, Share, StatusBar } from "react-native";
+import { ERootRoutes, MembersStackScreenProps, IUser } from "../types";
+import {
+  View,
+  Text,
+  FlatList,
+  Image,
+  TouchableOpacity,
+  Share,
+  StatusBar,
+  TextInput,
+} from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { Share2, Crown, Trash2, LogOut } from "lucide-react-native";
+import { Share2, Crown, Trash2, Mail, UserCheck } from "lucide-react-native";
 import { useAuthStore } from "../store/useAuthStore";
 import {
   useFamilyDetails,
   useFamilyMembers,
   useRemoveMember,
-  useLeaveFamily,
+  useInviteMember,
+  useUpdateMemberRole,
   useTextFormatter,
 } from "../hooks";
 import { AppHeader, Card, StatusModal, LoadingOverlay } from "../components/ui";
-import NotificationModal from "../components/NotificationModal";
 
 /**
  * Maps family-related operation errors to user-friendly messages
@@ -34,16 +43,18 @@ const getFamilyActionErrorMessage = (error: unknown, fallback: string) => {
  * Premium Family Members Management Screen
  * Why: To provide a high-fidelity experience for managing family groups with elegant feedback.
  */
-const MembersScreen = ({ navigation }: MembersStackScreenProps<"Members">) => {
+const MembersScreen = ({ navigation }: MembersStackScreenProps) => {
   const { user } = useAuthStore();
   const { toInitial } = useTextFormatter();
-  const [isNotifOpen, setNotifOpen] = useState(false);
 
   // TanStack Query Hooks
   const { data: family, isLoading: familyLoading } = useFamilyDetails(user?.familyId);
   const { data: members = [], isLoading: membersLoading } = useFamilyMembers(user?.familyId);
   const removeMemberMutation = useRemoveMember();
-  const leaveFamilyMutation = useLeaveFamily();
+  const inviteMemberMutation = useInviteMember();
+  const updateRoleMutation = useUpdateMemberRole();
+
+  const [inviteEmail, setInviteEmail] = useState("");
 
   // Modal states
   const [statusModal, setStatusModal] = useState<{
@@ -87,6 +98,66 @@ const MembersScreen = ({ navigation }: MembersStackScreenProps<"Members">) => {
   };
 
   /**
+   * Invites a member via email address API
+   */
+  const handleInviteEmail = () => {
+    if (!user?.familyId || !inviteEmail.trim()) return;
+
+    inviteMemberMutation.mutate(
+      { familyId: user.familyId, email: inviteEmail.trim() },
+      {
+        onSuccess: () => {
+          setInviteEmail("");
+          setStatusModal({
+            visible: true,
+            title: "Invitation Sent",
+            message: `Invitation successfully sent to ${inviteEmail.trim()}`,
+            type: "success",
+          });
+        },
+        onError: (error) => {
+          setStatusModal({
+            visible: true,
+            title: "Invite Failed",
+            message: getFamilyActionErrorMessage(error, "Could not send invite."),
+            type: "error",
+          });
+        },
+      },
+    );
+  };
+
+  /**
+   * Updates a member's role (owner vs member) via API
+   */
+  const handleToggleRole = (member: IUser) => {
+    if (!user?.familyId || !isOwner || member.uid === user.uid) return;
+    const newRole = member.role === "owner" ? "member" : "owner";
+
+    updateRoleMutation.mutate(
+      { familyId: user.familyId, targetUserId: member.uid, role: newRole },
+      {
+        onSuccess: () => {
+          setStatusModal({
+            visible: true,
+            title: "Role Updated",
+            message: `Updated ${member.displayName}'s role to ${newRole}.`,
+            type: "success",
+          });
+        },
+        onError: (error) => {
+          setStatusModal({
+            visible: true,
+            title: "Update Role Failed",
+            message: getFamilyActionErrorMessage(error, "Could not update member role."),
+            type: "error",
+          });
+        },
+      },
+    );
+  };
+
+  /**
    * Prompts to remove a member from the family (Owner only)
    * @param member - The user to remove
    */
@@ -121,51 +192,11 @@ const MembersScreen = ({ navigation }: MembersStackScreenProps<"Members">) => {
     });
   };
 
-  /**
-   * Prompts the current user to leave the family
-   */
-  const handleLeaveFamily = () => {
-    if (!user?.uid || !user.familyId) return;
-
-    setStatusModal({
-      visible: true,
-      title: "Leave Family",
-      message: isOwner
-        ? "You are the owner. If you leave, ownership will be transferred to another member or the family will be deleted if you are the last one. Continue?"
-        : "Are you sure you want to leave this family group?",
-      type: "confirm",
-      onConfirm: async () => {
-        setStatusModal((prev) => ({ ...prev, visible: false }));
-        leaveFamilyMutation.mutate(
-          {
-            userId: user.uid,
-            familyId: user.familyId!,
-            role: myRole,
-          },
-          {
-            onError: (error) => {
-              setStatusModal({
-                visible: true,
-                title: "Leave Failed",
-                message: getFamilyActionErrorMessage(error, "Could not leave family."),
-                type: "error",
-              });
-            },
-          },
-        );
-      },
-    });
-  };
-
   return (
     <SafeAreaView edges={["top", "left", "right"]} className="flex-1 bg-background">
       <StatusBar barStyle="dark-content" />
       <LoadingOverlay
-        visible={
-          removeMemberMutation.isPending ||
-          leaveFamilyMutation.isPending ||
-          (familyLoading && membersLoading)
-        }
+        visible={removeMemberMutation.isPending || (familyLoading && membersLoading)}
       />
       <StatusModal
         visible={statusModal.visible}
@@ -179,7 +210,7 @@ const MembersScreen = ({ navigation }: MembersStackScreenProps<"Members">) => {
       <AppHeader
         title="Family Group"
         eyebrow="Management"
-        onNotificationPress={() => setNotifOpen(true)}
+        onNotificationPress={() => navigation.navigate(ERootRoutes.NOTIFICATIONS)}
       />
 
       <View className="px-6 flex-1 pt-6">
@@ -187,7 +218,7 @@ const MembersScreen = ({ navigation }: MembersStackScreenProps<"Members">) => {
           <Text className="mb-4 text-[11px] font-bold uppercase tracking-[1.5px] text-primary-600">
             Invite Your Family
           </Text>
-          <View className="flex-row items-center justify-between rounded-2xl bg-white border border-border/50 px-6 py-5 shadow-sm">
+          <View className="flex-row items-center justify-between rounded-2xl bg-white border border-border/50 px-6 py-5 shadow-sm mb-4">
             <View>
               <Text className="text-[10px] font-bold text-text-muted uppercase tracking-[2px] mb-1">
                 Family Code
@@ -202,6 +233,31 @@ const MembersScreen = ({ navigation }: MembersStackScreenProps<"Members">) => {
               className="h-14 w-14 items-center justify-center rounded-2xl bg-primary-500 shadow-lg shadow-primary-500/30"
             >
               <Share2 stroke="white" size={22} strokeWidth={2.5} />
+            </TouchableOpacity>
+          </View>
+
+          {/* Email Invite REST API Action */}
+          <View className="flex-row items-center bg-white rounded-2xl border border-border/50 px-3 py-2">
+            <Mail size={18} color="#94A3B8" style={{ marginLeft: 6, marginRight: 8 }} />
+            <TextInput
+              value={inviteEmail}
+              onChangeText={setInviteEmail}
+              placeholder="Invite member by email..."
+              placeholderTextColor="#94A3B8"
+              keyboardType="email-address"
+              autoCapitalize="none"
+              className="flex-1 text-sm font-medium text-slate-800 h-10"
+            />
+            <TouchableOpacity
+              onPress={handleInviteEmail}
+              disabled={!inviteEmail.trim() || inviteMemberMutation.isPending}
+              className={`px-4 py-2 rounded-xl ${
+                inviteEmail.trim() ? "bg-primary-600" : "bg-slate-200"
+              }`}
+            >
+              <Text className="text-white font-bold text-xs">
+                {inviteMemberMutation.isPending ? "Sending..." : "Invite"}
+              </Text>
             </TouchableOpacity>
           </View>
         </Card>
@@ -241,46 +297,47 @@ const MembersScreen = ({ navigation }: MembersStackScreenProps<"Members">) => {
                   </Text>
                 </View>
 
-                {item.role === "owner" ? (
-                  <View className="bg-primary-500/10 px-3 py-1.5 rounded-lg flex-row items-center border border-primary-500/20">
-                    <Crown stroke="#10B981" size={12} strokeWidth={3} />
-                    <Text className="ml-1.5 text-[10px] font-black uppercase tracking-widest text-primary-600">
-                      Owner
-                    </Text>
-                  </View>
-                ) : isOwner && item.uid !== user?.uid ? (
-                  <TouchableOpacity
-                    onPress={() => handleRemoveMember(item)}
-                    activeOpacity={0.7}
-                    className="h-10 w-10 items-center justify-center rounded-xl bg-danger-light border border-danger/20"
-                  >
-                    <Trash2 stroke="#E55C5C" size={18} strokeWidth={2.5} />
-                  </TouchableOpacity>
-                ) : (
-                  <View className="bg-surface-muted px-3 py-1.5 rounded-lg border border-border/50">
-                    <Text className="text-[10px] font-black uppercase tracking-widest text-text-muted">
-                      Member
-                    </Text>
-                  </View>
-                )}
+                <View className="flex-row items-center gap-2">
+                  {isOwner && item.uid !== user?.uid && (
+                    <TouchableOpacity
+                      onPress={() => handleToggleRole(item)}
+                      className="bg-purple-50 px-2.5 py-1.5 rounded-lg flex-row items-center border border-purple-200"
+                    >
+                      <UserCheck size={12} color="#8B5CF6" style={{ marginRight: 4 }} />
+                      <Text className="text-[10px] font-extrabold uppercase text-purple-700">
+                        {item.role === "owner" ? "Demote" : "Promote"}
+                      </Text>
+                    </TouchableOpacity>
+                  )}
+
+                  {item.role === "owner" ? (
+                    <View className="bg-primary-500/10 px-3 py-1.5 rounded-lg flex-row items-center border border-primary-500/20">
+                      <Crown stroke="#10B981" size={12} strokeWidth={3} />
+                      <Text className="ml-1.5 text-[10px] font-black uppercase tracking-widest text-primary-600">
+                        Owner
+                      </Text>
+                    </View>
+                  ) : isOwner && item.uid !== user?.uid ? (
+                    <TouchableOpacity
+                      onPress={() => handleRemoveMember(item)}
+                      activeOpacity={0.7}
+                      className="h-10 w-10 items-center justify-center rounded-xl bg-danger-light border border-danger/20"
+                    >
+                      <Trash2 stroke="#E55C5C" size={18} strokeWidth={2.5} />
+                    </TouchableOpacity>
+                  ) : (
+                    <View className="bg-surface-muted px-3 py-1.5 rounded-lg border border-border/50">
+                      <Text className="text-[10px] font-black uppercase tracking-widest text-text-muted">
+                        Member
+                      </Text>
+                    </View>
+                  )}
+                </View>
               </View>
             </Card>
           )}
         />
-
-        <View className="py-4">
-          <TouchableOpacity
-            onPress={handleLeaveFamily}
-            activeOpacity={0.8}
-            className="flex-row items-center justify-center py-4 bg-white border border-danger-light rounded-2xl"
-          >
-            <LogOut stroke="#E55C5C" size={18} strokeWidth={2.5} />
-            <Text className="ml-2 text-danger-dark font-bold text-[15px]">Leave Family Group</Text>
-          </TouchableOpacity>
-        </View>
       </View>
-
-      <NotificationModal visible={isNotifOpen} onClose={() => setNotifOpen(false)} />
     </SafeAreaView>
   );
 };

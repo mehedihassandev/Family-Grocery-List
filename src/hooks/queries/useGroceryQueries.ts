@@ -8,13 +8,13 @@ import {
   modifyGroceryItemApi,
   removeGroceryItemApi,
   seedGroceryItemsApi,
-} from "../services/api/grocery";
+} from "../../services/api/grocery";
 import {
   ICreateGroceryItemRequest,
   IDataGrocerySummary,
   IGroceryItem,
   IUpdateGroceryItemRequest,
-} from "../models/grocery";
+} from "../../models/grocery";
 
 // ─── Query Keys ──────────────────────────────────────────────────────────────
 export const GROCERY_SUMMARY_QUERY_KEY = "dataGrocerySummary" as const;
@@ -111,8 +111,7 @@ export const useDeleteGroceryItemBackend = (familyId?: string | null) => {
 
   return useMutation({
     mutationFn: (itemId: string) => removeGroceryItemApi(familyId ?? "", itemId),
-    onSuccess: (_, itemId) => {
-      queryClient.removeQueries({ queryKey: [GROCERY_ITEM_DETAIL_QUERY_KEY, itemId] });
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [GROCERY_ITEMS_QUERY_KEY, familyId] });
       queryClient.invalidateQueries({ queryKey: [GROCERY_SUMMARY_QUERY_KEY, familyId] });
     },

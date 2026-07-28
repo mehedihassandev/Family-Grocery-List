@@ -8,8 +8,8 @@ import LoginScreen from "../screens/LoginScreen";
 const Stack = createNativeStackNavigator<UnAuthenticatedStackNavigatorParamList>();
 
 /**
- * Unauthenticated Navigator
- * Why: To isolate the login flow from the main application.
+ * Unauthenticated Stack Navigator
+ * Why: Isolated stack for logged-out users handling authentication flows (e.g. Login).
  */
 const UnAuthenticatedNavigator = () => {
   return (

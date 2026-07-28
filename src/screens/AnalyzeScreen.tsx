@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from "react";
-import { AnalyzeStackScreenProps } from "../types";
+import { AnalyzeStackScreenProps, ERootRoutes } from "../types";
 import { ScrollView, StatusBar, Text, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import {
@@ -9,11 +9,26 @@ import {
   TrendingUp,
   Calendar as CalendarIcon,
   AlertTriangle,
+  Store,
+  Utensils,
+  Wallet,
+  Bell,
+  RefreshCw,
+  Trash2,
+  Split,
 } from "lucide-react-native";
 import { useAuthStore } from "../store/useAuthStore";
-import { useFamilyGroceryItemsBackend, useDateFormatter } from "../hooks";
+import {
+  useFamilyGroceryItemsBackend,
+  useDateFormatter,
+  useMonthlyAnalytics,
+  useBasketOptimization,
+  useBasketSplitOptimization,
+  usePriceAlerts,
+  useCheckPriceAlerts,
+  useDeletePriceAlert,
+} from "../hooks";
 import { AppHeader, Card, DonutChart, ProgressBar } from "../components/ui";
-import NotificationModal from "../components/NotificationModal";
 
 const getDataErrorMessage = (error: Error) => {
   const message = error.message || "";
@@ -32,10 +47,9 @@ const getDataErrorMessage = (error: Error) => {
  * Fix: Re-implemented DonutChart using react-native-gifted-charts for stability and animation.
  * Note: Enforces a single light theme.
  */
-const AnalyzeScreen = ({ navigation }: AnalyzeStackScreenProps<"Analyze">) => {
+const AnalyzeScreen = ({ navigation }: AnalyzeStackScreenProps) => {
   const { user } = useAuthStore();
   const { toDate, toMonthYear } = useDateFormatter();
-  const [isNotifOpen, setNotifOpen] = useState(false);
   const [selectedMonth, setSelectedMonth] = useState(() => {
     const now = new Date();
     return new Date(now.getFullYear(), now.getMonth(), 1);
@@ -46,6 +60,18 @@ const AnalyzeScreen = ({ navigation }: AnalyzeStackScreenProps<"Analyze">) => {
   const analyticsErrorMessage = analyticsError
     ? getDataErrorMessage(analyticsError as Error)
     : null;
+
+  // Monthly Analytics & Superstore Basket Optimizer Hooks
+  const { data: monthlyAnalytics } = useMonthlyAnalytics(
+    user?.familyId || undefined,
+    items,
+    selectedMonth,
+  );
+  const { data: basketOpt } = useBasketOptimization(user?.familyId || undefined, items);
+  const { data: basketSplitOpt } = useBasketSplitOptimization(user?.familyId || undefined, items);
+  const { data: priceAlerts = [] } = usePriceAlerts(user?.familyId || undefined);
+  const checkAlertsMutation = useCheckPriceAlerts(user?.familyId || undefined);
+  const deleteAlertMutation = useDeletePriceAlert(user?.familyId || undefined);
 
   // Filtering items for the selected month
   const monthlyItems = useMemo(() => {
@@ -168,9 +194,7 @@ const AnalyzeScreen = ({ navigation }: AnalyzeStackScreenProps<"Analyze">) => {
       <AppHeader
         title="Analytics"
         eyebrow="Overview"
-        showBackButton
-        onBackPress={() => navigation.goBack()}
-        onNotificationPress={() => setNotifOpen(true)}
+        onNotificationPress={() => navigation.navigate(ERootRoutes.NOTIFICATIONS)}
       />
 
       <ScrollView
@@ -334,10 +358,259 @@ const AnalyzeScreen = ({ navigation }: AnalyzeStackScreenProps<"Analyze">) => {
                   Est. Spend
                 </Text>
                 <Text className="mt-1 text-2xl font-bold text-primary-700">
-                  ${monthlyEstimatedSpend.toFixed(0)}
+                  ৳
+                  {monthlyEstimatedSpend > 0
+                    ? monthlyEstimatedSpend
+                    : monthlyAnalytics?.totalSpentBDT || 0}
                 </Text>
               </View>
             </View>
+
+            {/* SUPERSTORE BASKET OPTIMIZER (Shwapno, Meena Bazar, Agora) */}
+            {Boolean(basketOpt && Array.isArray(basketOpt.storeTotals)) && (
+              <View className="px-6 mb-8">
+                <View className="flex-row items-center justify-between mb-3">
+                  <View className="flex-row items-center">
+                    <Store size={20} color="#10B981" style={{ marginRight: 6 }} />
+                    <Text className="text-text-primary text-[18px] font-bold tracking-tight">
+                      Superstore Basket Compare
+                    </Text>
+                  </View>
+                  <View className="bg-emerald-100 px-2.5 py-1 rounded-full">
+                    <Text className="text-emerald-700 font-bold text-xs">
+                      Best: {basketOpt?.cheapestStoreName || "Store"}
+                    </Text>
+                  </View>
+                </View>
+
+                <Card className="p-5">
+                  <Text className="text-xs text-slate-500 mb-3 font-medium">
+                    Total cost to buy all {basketOpt?.totalItemsCount || 0} active items in your
+                    family list across retailers:
+                  </Text>
+
+                  {basketOpt?.storeTotals?.map((st, i) => (
+                    <View
+                      key={st.storeName || i}
+                      className={`flex-row items-center justify-between py-2.5 px-3 rounded-xl mb-2 ${
+                        st.storeName === basketOpt?.cheapestStoreName
+                          ? "bg-emerald-50 border border-emerald-300"
+                          : "bg-slate-50 border border-slate-200"
+                      }`}
+                    >
+                      <View className="flex-row items-center">
+                        <Text className="font-bold text-slate-800 text-sm mr-2">
+                          {st.storeName}
+                        </Text>
+                        {st.storeName === basketOpt?.cheapestStoreName && (
+                          <View className="bg-emerald-600 px-1.5 py-0.5 rounded">
+                            <Text className="text-white font-bold text-[9px]">CHEAPEST</Text>
+                          </View>
+                        )}
+                      </View>
+                      <Text className="font-extrabold text-slate-900 text-sm">৳{st.totalBDT}</Text>
+                    </View>
+                  ))}
+
+                  {Boolean(basketOpt?.potentialSavingsBDT && basketOpt.potentialSavingsBDT > 0) && (
+                    <Text className="text-emerald-600 text-xs font-bold mt-2 text-center">
+                      💡 Buying at {basketOpt?.cheapestStoreName} saves your family ৳
+                      {basketOpt?.potentialSavingsBDT}!
+                    </Text>
+                  )}
+                </Card>
+              </View>
+            )}
+
+            {/* SPLIT ORDER STRATEGY CARD */}
+            {Boolean(
+              basketSplitOpt &&
+              Array.isArray(basketSplitOpt.itemAllocations) &&
+              basketSplitOpt.itemAllocations.length > 0,
+            ) && (
+              <View className="px-6 mb-8">
+                <View className="flex-row items-center justify-between mb-3">
+                  <View className="flex-row items-center">
+                    <Split size={20} color="#8B5CF6" style={{ marginRight: 6 }} />
+                    <Text className="text-text-primary text-[18px] font-bold tracking-tight">
+                      Split Store Order Strategy
+                    </Text>
+                  </View>
+                  <View className="bg-purple-100 px-2.5 py-1 rounded-full">
+                    <Text className="text-purple-700 font-bold text-xs">
+                      Max Savings: ৳{basketSplitOpt?.extraSplitSavingsBDT || 0}
+                    </Text>
+                  </View>
+                </View>
+
+                <Card className="p-5">
+                  <Text className="text-xs text-slate-500 mb-3 font-medium">
+                    Allocating items to store with absolute lowest price saves an extra ৳
+                    {basketSplitOpt?.extraSplitSavingsBDT || 0} over single store purchase:
+                  </Text>
+
+                  {basketSplitOpt?.itemAllocations?.map((alloc, idx) => (
+                    <View
+                      key={idx}
+                      className="flex-row items-center justify-between py-2 border-b border-slate-100"
+                    >
+                      <View className="flex-1 mr-2">
+                        <Text className="font-semibold text-slate-800 text-xs" numberOfLines={1}>
+                          {alloc.itemName}
+                        </Text>
+                      </View>
+                      <View className="flex-row items-center">
+                        <View className="bg-purple-50 px-2 py-0.5 rounded border border-purple-200 mr-2">
+                          <Text className="text-purple-700 font-bold text-[10px]">
+                            {alloc.bestStoreName}
+                          </Text>
+                        </View>
+                        <Text className="font-bold text-slate-900 text-xs">৳{alloc.priceBDT}</Text>
+                      </View>
+                    </View>
+                  ))}
+
+                  <View className="mt-3 pt-3 border-t border-slate-200 flex-row justify-between items-center">
+                    <Text className="text-xs font-bold text-slate-700">Split Total Cost</Text>
+                    <Text className="text-sm font-extrabold text-purple-700">
+                      ৳{basketSplitOpt?.splitTotalBDT || 0}
+                    </Text>
+                  </View>
+                </Card>
+              </View>
+            )}
+
+            {/* MY PRICE DROP ALERTS CARD */}
+            <View className="px-6 mb-8">
+              <View className="flex-row items-center justify-between mb-3">
+                <View className="flex-row items-center">
+                  <Bell size={20} color="#F59E0B" style={{ marginRight: 6 }} />
+                  <Text className="text-text-primary text-[18px] font-bold tracking-tight">
+                    Price Drop Monitors ({(priceAlerts || []).length})
+                  </Text>
+                </View>
+                <TouchableOpacity
+                  onPress={() => checkAlertsMutation.mutate()}
+                  disabled={checkAlertsMutation.isPending}
+                  className="flex-row items-center bg-amber-50 px-2.5 py-1 rounded-full border border-amber-200"
+                >
+                  <RefreshCw size={12} color="#D97706" style={{ marginRight: 4 }} />
+                  <Text className="text-amber-700 font-bold text-xs">
+                    {checkAlertsMutation.isPending ? "Checking..." : "Refresh Prices"}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+
+              <Card className="p-5">
+                {!priceAlerts || priceAlerts.length === 0 ? (
+                  <View className="py-4 items-center">
+                    <Text className="text-xs text-slate-500 text-center font-medium">
+                      No active price drop monitors set. Click &quot;Set Price Alert&quot; on any
+                      product card!
+                    </Text>
+                  </View>
+                ) : (
+                  (priceAlerts || []).map((alert) => (
+                    <View
+                      key={alert.id}
+                      className="flex-row items-center justify-between py-2.5 border-b border-slate-100"
+                    >
+                      <View className="flex-1 mr-2">
+                        <View className="flex-row items-center">
+                          <Text className="font-bold text-slate-800 text-sm">{alert.query}</Text>
+                          {alert.unit && (
+                            <Text className="text-xs text-slate-400 ml-1">({alert.unit})</Text>
+                          )}
+                        </View>
+                        <Text className="text-xs text-slate-500 mt-0.5">
+                          Target: ৳{alert.targetPriceBDT} • Current: ৳
+                          {alert.currentBestPriceBDT || alert.targetPriceBDT} (
+                          {alert.currentBestStore || "Shwapno"})
+                        </Text>
+                      </View>
+                      <TouchableOpacity
+                        onPress={() => deleteAlertMutation.mutate(alert.id)}
+                        className="p-1.5 rounded-lg bg-red-50"
+                      >
+                        <Trash2 size={16} color="#EF4444" />
+                      </TouchableOpacity>
+                    </View>
+                  ))
+                )}
+              </Card>
+            </View>
+
+            {/* MEAL CONSUMPTION & USAGE REPORT */}
+            {Boolean(
+              monthlyAnalytics &&
+              Array.isArray(monthlyAnalytics.mealBreakdown) &&
+              monthlyAnalytics.mealBreakdown.length > 0,
+            ) && (
+              <View className="px-6 mb-8">
+                <View className="flex-row items-center mb-3">
+                  <Utensils size={20} color="#3B82F6" style={{ marginRight: 6 }} />
+                  <Text className="text-text-primary text-[18px] font-bold tracking-tight">
+                    Meal Usage Breakdown
+                  </Text>
+                </View>
+
+                <Card className="p-5">
+                  {monthlyAnalytics?.mealBreakdown?.map((meal) => (
+                    <View key={meal.mealType} className="mb-4 pb-3 border-b border-slate-100">
+                      <View className="flex-row justify-between items-center mb-1">
+                        <Text className="font-bold text-slate-900 text-sm">
+                          {meal.mealType} ({meal.itemCount} items)
+                        </Text>
+                        <Text className="font-extrabold text-blue-600 text-sm">
+                          ৳{meal.totalSpentBDT}
+                        </Text>
+                      </View>
+                      {Array.isArray(meal.topItems) &&
+                        meal.topItems.map((top, idx) => (
+                          <Text key={idx} className="text-slate-500 text-xs mt-0.5">
+                            • {top.name} ({top.quantity}) — used {top.frequency}x
+                          </Text>
+                        ))}
+                    </View>
+                  ))}
+                </Card>
+              </View>
+            )}
+
+            {/* MONTHLY BUDGET TRACKER */}
+            {monthlyAnalytics && (
+              <View className="px-6 mb-8">
+                <View className="flex-row items-center justify-between mb-3">
+                  <View className="flex-row items-center">
+                    <Wallet size={20} color="#F59E0B" style={{ marginRight: 6 }} />
+                    <Text className="text-text-primary text-[18px] font-bold tracking-tight">
+                      Monthly Family Budget
+                    </Text>
+                  </View>
+                  <Text className="text-slate-500 font-bold text-xs">
+                    ৳{monthlyAnalytics.totalSpentBDT} / ৳{monthlyAnalytics.budgetBDT}
+                  </Text>
+                </View>
+
+                <Card className="p-5">
+                  <View className="mb-2 flex-row justify-between items-center">
+                    <Text className="text-xs font-bold text-slate-700">
+                      Budget Utilization ({monthlyAnalytics.budgetUtilizationPercentage}%)
+                    </Text>
+                    <Text className="text-xs font-bold text-emerald-600">
+                      ৳{monthlyAnalytics.remainingBudgetBDT} Remaining
+                    </Text>
+                  </View>
+                  <ProgressBar
+                    progress={monthlyAnalytics.budgetUtilizationPercentage}
+                    color={
+                      monthlyAnalytics.budgetUtilizationPercentage > 90 ? "#EF4444" : "#10B981"
+                    }
+                    height={10}
+                  />
+                </Card>
+              </View>
+            )}
 
             {/* Categories List */}
             <View className="px-6">
@@ -377,8 +650,6 @@ const AnalyzeScreen = ({ navigation }: AnalyzeStackScreenProps<"Analyze">) => {
           </View>
         )}
       </ScrollView>
-
-      <NotificationModal visible={isNotifOpen} onClose={() => setNotifOpen(false)} />
     </SafeAreaView>
   );
 };

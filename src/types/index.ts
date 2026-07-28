@@ -2,8 +2,6 @@ import type {
   NativeStackNavigationProp,
   NativeStackScreenProps,
 } from "@react-navigation/native-stack";
-import type { BottomTabScreenProps } from "@react-navigation/bottom-tabs";
-import type { CompositeScreenProps } from "@react-navigation/native";
 import { ERootRoutes, ETabRoutes } from "../navigation/routes";
 
 export * from "./apiModels";
@@ -47,8 +45,6 @@ export type RootNavigatorParamList = {
   UnAuthenticatedStack: undefined;
   /** Authenticated shell — Hosts the main app content */
   AuthenticatedStack: undefined;
-  /** Splash/loading gate while auth state resolves */
-  [ERootRoutes.LOADING]: undefined;
 };
 
 /** Authenticated Stack — Screens available after login */
@@ -70,32 +66,13 @@ export type AuthenticatedStackNavigatorParamList = {
   [ERootRoutes.ITEM_DETAIL]: { itemId: string };
   [ERootRoutes.EDIT_ITEM]: { itemId: string };
   [ERootRoutes.ANALYZE]: undefined;
+  [ERootRoutes.NOTIFICATIONS]: undefined;
 };
 
 /** Unauthenticated Stack — Screens available before login */
 export type UnAuthenticatedStackNavigatorParamList = {
   [ERootRoutes.LOGIN]: undefined;
 };
-
-/** Bottom tab navigator — each tab maps to its own stack */
-export type BottomTabNavigatorParamList = {
-  HomeStack: undefined;
-  ListStack: undefined;
-  MembersStack: undefined;
-  AnalyzeStack: undefined;
-  ProfileStack: undefined;
-};
-
-// Sub-stacks for Tabs
-export type HomeStackParamList = { Home: undefined };
-export type ListStackParamList = { List: undefined };
-export type MembersStackParamList = { Members: undefined };
-export type AnalyzeStackParamList = { Analyze: undefined };
-export type ProfileStackParamList = { Profile: undefined };
-
-// ---------------------------------------------------------------------------
-// Convenience prop types
-// ---------------------------------------------------------------------------
 
 export type RootStackNavigationProp = NativeStackNavigationProp<RootNavigatorParamList>;
 
@@ -113,36 +90,19 @@ export type UnAuthenticatedStackNavigatorScreenProps<
   T extends keyof UnAuthenticatedStackNavigatorParamList,
 > = NativeStackScreenProps<UnAuthenticatedStackNavigatorParamList, T>;
 
-export type BottomTabNavigatorScreenProps<T extends keyof BottomTabNavigatorParamList> =
-  CompositeScreenProps<
-    BottomTabScreenProps<BottomTabNavigatorParamList, T>,
-    AuthenticatedStackNavigatorScreenProps<keyof AuthenticatedStackNavigatorParamList>
-  >;
+export type TActiveTab = "dashboard" | "groceries" | "analytics" | "family" | "profile";
 
-export type HomeStackScreenProps<T extends keyof HomeStackParamList> = CompositeScreenProps<
-  NativeStackScreenProps<HomeStackParamList, T>,
-  BottomTabNavigatorScreenProps<keyof BottomTabNavigatorParamList>
->;
+export interface ITabScreenProps {
+  navigation: any;
+  onTabChange: (tab: TActiveTab) => void;
+}
 
-export type ListStackScreenProps<T extends keyof ListStackParamList> = CompositeScreenProps<
-  NativeStackScreenProps<ListStackParamList, T>,
-  BottomTabNavigatorScreenProps<keyof BottomTabNavigatorParamList>
->;
+export type HomeStackScreenProps = ITabScreenProps;
+export type ListStackScreenProps = ITabScreenProps;
+export type MembersStackScreenProps = ITabScreenProps;
+export type ProfileStackScreenProps = ITabScreenProps;
 
-export type MembersStackScreenProps<T extends keyof MembersStackParamList> = CompositeScreenProps<
-  NativeStackScreenProps<MembersStackParamList, T>,
-  BottomTabNavigatorScreenProps<keyof BottomTabNavigatorParamList>
->;
-
-export type AnalyzeStackScreenProps<T extends keyof AnalyzeStackParamList> = CompositeScreenProps<
-  NativeStackScreenProps<AnalyzeStackParamList, T>,
-  BottomTabNavigatorScreenProps<keyof BottomTabNavigatorParamList>
->;
-
-export type ProfileStackScreenProps<T extends keyof ProfileStackParamList> = CompositeScreenProps<
-  NativeStackScreenProps<ProfileStackParamList, T>,
-  BottomTabNavigatorScreenProps<keyof BottomTabNavigatorParamList>
->;
+export type AnalyzeStackScreenProps = AuthenticatedStackNavigatorScreenProps<ERootRoutes.ANALYZE>;
 
 export interface IAppNotification {
   id: string;
@@ -157,3 +117,5 @@ export interface IAppNotification {
   readBy: string[];
   createdAt: TFirestoreDateValue;
 }
+
+export * from "./superstore";

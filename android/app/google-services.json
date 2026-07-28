@@ -1,0 +1,54 @@
+{
+  "project_info": {
+    "project_number": "1062088306859",
+    "project_id": "family-grocery-list-118d2",
+    "storage_bucket": "family-grocery-list-118d2.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1062088306859:android:bc00068fa881cf4649c7ee",
+        "android_client_info": {
+          "package_name": "com.mehedi.FamilyGroceryList"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "1062088306859-vfm8amp2ugq5d57oaugvj5jgmkergg55.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.mehedi.FamilyGroceryList",
+            "certificate_hash": "5e8f16062ea3cd2c4a0d547876baa6f38cabf625"
+          }
+        },
+        {
+          "client_id": "1062088306859-58tdg5u3uqf7oqk15afmeqj10b0s7k04.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCdK0LOBqFkvKx7Pi-jyDgxITwR7mULUT4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "1062088306859-58tdg5u3uqf7oqk15afmeqj10b0s7k04.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "1062088306859-g25274d26kfdh2joau9vnk0eharr8l9e.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.mehedi.FamilyGroceryList"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

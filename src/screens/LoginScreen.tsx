@@ -186,15 +186,15 @@ const LoginScreen = () => {
           </View>
 
           {/* ── Mode toggle (Sign In / Create) ── */}
-          <View className="mt-10 flex-row rounded-full border border-border-muted bg-surface p-1">
+          <View className="mt-10 flex-row rounded-2xl border border-border bg-surface-alt p-1.5">
             <TouchableOpacity
               activeOpacity={0.9}
               onPress={() => switchMode("signIn")}
               disabled={isBusy}
-              className={`flex-1 rounded-full py-2.5 ${authMode === "signIn" ? "bg-primary-700" : ""}`}
+              className={`flex-1 rounded-xl py-3 ${authMode === "signIn" ? "bg-primary-600 shadow-xs" : ""}`}
             >
               <Text
-                className={`text-center text-[14px] font-semibold ${authMode === "signIn" ? "text-text-inverse" : "text-text-secondary"}`}
+                className={`text-center text-[14px] font-bold ${authMode === "signIn" ? "text-white" : "text-text-secondary"}`}
               >
                 Sign In
               </Text>
@@ -204,10 +204,10 @@ const LoginScreen = () => {
               activeOpacity={0.9}
               onPress={() => switchMode("signUp")}
               disabled={isBusy}
-              className={`flex-1 rounded-full py-2.5 ${authMode === "signUp" ? "bg-primary-700" : ""}`}
+              className={`flex-1 rounded-xl py-3 ${authMode === "signUp" ? "bg-primary-600 shadow-xs" : ""}`}
             >
               <Text
-                className={`text-center text-[14px] font-semibold ${authMode === "signUp" ? "text-text-inverse" : "text-text-secondary"}`}
+                className={`text-center text-[14px] font-bold ${authMode === "signUp" ? "text-white" : "text-text-secondary"}`}
               >
                 Create
               </Text>
@@ -330,9 +330,9 @@ const LoginScreen = () => {
             onPress={onSubmitPress}
             activeOpacity={0.88}
             disabled={isBusy}
-            className="mt-7 flex-row items-center justify-center rounded-full bg-primary-700 py-3.5 shadow-sm shadow-primary-200 disabled:opacity-60"
+            className="mt-7 flex-row items-center justify-center rounded-2xl bg-primary-600 h-[52px] shadow-sm shadow-primary-500/20 disabled:opacity-60"
           >
-            <Text className="text-[15px] font-bold text-text-inverse">
+            <Text className="text-[15px] font-bold text-white">
               {emailBusy
                 ? authMode === "signIn"
                   ? "Signing In..."
@@ -341,7 +341,7 @@ const LoginScreen = () => {
                   ? "Sign In"
                   : "Create Account"}
             </Text>
-            <ArrowRight size={17} color="#f6fbf7" strokeWidth={2.3} className="ml-2" />
+            <ArrowRight size={17} color="#FFFFFF" strokeWidth={2.3} className="ml-2" />
           </TouchableOpacity>
 
           {/* ── Divider ── */}
@@ -358,7 +358,7 @@ const LoginScreen = () => {
             onPress={handleGoogleSignIn}
             activeOpacity={0.88}
             disabled={isBusy || !googleConfigured}
-            className="flex-row items-center justify-center rounded-full border border-border bg-surface py-3 disabled:opacity-60"
+            className="flex-row items-center justify-center rounded-2xl border border-border bg-white h-[52px] disabled:opacity-60"
           >
             <Image
               source={{

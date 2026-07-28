@@ -1,6 +1,6 @@
 import React from "react";
 import { View, Text, TouchableOpacity, Image } from "react-native";
-import { Check } from "lucide-react-native";
+import { Check, Calendar, Tag, User, FileText } from "lucide-react-native";
 import { IGroceryItem } from "../types";
 import { useDateFormatter, useTextFormatter } from "../hooks";
 import { PriorityBadge } from "./ui";
@@ -14,7 +14,7 @@ interface IItemCardProps {
 
 /**
  * Premium Grocery Item Card
- * Why: To display item details in the main list with a layout consistent with the new dashboard.
+ * Why: To display item details in the main list with clean, non-nested touch target controls.
  * @param props - Component props including item data and interaction handlers
  */
 const ItemCard = ({ item, onToggle, onPress }: IItemCardProps) => {
@@ -24,88 +24,116 @@ const ItemCard = ({ item, onToggle, onPress }: IItemCardProps) => {
   const timeAgo = toRelativeTime(item.createdAt);
 
   return (
-    <TouchableOpacity onPress={() => onPress(item)} activeOpacity={0.8} className="mb-3">
-      <View className="flex-row overflow-hidden rounded-2xl bg-white shadow-sm border border-border/40 min-h-[96px]">
-        {/* Priority left border accent */}
+    <View className="mb-3">
+      <View
+        className={`flex-row overflow-hidden rounded-2xl bg-white border ${
+          isCompleted
+            ? "border-slate-200/60 bg-slate-50/60 opacity-75"
+            : "border-slate-200/90 shadow-xs"
+        }`}
+      >
+        {/* Priority stripe accent */}
         <View
           style={{
-            width: 6,
+            width: 4.5,
             backgroundColor: isCompleted
-              ? "#E8EBF0"
+              ? "#CBD5E1"
               : item.priority === "Urgent"
-                ? "#E55C5C"
+                ? "#EF4444"
                 : item.priority === "Medium"
-                  ? "#F5A623"
+                  ? "#F59E0B"
                   : "#10B981",
           }}
         />
 
-        <View className="flex-1 p-4">
-          <View className="flex-row items-center justify-between mb-3">
-            <TouchableOpacity
-              onPress={() => onToggle(item)}
-              activeOpacity={0.7}
-              className="flex-row items-center flex-1 mr-3"
-            >
-              <View
-                className={
-                  "h-8 w-8 items-center justify-center rounded-xl border-2 " +
-                  (isCompleted
-                    ? "bg-primary-500 border-primary-500 shadow-sm shadow-primary-200"
-                    : "border-border-muted bg-surface-alt")
-                }
-              >
-                {isCompleted && <Check stroke="#FFF" size={18} strokeWidth={3} />}
-              </View>
+        {/* Independent Checkbox Toggle Area */}
+        <TouchableOpacity
+          onPress={() => onToggle(item)}
+          activeOpacity={0.7}
+          className="pl-3.5 pr-2 py-3.5 items-center justify-center"
+        >
+          {isCompleted ? (
+            <View className="h-7 w-7 items-center justify-center rounded-xl bg-emerald-600 shadow-xs">
+              <Check stroke="#FFF" size={16} strokeWidth={3} />
+            </View>
+          ) : (
+            <View className="h-7 w-7 items-center justify-center rounded-xl border-2 border-slate-300 bg-slate-50" />
+          )}
+        </TouchableOpacity>
+
+        {/* Independent Card Body Details Touch Area */}
+        <TouchableOpacity
+          onPress={() => onPress(item)}
+          activeOpacity={0.82}
+          className="flex-1 py-3.5 pr-3.5 justify-between"
+        >
+          <View className="flex-row items-center justify-between mb-2">
+            <View className="flex-1 pr-2">
               <Text
-                className={
-                  "ml-4 text-[17px] font-bold flex-1 " +
-                  (isCompleted ? "text-text-muted line-through opacity-60" : "text-text-primary")
-                }
+                className={`text-[15px] font-bold ${
+                  isCompleted ? "text-slate-400 line-through opacity-70" : "text-slate-900"
+                }`}
                 numberOfLines={1}
               >
                 {item.name}
               </Text>
-            </TouchableOpacity>
+              {item.notes ? (
+                <View className="flex-row items-center mt-0.5">
+                  <FileText stroke="#94A3B8" size={11} className="mr-1" />
+                  <Text className="text-[11px] font-medium text-slate-400 flex-1" numberOfLines={1}>
+                    {item.notes}
+                  </Text>
+                </View>
+              ) : null}
+            </View>
 
             {!isCompleted && <PriorityBadge priority={item.priority} />}
           </View>
 
-          <View className="flex-row items-center justify-between pl-12 mt-auto">
-            <View className="flex-row items-center flex-wrap flex-1 gap-y-2">
-              <View className="bg-surface-muted px-2.5 py-1 rounded-lg border border-border/60 mr-2">
-                <Text className="text-[11px] font-semibold text-text-secondary">
-                  {item.category} {item.quantity ? "· " + item.quantity : ""}
-                </Text>
+          <View className="flex-row items-center justify-between mt-1">
+            <View className="flex-row items-center flex-wrap flex-1 gap-1.5">
+              <View className="bg-emerald-500/10 px-2.5 py-0.5 rounded-lg border border-emerald-500/20 flex-row items-center">
+                <Tag stroke="#059669" size={10} className="mr-1" />
+                <Text className="text-[11px] font-bold text-emerald-800">{item.category}</Text>
               </View>
+
+              {item.quantity ? (
+                <View className="bg-slate-100 px-2 py-0.5 rounded-lg border border-slate-200/80">
+                  <Text className="text-[11px] font-bold text-slate-700">{item.quantity}</Text>
+                </View>
+              ) : null}
+
               {item.dueDate ? (
-                <View className="bg-warning-light px-2.5 py-1 rounded-lg border border-warning-light/50 mr-2">
-                  <Text className="text-[11px] font-bold text-warning-dark">Due</Text>
+                <View className="bg-amber-500/10 px-2 py-0.5 rounded-lg border border-amber-500/20 flex-row items-center">
+                  <Calendar stroke="#D97706" size={10} className="mr-1" />
+                  <Text className="text-[11px] font-bold text-amber-800">Due</Text>
                 </View>
               ) : null}
+
               {item.assignee?.name ? (
-                <View className="bg-primary-50 px-2.5 py-1 rounded-lg border border-primary-100 mr-2">
-                  <Text className="text-[11px] font-bold text-primary-700">
-                    {item.assignee.name}
-                  </Text>
+                <View className="bg-sky-500/10 px-2 py-0.5 rounded-lg border border-sky-500/20 flex-row items-center">
+                  <User stroke="#0284C7" size={10} className="mr-1" />
+                  <Text className="text-[11px] font-bold text-sky-800">{item.assignee.name}</Text>
                 </View>
               ) : null}
-              <Text className="text-[11px] font-medium text-text-muted/80">{timeAgo}</Text>
             </View>
 
-            <View className="h-7 w-7 rounded-full bg-primary-600 border-2 border-white items-center justify-center overflow-hidden shadow-sm ml-2">
-              {item.addedBy?.photoURL ? (
-                <Image source={{ uri: item.addedBy.photoURL }} className="h-full w-full" />
-              ) : (
-                <Text className="text-white text-[10px] font-bold">
-                  {toInitial(item.addedBy?.name || "U")}
-                </Text>
-              )}
+            <View className="flex-row items-center ml-2">
+              <Text className="text-[10px] font-medium text-slate-400 mr-2">{timeAgo}</Text>
+              <View className="h-6 w-6 rounded-full bg-emerald-600 border-2 border-white items-center justify-center overflow-hidden shadow-xs">
+                {item.addedBy?.photoURL ? (
+                  <Image source={{ uri: item.addedBy.photoURL }} className="h-full w-full" />
+                ) : (
+                  <Text className="text-white text-[9px] font-bold">
+                    {toInitial(item.addedBy?.name || "U")}
+                  </Text>
+                )}
+              </View>
             </View>
           </View>
-        </View>
+        </TouchableOpacity>
       </View>
-    </TouchableOpacity>
+    </View>
   );
 };
 

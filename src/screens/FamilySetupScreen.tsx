@@ -14,7 +14,6 @@ import { FirebaseError } from "firebase/app";
 import { signOut } from "../services/auth";
 import { useAuthStore } from "../store/useAuthStore";
 import { useCreateFamily, useJoinFamily, useTextFormatter } from "../hooks";
-import { goToAuthenticatedRoot } from "../navigation/navigationRef";
 import { LoadingOverlay, RhfTextfield, StatusModal } from "../components/ui";
 
 const FAMILY_ACTION_TIMEOUT_MS = 15000;
@@ -67,7 +66,7 @@ async function withFamilyActionTimeout<T>(operation: Promise<T>, timeoutMessage:
   }
 }
 
-const FamilySetupScreen = () => {
+const FamilySetupScreen = ({ navigation }: any) => {
   const { user, setUser } = useAuthStore();
   const { toTrimmed, toInviteCode } = useTextFormatter();
   const [mode, setMode] = useState<FamilySetupMode>("selection");
@@ -165,7 +164,7 @@ const FamilySetupScreen = () => {
     const isSuccess = statusModal.type === "success";
     setStatusModal((prev) => ({ ...prev, visible: false }));
     if (isSuccess) {
-      goToAuthenticatedRoot();
+      navigation.reset({ index: 0, routes: [{ name: "Root" }] });
     }
   };
 

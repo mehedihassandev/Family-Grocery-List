@@ -1,11 +1,6 @@
-import {
-  ScrollView,
-  Text,
-  TouchableOpacity,
-  View,
-  ActivityIndicator,
-  StyleSheet,
-} from "react-native";
+import React, { useState } from "react";
+import { ScrollView, Text, TouchableOpacity, View, ActivityIndicator } from "react-native";
+
 import {
   X,
   Edit2,
@@ -16,11 +11,13 @@ import {
   Info,
   Repeat,
   Wallet,
+  Bell,
 } from "lucide-react-native";
 import { AuthenticatedStackNavigatorScreenProps, ERootRoutes } from "../types";
+
 import { GroceryPriority } from "../features/grocery";
-import { useDateFormatter, useGroceryItemBackend } from "../hooks";
-import { Card, Chip, PriorityBadge } from "../components/ui";
+import { useDateFormatter, useGroceryItemBackend, useCreatePriceAlert } from "../hooks";
+import { Card, Chip, PriorityBadge, SuperstoreComparisonCard } from "../components/ui";
 import { useAuthStore } from "../store/useAuthStore";
 
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -40,6 +37,8 @@ const ItemDetailScreen = ({
 
   // TanStack Query Hook for Python Backend API
   const { data: item, isLoading: loading } = useGroceryItemBackend(user?.familyId, itemId);
+  const createPriceAlertMutation = useCreatePriceAlert();
+  const [alertSet, setAlertSet] = useState(false);
 
   if (loading) {
     return (
@@ -86,17 +85,16 @@ const ItemDetailScreen = ({
             <TouchableOpacity
               onPress={() => navigation.navigate(ERootRoutes.EDIT_ITEM, { itemId: item.id })}
               activeOpacity={0.7}
-              className="h-11 w-11 items-center justify-center rounded-full bg-primary-600"
-              style={styles.actionShadow}
+              className="h-11 w-11 items-center justify-center rounded-2xl bg-primary-600 shadow-xs"
             >
-              <Edit2 stroke="white" size={18} strokeWidth={3} />
+              <Edit2 stroke="white" size={18} strokeWidth={2.5} />
             </TouchableOpacity>
             <TouchableOpacity
               onPress={() => navigation.goBack()}
               activeOpacity={0.7}
-              className="h-11 w-11 items-center justify-center rounded-full bg-surface-muted border border-border-muted"
+              className="h-11 w-11 items-center justify-center rounded-2xl bg-white border border-border shadow-xs"
             >
-              <X stroke="#748379" size={20} strokeWidth={3} />
+              <X stroke="#475569" size={20} strokeWidth={2.5} />
             </TouchableOpacity>
           </View>
         </View>
@@ -170,6 +168,57 @@ const ItemDetailScreen = ({
             </View>
           </Card>
 
+          {/* Superstore Price & Availability Comparison (Shwapno, Meena Bazar, Agora) */}
+          <SuperstoreComparisonCard itemName={item.name} />
+
+          {/* Set Price Drop Alert Action */}
+          <TouchableOpacity
+            onPress={() => {
+              if (!user?.familyId) return;
+              createPriceAlertMutation.mutate({
+                familyId: user.familyId,
+                query: item.name,
+                targetPriceBDT: item.estimatedTotal || 500,
+                unit: item.quantity || "1kg",
+              });
+              setAlertSet(true);
+            }}
+            disabled={alertSet || createPriceAlertMutation.isPending}
+            activeOpacity={0.8}
+            className={`mb-6 flex-row items-center justify-between p-4 rounded-2xl border ${
+              alertSet ? "bg-emerald-50 border-emerald-300" : "bg-amber-50 border-amber-300"
+            }`}
+          >
+            <View className="flex-row items-center flex-1 mr-3">
+              <Bell
+                size={20}
+                color={alertSet ? "#10B981" : "#D97706"}
+                style={{ marginRight: 10 }}
+              />
+              <View className="flex-1">
+                <Text className="font-bold text-slate-900 text-sm">
+                  {alertSet ? "Price Drop Monitor Active" : `Set Price Alert for ${item.name}`}
+                </Text>
+                <Text className="text-xs text-slate-500 mt-0.5">
+                  {alertSet
+                    ? "We'll notify you when Shwapno, Meena or Agora price drops below target!"
+                    : "Track market prices and get notified on price drops"}
+                </Text>
+              </View>
+            </View>
+            <View
+              className={`px-3 py-1.5 rounded-xl ${alertSet ? "bg-emerald-600" : "bg-amber-500"}`}
+            >
+              <Text className="text-white font-bold text-xs">
+                {alertSet
+                  ? "Active"
+                  : createPriceAlertMutation.isPending
+                    ? "Setting..."
+                    : "+ Alert"}
+              </Text>
+            </View>
+          </TouchableOpacity>
+
           <Card className="mb-6 p-5">
             <View className="flex-row items-center justify-between">
               <View className="flex-row items-center">
@@ -228,15 +277,5 @@ const ItemDetailScreen = ({
     </View>
   );
 };
-
-const styles = StyleSheet.create({
-  actionShadow: {
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.12,
-    shadowRadius: 8,
-    elevation: 3,
-  },
-});
 
 export default ItemDetailScreen;

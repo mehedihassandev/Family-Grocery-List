@@ -12,6 +12,9 @@ export const API_ENDPOINTS = {
     join: "/v1/families/join",
     detail: (id: string) => `/v1/families/${encodeURIComponent(id)}`,
     members: (id: string) => `/v1/families/${encodeURIComponent(id)}/members`,
+    inviteMember: (id: string) => `/v1/families/${encodeURIComponent(id)}/members`,
+    updateRole: (familyId: string, userId: string) =>
+      `/v1/families/${encodeURIComponent(familyId)}/members/${encodeURIComponent(userId)}/role`,
     leave: (id: string) => `/v1/families/${encodeURIComponent(id)}/leave`,
     removeMember: (familyId: string, userId: string) =>
       `/v1/families/${encodeURIComponent(familyId)}/members/${encodeURIComponent(userId)}`,
@@ -22,5 +25,31 @@ export const API_ENDPOINTS = {
       `/v1/families/${encodeURIComponent(familyId)}/items/${encodeURIComponent(itemId)}`,
     seed: (familyId: string) => `/v1/families/${encodeURIComponent(familyId)}/seed`,
     summary: (familyId: string) => `/v1/families/${encodeURIComponent(familyId)}/grocery-summary`,
+  },
+  superstores: {
+    search: "/v1/superstores/search",
+    basketOptimization: "/v1/superstores/basket-optimization",
+    basketSplitOptimization: "/v1/superstores/basket-split-optimization",
+    priceAlerts: "/v1/superstores/price-alerts",
+    checkPriceAlerts: "/v1/superstores/price-alerts/check",
+    priceAlertDetail: (alertId: string) =>
+      `/v1/superstores/price-alerts/${encodeURIComponent(alertId)}`,
+  },
+  ai: {
+    recipeToGrocery: "/v1/ai/recipe-to-grocery",
+    monthlyInsights: "/v1/ai/monthly-insights",
+  },
+  deviceTokens: {
+    register: "/v1/users/me/device-tokens",
+    remove: (token: string) => `/v1/users/me/device-tokens/${encodeURIComponent(token)}`,
+  },
+  notifications: {
+    list: (familyId: string) => `/v1/families/${encodeURIComponent(familyId)}/notifications`,
+    unreadCount: (familyId: string) =>
+      `/v1/families/${encodeURIComponent(familyId)}/notifications/unread-count`,
+    markRead: (familyId: string, notificationId: string) =>
+      `/v1/families/${encodeURIComponent(familyId)}/notifications/${encodeURIComponent(notificationId)}/read`,
+    markAllRead: (familyId: string) =>
+      `/v1/families/${encodeURIComponent(familyId)}/notifications/read-all`,
   },
 } as const;

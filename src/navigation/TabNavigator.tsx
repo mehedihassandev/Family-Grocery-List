@@ -1,101 +1,43 @@
 import React, { useEffect } from "react";
+import { View, StyleSheet, Platform } from "react-native";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
-import { Home, ShoppingBasket, Users, User as UserIcon } from "lucide-react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { Home, ShoppingBasket, BarChart3, Users, User as UserIcon } from "lucide-react-native";
+
 import DashboardScreen from "../screens/DashboardScreen";
-import HomeScreen from "../screens/HomeScreen";
+import GroceryListScreen from "../screens/GroceryListScreen";
+import AnalyzeScreen from "../screens/AnalyzeScreen";
 import MembersScreen from "../screens/MembersScreen";
 import ProfileScreen from "../screens/ProfileScreen";
 import { useAuthStore } from "../store/useAuthStore";
-import { useNotificationStore } from "../store/useNotificationStore";
-import { createNativeStackNavigator } from "@react-navigation/native-stack";
-import {
-  BottomTabNavigatorParamList,
-  HomeStackParamList,
-  ListStackParamList,
-  MembersStackParamList,
-  ProfileStackParamList,
-} from "../types";
-import { View } from "react-native";
 import { syncFamilyInviteForOwner } from "../services/family";
 
-const Tab = createBottomTabNavigator<BottomTabNavigatorParamList>();
-const HomeStack = createNativeStackNavigator<HomeStackParamList>();
-const ListStack = createNativeStackNavigator<ListStackParamList>();
-const MembersStack = createNativeStackNavigator<MembersStackParamList>();
-const ProfileStack = createNativeStackNavigator<ProfileStackParamList>();
+const Tab = createBottomTabNavigator();
 
-const HomeStackScreen = () => (
-  <HomeStack.Navigator screenOptions={{ headerShown: false }}>
-    <HomeStack.Screen name="Home" component={DashboardScreen} />
-  </HomeStack.Navigator>
+const TabIcon = ({ focused, Icon }: { focused: boolean; Icon: any }) => (
+  <View style={styles.iconContainer}>
+    <Icon stroke={focused ? "#10B981" : "#94A3B8"} size={22} strokeWidth={focused ? 2.5 : 2} />
+  </View>
 );
-
-const ListStackScreen = () => (
-  <ListStack.Navigator screenOptions={{ headerShown: false }}>
-    <ListStack.Screen name="List" component={HomeScreen} />
-  </ListStack.Navigator>
-);
-
-const MembersStackScreen = () => (
-  <MembersStack.Navigator screenOptions={{ headerShown: false }}>
-    <MembersStack.Screen name="Members" component={MembersScreen} />
-  </MembersStack.Navigator>
-);
-
-const ProfileStackScreen = () => (
-  <ProfileStack.Navigator screenOptions={{ headerShown: false }}>
-    <ProfileStack.Screen name="Profile" component={ProfileScreen} />
-  </ProfileStack.Navigator>
-);
-
-const TAB_ICON_SIZE = 22;
-const TAB_ICON_STROKE_WIDTH = 2.5;
-
-const TabIcon = ({
-  focused,
-  color,
-  Icon,
-}: {
-  focused: boolean;
-  color: string;
-  Icon: React.ElementType;
-}) => {
-  return (
-    <View
-      className={
-        "items-center justify-center rounded-2xl " + (focused ? "bg-primary-50 px-5 py-1.5" : "")
-      }
-    >
-      <Icon stroke={color} size={TAB_ICON_SIZE} strokeWidth={TAB_ICON_STROKE_WIDTH} />
-    </View>
-  );
-};
 
 /**
- * Main bottom tab navigator
- * Why: To provide easy access to the core features of the application.
+ * Standard Bottom Tab Navigator matching my-care-mobile architecture.
+ * Uses official @react-navigation/bottom-tabs to inject NavigationContext across all screens.
  */
-const TabNavigator = () => {
+const TabNavigator: React.FC = () => {
   const insets = useSafeAreaInsets();
-  const tabBarPaddingBottom = Math.max(insets.bottom, 10);
-  const { user, loading, hasHydrated, profileSynced } = useAuthStore();
-  const initNotifications = useNotificationStore((state) => state.init);
-  const clearNotifications = useNotificationStore((state) => state.clear);
-  const authReady = hasHydrated && !loading;
-  const familyId = authReady && profileSynced ? user?.familyId : null;
+  const { user, profileSynced, loading, hasHydrated } = useAuthStore();
+  const familyId = user?.familyId || "";
 
   useEffect(() => {
-    if (familyId) {
-      initNotifications(familyId);
-    } else {
-      clearNotifications();
-    }
-    return () => clearNotifications();
-  }, [clearNotifications, familyId, initNotifications]);
-
-  useEffect(() => {
-    if (!authReady || !profileSynced || !user?.uid || !familyId || user.role !== "owner") {
+    if (
+      !hasHydrated ||
+      loading ||
+      !profileSynced ||
+      !user?.uid ||
+      !familyId ||
+      user.role !== "owner"
+    ) {
       return;
     }
     void syncFamilyInviteForOwner(familyId, user.uid).catch((error) => {
@@ -103,88 +45,83 @@ const TabNavigator = () => {
         console.warn("Owner invite sync failed:", error);
       }
     });
-  }, [authReady, familyId, profileSynced, user?.role, user?.uid]);
+  }, [hasHydrated, loading, familyId, profileSynced, user?.role, user?.uid]);
 
   return (
     <Tab.Navigator
-      key={familyId ? "family-tabs" : "no-family-tabs"}
       screenOptions={{
         headerShown: false,
         tabBarActiveTintColor: "#10B981",
-        tabBarInactiveTintColor: "#9AA3AF",
-        tabBarShowLabel: true,
+        tabBarInactiveTintColor: "#94A3B8",
         tabBarStyle: {
-          position: "absolute",
-          bottom: 0,
-          left: 0,
-          right: 0,
+          height: (Platform.OS === "ios" ? 60 : 56) + (insets.bottom > 0 ? insets.bottom : 8),
+          paddingBottom: insets.bottom > 0 ? insets.bottom : 6,
+          paddingTop: 6,
           backgroundColor: "#FFFFFF",
-          height: 64 + tabBarPaddingBottom,
-          paddingBottom: tabBarPaddingBottom,
-          paddingTop: 8,
           borderTopWidth: 1,
-          borderTopColor: "#E8EBF0",
-          elevation: 10,
-          shadowColor: "#000",
+          borderTopColor: "#E2E8F0",
+          elevation: 8,
+          shadowColor: "#0F172A",
           shadowOffset: { width: 0, height: -4 },
-          shadowOpacity: 0.05,
-          shadowRadius: 10,
+          shadowOpacity: 0.04,
+          shadowRadius: 12,
         },
         tabBarLabelStyle: {
-          fontSize: 10,
+          fontSize: 11,
           fontWeight: "700",
-          marginTop: 4,
+          marginTop: 2,
         },
       }}
     >
       <Tab.Screen
-        name="HomeStack"
-        component={HomeStackScreen}
+        name="Dashboard"
+        component={DashboardScreen as any}
         options={{
-          title: "Dashboard",
-          tabBarIcon: ({ color, focused }) => (
-            <TabIcon focused={focused} color={color} Icon={Home} />
-          ),
+          tabBarLabel: "Dashboard",
+          tabBarIcon: ({ focused }) => <TabIcon focused={focused} Icon={Home} />,
         }}
       />
-
-      {familyId ? (
-        <>
-          <Tab.Screen
-            name="ListStack"
-            component={ListStackScreen}
-            options={{
-              title: "Groceries",
-              tabBarIcon: ({ color, focused }) => (
-                <TabIcon focused={focused} color={color} Icon={ShoppingBasket} />
-              ),
-            }}
-          />
-          <Tab.Screen
-            name="MembersStack"
-            component={MembersStackScreen}
-            options={{
-              title: "Family",
-              tabBarIcon: ({ color, focused }) => (
-                <TabIcon focused={focused} color={color} Icon={Users} />
-              ),
-            }}
-          />
-        </>
-      ) : null}
-
       <Tab.Screen
-        name="ProfileStack"
-        component={ProfileStackScreen}
+        name="Groceries"
+        component={GroceryListScreen as any}
         options={{
-          title: "Profile",
-          tabBarIcon: ({ color, focused }) => (
-            <TabIcon focused={focused} color={color} Icon={UserIcon} />
-          ),
+          tabBarLabel: "Groceries",
+          tabBarIcon: ({ focused }) => <TabIcon focused={focused} Icon={ShoppingBasket} />,
+        }}
+      />
+      <Tab.Screen
+        name="Analytics"
+        component={AnalyzeScreen as any}
+        options={{
+          tabBarLabel: "Analytics",
+          tabBarIcon: ({ focused }) => <TabIcon focused={focused} Icon={BarChart3} />,
+        }}
+      />
+      <Tab.Screen
+        name="Family"
+        component={MembersScreen as any}
+        options={{
+          tabBarLabel: "Family",
+          tabBarIcon: ({ focused }) => <TabIcon focused={focused} Icon={Users} />,
+        }}
+      />
+      <Tab.Screen
+        name="Profile"
+        component={ProfileScreen as any}
+        options={{
+          tabBarLabel: "Profile",
+          tabBarIcon: ({ focused }) => <TabIcon focused={focused} Icon={UserIcon} />,
         }}
       />
     </Tab.Navigator>
   );
 };
+
+const styles = StyleSheet.create({
+  iconContainer: {
+    alignItems: "center",
+    justifyContent: "center",
+  },
+});
 
 export default TabNavigator;

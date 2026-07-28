@@ -42,6 +42,7 @@ const EditItemScreen = ({
   const [name, setName] = useState("");
   const [category, setCategory] = useState<string>("Other");
   const [priority, setPriority] = useState<Priority>("Medium");
+  const [itemStatus, setItemStatus] = useState<"pending" | "completed">("pending");
   const [quantity, setQuantity] = useState("");
   const [notes, setNotes] = useState("");
   const [recurrenceFrequency, setRecurrenceFrequency] = useState<"none" | "weekly" | "monthly">(
@@ -79,6 +80,7 @@ const EditItemScreen = ({
       setName(item.name);
       setCategory(item.category || "Other");
       setPriority(item.priority || "Medium");
+      setItemStatus(item.status || "pending");
       setQuantity(item.quantity || "");
       setRecurrenceFrequency(
         item.recurrenceFrequency === "weekly" || item.recurrenceFrequency === "monthly"
@@ -226,6 +228,7 @@ const EditItemScreen = ({
           name: name.trim(),
           category,
           priority,
+          status: itemStatus,
           quantity: quantity.trim(),
           notes: notes.trim(),
           recurrenceFrequency,
@@ -269,7 +272,7 @@ const EditItemScreen = ({
         setStatusModal((prev) => ({ ...prev, visible: false }));
         deleteMutation.mutate(item.id, {
           onSuccess: () => {
-            navigation.navigate("Root");
+            navigation.goBack();
           },
           onError: (error) => {
             console.error("Delete failed:", error);
@@ -347,9 +350,9 @@ const EditItemScreen = ({
           <TouchableOpacity
             onPress={() => navigation.goBack()}
             activeOpacity={0.7}
-            className="h-12 w-12 items-center justify-center rounded-2xl bg-surface-alt border border-border"
+            className="h-11 w-11 items-center justify-center rounded-2xl bg-white border border-border shadow-xs"
           >
-            <X stroke="#748379" size={24} strokeWidth={2.5} />
+            <X stroke="#475569" size={20} strokeWidth={2.5} />
           </TouchableOpacity>
         </View>
 
@@ -366,6 +369,26 @@ const EditItemScreen = ({
             containerClassName="mb-6"
             inputClassName="h-16 text-lg font-bold"
           />
+
+          <View className="mb-6">
+            <Text className="mb-2 ml-1 text-[11px] font-black uppercase tracking-[1.5px] text-text-muted">
+              STATUS
+            </Text>
+            <View className="flex-row gap-2">
+              <Chip
+                label="Pending"
+                selected={itemStatus === "pending"}
+                onPress={() => setItemStatus("pending")}
+                className="mr-2"
+              />
+              <Chip
+                label="Completed"
+                selected={itemStatus === "completed"}
+                onPress={() => setItemStatus("completed")}
+                className="mr-2"
+              />
+            </View>
+          </View>
 
           <View className="flex-row gap-4 mb-6">
             <InputField

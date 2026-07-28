@@ -4,18 +4,18 @@ import { View, Text } from "react-native";
 const categoryColors: Record<string, { badge: string; text: string; border: string }> = {
   Beauty: {
     badge: "bg-secondary-50",
-    text: "text-secondary-600",
-    border: "border-secondary-100",
+    text: "text-secondary-700",
+    border: "border-secondary-200",
   },
   Meat: {
-    badge: "bg-urgent/10",
-    text: "text-urgent",
-    border: "border-urgent/20",
+    badge: "bg-danger-light",
+    text: "text-danger-dark",
+    border: "border-danger-light",
   },
   Fish: {
     badge: "bg-secondary-50",
     text: "text-secondary-700",
-    border: "border-secondary-100",
+    border: "border-secondary-200",
   },
   Vegetables: {
     badge: "bg-primary-50",
@@ -28,34 +28,34 @@ const categoryColors: Record<string, { badge: string; text: string; border: stri
     border: "border-primary-100",
   },
   Dairy: {
-    badge: "bg-medium/15",
-    text: "text-medium",
-    border: "border-medium/30",
+    badge: "bg-warning-light",
+    text: "text-warning-dark",
+    border: "border-warning-light",
   },
   Snacks: {
-    badge: "bg-secondary-50",
-    text: "text-secondary-600",
-    border: "border-secondary-100",
+    badge: "bg-warning-light",
+    text: "text-warning-dark",
+    border: "border-warning-light",
   },
   Drinks: {
     badge: "bg-secondary-50",
     text: "text-secondary-700",
-    border: "border-secondary-100",
+    border: "border-secondary-200",
   },
   Household: {
-    badge: "bg-surface-subtle",
+    badge: "bg-surface-alt",
     text: "text-text-secondary",
-    border: "border-border-muted",
+    border: "border-border",
   },
   Medicine: {
     badge: "bg-secondary-50",
     text: "text-secondary-700",
-    border: "border-secondary-100",
+    border: "border-secondary-200",
   },
   Other: {
-    badge: "bg-surface-subtle",
+    badge: "bg-surface-alt",
     text: "text-text-muted",
-    border: "border-border-muted",
+    border: "border-border",
   },
 };
 
@@ -63,8 +63,8 @@ const CategoryBadge = ({ category }: { category: string }) => {
   const colorClass = categoryColors[category] || categoryColors["Other"];
 
   return (
-    <View className={`px-2.5 py-0.5 rounded-full border ${colorClass.badge} ${colorClass.border}`}>
-      <Text className={`text-[9px] font-black uppercase tracking-wider ${colorClass.text}`}>
+    <View className={`px-2.5 py-1 rounded-xl border ${colorClass.badge} ${colorClass.border}`}>
+      <Text className={`text-[10px] font-bold uppercase tracking-wider ${colorClass.text}`}>
         {category}
       </Text>
     </View>

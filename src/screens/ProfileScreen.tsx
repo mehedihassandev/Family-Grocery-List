@@ -11,12 +11,13 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { LogOut, Shield, HelpCircle, ChevronRight, Edit3, Users } from "lucide-react-native";
+
 import { useAuthStore } from "../store/useAuthStore";
 import { signOut } from "../services/auth";
 import { leaveFamily } from "../services/family";
 import { useTextFormatter } from "../hooks";
 import { AppHeader, Card, StatusModal } from "../components/ui";
-import { ERootRoutes, ETabRoutes } from "../navigation/routes";
+import { ERootRoutes } from "../navigation/routes";
 
 type TStatusModalType = "success" | "error" | "warning" | "confirm";
 
@@ -46,7 +47,7 @@ const getFamilyActionErrorMessage = (error: unknown, fallback: string) => {
   return rawMessage.trim() || fallback;
 };
 
-const ProfileScreen = ({ navigation }: ProfileStackScreenProps<"Profile">) => {
+const ProfileScreen = ({ navigation }: ProfileStackScreenProps) => {
   const { user, setUser } = useAuthStore();
   const { toInitials } = useTextFormatter();
   const [leavingFamily, setLeavingFamily] = useState(false);
@@ -97,7 +98,7 @@ const ProfileScreen = ({ navigation }: ProfileStackScreenProps<"Profile">) => {
     const wasSuccess = statusModal.type === "success";
     setStatusModal((prev) => ({ ...prev, visible: false }));
     if (wasSuccess) {
-      navigation.navigate(ETabRoutes.HOME);
+      (navigation as any)?.navigate?.("Dashboard");
     }
   };
 

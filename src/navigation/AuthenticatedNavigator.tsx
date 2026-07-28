@@ -13,18 +13,20 @@ import {
   EditItemScreen,
   AddItemScreen,
   AnalyzeScreen,
+  NotificationScreen,
 } from "../screens";
 
 const Stack = createNativeStackNavigator<AuthenticatedStackNavigatorParamList>();
 
 /**
- * Authenticated Navigator
- * Why: To provide a structured stack for logged-in users.
- * Hosts the bottom tab navigator as its root and secondary full-screen views.
+ * Authenticated Stack Navigator
+ * Why: Isolated stack for logged-in user features.
+ * Hosts the bottom tab navigator as its root screen alongside secondary screens and modals.
  */
 const AuthenticatedNavigator = () => {
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
+      {/* Root Bottom Tab Navigator */}
       <Stack.Screen name="Root" component={TabNavigator} />
 
       {/* Secondary Screens */}
@@ -33,18 +35,11 @@ const AuthenticatedNavigator = () => {
       <Stack.Screen name={ERootRoutes.PRIVACY_SECURITY} component={PrivacySecurityScreen} />
       <Stack.Screen name={ERootRoutes.HELP_SUPPORT} component={HelpSupportScreen} />
       <Stack.Screen name={ERootRoutes.ANALYZE} component={AnalyzeScreen} />
+      <Stack.Screen name={ERootRoutes.NOTIFICATIONS} component={NotificationScreen} />
 
-      {/* Screens that were previously Modals */}
-      <Stack.Screen
-        name={ERootRoutes.ITEM_DETAIL}
-        component={ItemDetailScreen}
-        options={{ presentation: "modal" }}
-      />
-      <Stack.Screen
-        name={ERootRoutes.EDIT_ITEM}
-        component={EditItemScreen}
-        options={{ presentation: "modal" }}
-      />
+      {/* Modal Overlay Screens */}
+      <Stack.Screen name={ERootRoutes.ITEM_DETAIL} component={ItemDetailScreen} />
+      <Stack.Screen name={ERootRoutes.EDIT_ITEM} component={EditItemScreen} />
       <Stack.Screen name={ERootRoutes.ADD_ITEM} component={AddItemScreen} />
     </Stack.Navigator>
   );
