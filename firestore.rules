@@ -156,7 +156,7 @@ service cloud.firestore {
             (request.resource.data.familyId == null && request.resource.data.role == "member")
             || (
               request.resource.data.familyId == resource.data.familyId
-              && (request.resource.data.role == "owner" || request.resource.data.role == "member")
+              && (request.resource.data.role == "owner" || request.resource.data.role == "member" || request.resource.data.role == "admin")
             )
           )
         );

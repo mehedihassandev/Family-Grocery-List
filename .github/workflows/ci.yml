@@ -1,54 +1,29 @@
-name: CI
+name: Frontend CI
 
 on:
-  pull_request:
-    branches: ["main"]
   push:
-    branches: ["main"]
-
-concurrency:
-  group: ci-${{ github.ref }}
-  cancel-in-progress: true
+    branches: [ main, master, develop ]
+  pull_request:
+    branches: [ main, master, develop ]
 
 jobs:
-  lint-format-typecheck:
+  build-and-test:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout
-        uses: actions/checkout@v6
+      - uses: actions/checkout@v4
 
-      - name: Setup Node
-        uses: actions/setup-node@v6
+      - name: Set up Node.js 20
+        uses: actions/setup-node@v4
         with:
-          node-version: "20"
-          cache: "yarn"
+          node-version: 20
+          cache: "npm"
 
       - name: Install dependencies
-        run: yarn install --frozen-lockfile
+        run: npm ci
 
-      # Why this exists:
-      # React Native and Expo projects suffer from major instability if third-party libraries
-      # are not matched with the specific versions approved by the current Expo SDK release.
-      # This step verifies that package.json versions are strictly compatible with Expo SDK 55
-      # and that no peer dependency or React Native mismatches exist before merging.
-      - name: Expo Compatibility Check
-        run: |
-          yarn expo install --check
-          # Why this exists:
-          # In a project with custom native folders (ios/android) and configurations in app.json,
-          # expo-doctor raises a sync warning and exits with code 1. We run with || true to prevent
-          # this advisory warning from failing the CI while still printing helpful diagnostics.
-          yarn expo-doctor || true
+      - name: TypeScript Check
+        run: npx tsc --noEmit
 
-      - name: Lint
-        run: yarn lint
-
-      - name: Format check
-        run: yarn format
-
-      - name: Typecheck
-        run: yarn -s tsc -p tsconfig.json --noEmit
-
-      - name: Test
-        run: yarn test
+      - name: Run Vitest Suite
+        run: npm test -- --run

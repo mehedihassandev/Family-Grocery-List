@@ -96,7 +96,36 @@ export const useToggleItemCompletionBackend = (familyId?: string | null) => {
       modifyGroceryItemApi(familyId ?? "", itemId, {
         status: currentStatus === "pending" ? "completed" : "pending",
       }),
-    onSuccess: (_, variables) => {
+    onMutate: async ({ itemId, currentStatus }) => {
+      await queryClient.cancelQueries({ queryKey: [GROCERY_ITEMS_QUERY_KEY, familyId] });
+
+      const previousItems = queryClient.getQueryData<IGroceryItem[]>([
+        GROCERY_ITEMS_QUERY_KEY,
+        familyId,
+      ]);
+
+      if (previousItems) {
+        queryClient.setQueryData<IGroceryItem[]>([GROCERY_ITEMS_QUERY_KEY, familyId], (old) =>
+          (old || []).map((item) =>
+            item.id === itemId
+              ? {
+                  ...item,
+                  status: currentStatus === "pending" ? "completed" : "pending",
+                  completedAt: currentStatus === "pending" ? new Date().toISOString() : null,
+                }
+              : item,
+          ),
+        );
+      }
+
+      return { previousItems };
+    },
+    onError: (_err, _variables, context) => {
+      if (context?.previousItems) {
+        queryClient.setQueryData([GROCERY_ITEMS_QUERY_KEY, familyId], context.previousItems);
+      }
+    },
+    onSettled: (_, __, variables) => {
       queryClient.invalidateQueries({
         queryKey: [GROCERY_ITEM_DETAIL_QUERY_KEY, variables.itemId],
       });
@@ -111,7 +140,28 @@ export const useDeleteGroceryItemBackend = (familyId?: string | null) => {
 
   return useMutation({
     mutationFn: (itemId: string) => removeGroceryItemApi(familyId ?? "", itemId),
-    onSuccess: () => {
+    onMutate: async (itemId) => {
+      await queryClient.cancelQueries({ queryKey: [GROCERY_ITEMS_QUERY_KEY, familyId] });
+
+      const previousItems = queryClient.getQueryData<IGroceryItem[]>([
+        GROCERY_ITEMS_QUERY_KEY,
+        familyId,
+      ]);
+
+      if (previousItems) {
+        queryClient.setQueryData<IGroceryItem[]>([GROCERY_ITEMS_QUERY_KEY, familyId], (old) =>
+          (old || []).filter((item) => item.id !== itemId),
+        );
+      }
+
+      return { previousItems };
+    },
+    onError: (_err, _itemId, context) => {
+      if (context?.previousItems) {
+        queryClient.setQueryData([GROCERY_ITEMS_QUERY_KEY, familyId], context.previousItems);
+      }
+    },
+    onSettled: () => {
       queryClient.invalidateQueries({ queryKey: [GROCERY_ITEMS_QUERY_KEY, familyId] });
       queryClient.invalidateQueries({ queryKey: [GROCERY_SUMMARY_QUERY_KEY, familyId] });
     },
