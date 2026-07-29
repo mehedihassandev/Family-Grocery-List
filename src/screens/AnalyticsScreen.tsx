@@ -667,6 +667,49 @@ const AnalyticsScreen = ({ navigation }: AnalyticsStackScreenProps) => {
               </Animated.View>
             )}
 
+            {/* MONTHLY CONSUMPTION & VOLUME STAPLES */}
+            {Boolean(
+              monthlyAnalytics?.topStapleConsumptions &&
+              monthlyAnalytics.topStapleConsumptions.length > 0,
+            ) && (
+              <Animated.View
+                entering={FadeInDown.duration(530).springify()}
+                className="px-6 py-5 border-b border-slate-100"
+              >
+                <View className="flex-row items-center justify-between mb-3">
+                  <View className="flex-row items-center">
+                    <TrendingUp size={16} color="#10B981" style={{ marginRight: 6 }} />
+                    <Text className="text-slate-900 text-[15px] font-extrabold tracking-tight">
+                      Monthly Consumption Volume
+                    </Text>
+                  </View>
+                  <Text className="text-[11px] font-bold text-emerald-600">Standardized Units</Text>
+                </View>
+
+                {monthlyAnalytics?.topStapleConsumptions.map((staple) => (
+                  <View
+                    key={staple.name}
+                    className="flex-row items-center justify-between py-2.5 border-b border-slate-100 last:border-b-0"
+                  >
+                    <View className="flex-1 mr-2">
+                      <Text className="font-bold text-slate-800 text-xs">{staple.name}</Text>
+                      <Text className="text-[10px] text-slate-400 font-medium">
+                        {staple.purchaseCount} purchases this month
+                      </Text>
+                    </View>
+                    <View className="items-end">
+                      <Text className="font-black text-emerald-700 text-xs">
+                        {staple.totalVolume} {staple.unit}
+                      </Text>
+                      <Text className="text-[10px] text-slate-500 font-bold">
+                        ৳{staple.totalSpentBDT}
+                      </Text>
+                    </View>
+                  </View>
+                ))}
+              </Animated.View>
+            )}
+
             {/* PRICE DROP MONITORS */}
             <Animated.View
               entering={FadeInDown.duration(540).springify()}

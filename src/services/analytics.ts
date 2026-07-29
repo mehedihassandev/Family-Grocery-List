@@ -14,6 +14,14 @@ export interface ICategorySpendBreakdown {
   color: string;
 }
 
+export interface IStapleConsumptionSummary {
+  name: string;
+  unit: string;
+  totalVolume: number;
+  totalSpentBDT: number;
+  purchaseCount: number;
+}
+
 export interface IMonthlyReportSummary {
   monthYearLabel: string;
   totalItemsConsumed: number;
@@ -23,6 +31,7 @@ export interface IMonthlyReportSummary {
   budgetUtilizationPercentage: number;
   mealBreakdown: IMealConsumptionBreakdown[];
   categoryBreakdown: ICategorySpendBreakdown[];
+  topStapleConsumptions: IStapleConsumptionSummary[];
 }
 
 const CATEGORY_COLORS: Record<string, string> = {
@@ -35,6 +44,25 @@ const CATEGORY_COLORS: Record<string, string> = {
   Household: "#64748B",
   Other: "#6B7280",
 };
+
+/**
+ * Auto-suggest price for an item based on historical purchases of the same item name
+ */
+export function getSuggestedPriceForItem(items: IGroceryItem[], itemName: string): number | null {
+  if (!itemName.trim() || !items.length) return null;
+  const normalized = itemName.trim().toLowerCase();
+
+  const match = items.find(
+    (item) =>
+      item.name.toLowerCase() === normalized &&
+      (typeof item.actualPrice === "number" ||
+        typeof item.unitPrice === "number" ||
+        typeof item.estimatedTotal === "number"),
+  );
+
+  if (!match) return null;
+  return match.actualPrice ?? match.unitPrice ?? match.estimatedTotal ?? null;
+}
 
 /**
  * Calculate detailed monthly consumption and meal analytics from grocery list data
@@ -76,14 +104,34 @@ export function calculateMonthlyAnalytics(
   };
 
   const categoryMap: Record<string, number> = {};
+  const stapleMap: Map<
+    string,
+    { unit: string; totalVolume: number; totalSpent: number; count: number }
+  > = new Map();
 
   monthlyItems.forEach((item) => {
-    const price = item.estimatedTotal || item.unitPrice || 120;
+    const price = item.actualPrice || item.estimatedTotal || item.unitPrice || 120;
     totalSpentBDT += price;
 
     // Category aggregation
     const cat = item.category || "Other";
     categoryMap[cat] = (categoryMap[cat] || 0) + price;
+
+    // Volume consumption aggregation
+    const itemNameKey = item.name.trim();
+    const qtyVal = parseFloat(item.quantity || "1") || 1;
+    const unitVal = item.unit || "pcs";
+
+    const existingStaple = stapleMap.get(itemNameKey) || {
+      unit: unitVal,
+      totalVolume: 0,
+      totalSpent: 0,
+      count: 0,
+    };
+    existingStaple.totalVolume += qtyVal;
+    existingStaple.totalSpent += price;
+    existingStaple.count += 1;
+    stapleMap.set(itemNameKey, existingStaple);
 
     // Meal type aggregation
     const meal = item.mealType || "General";
@@ -132,6 +180,18 @@ export function calculateMonthlyAnalytics(
     }),
   );
 
+  // Format Top Consumed Staples
+  const topStapleConsumptions: IStapleConsumptionSummary[] = Array.from(stapleMap.entries())
+    .map(([name, data]) => ({
+      name,
+      unit: data.unit,
+      totalVolume: data.totalVolume,
+      totalSpentBDT: data.totalSpent,
+      purchaseCount: data.count,
+    }))
+    .sort((a, b) => b.purchaseCount - a.purchaseCount)
+    .slice(0, 5);
+
   const remainingBudgetBDT = Math.max(0, monthlyBudgetBDT - totalSpentBDT);
   const budgetUtilizationPercentage =
     monthlyBudgetBDT > 0 ? Math.min(100, Math.round((totalSpentBDT / monthlyBudgetBDT) * 100)) : 0;
@@ -145,5 +205,6 @@ export function calculateMonthlyAnalytics(
     budgetUtilizationPercentage,
     mealBreakdown,
     categoryBreakdown,
+    topStapleConsumptions,
   };
 }

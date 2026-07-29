@@ -31,6 +31,7 @@ import { useFamilyGroceryItemsBackend, useToggleItemCompletionBackend } from "..
 
 import ItemCard from "../components/ItemCard";
 import EmptyState from "../components/EmptyState";
+import { TripSummaryModal } from "../components/TripSummaryModal";
 import { sortLegacyGroceryItemsForHome } from "../features/grocery";
 import { AppHeader, ProgressBar } from "../components/ui";
 
@@ -69,6 +70,15 @@ const GroceryListScreen = ({ navigation }: ListStackScreenProps) => {
   const insets = useSafeAreaInsets();
   const [searchQuery, setSearchQuery] = useState("");
   const [undoState, setUndoState] = useState<IUndoState | null>(null);
+  const [summaryModal, setSummaryModal] = useState<{
+    visible: boolean;
+    items: IGroceryItem[];
+    totalSpent: number;
+  }>({
+    visible: false,
+    items: [],
+    totalSpent: 0,
+  });
 
   const [statusFilter, setStatusFilter] = useState<"all" | "pending" | "in_cart" | "completed">(
     "all",
@@ -568,14 +578,23 @@ const GroceryListScreen = ({ navigation }: ListStackScreenProps) => {
               if (!user?.familyId || !user?.uid) return;
               try {
                 Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
-                const inCartItemsList = items
-                  .filter((i) => i.status === "in_cart")
-                  .map((i) => ({ id: i.id, name: i.name }));
+                const inCartItemsFull = items.filter((i) => i.status === "in_cart");
+                const inCartItemsList = inCartItemsFull.map((i) => ({ id: i.id, name: i.name }));
+                const calculatedSpent = inCartItemsFull.reduce((acc, item) => {
+                  const price = item.actualPrice || item.estimatedTotal || item.unitPrice || 0;
+                  return acc + price;
+                }, 0);
 
                 const { checkoutCartItems } = await import("../services/grocery");
                 await checkoutCartItems(user.familyId, inCartItemsList, {
                   uid: user.uid,
                   name: user.displayName || "Family Member",
+                });
+
+                setSummaryModal({
+                  visible: true,
+                  items: inCartItemsFull,
+                  totalSpent: calculatedSpent,
                 });
                 refetch();
               } catch (err) {
@@ -635,6 +654,14 @@ const GroceryListScreen = ({ navigation }: ListStackScreenProps) => {
           </TouchableOpacity>
         </View>
       ) : null}
+
+      {/* Trip Cost Summary Modal */}
+      <TripSummaryModal
+        visible={summaryModal.visible}
+        items={summaryModal.items}
+        totalSpent={summaryModal.totalSpent}
+        onClose={() => setSummaryModal((prev) => ({ ...prev, visible: false }))}
+      />
     </SafeAreaView>
   );
 };

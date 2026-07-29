@@ -8,13 +8,20 @@ import {
   Platform,
 } from "react-native";
 import { X, Check } from "lucide-react-native";
-import { Priority, Category, AuthenticatedStackNavigatorScreenProps, ROUTES } from "../types";
-import { useAddGroceryItemBackend } from "../hooks";
+import {
+  AuthenticatedStackNavigatorScreenProps,
+  Category,
+  Priority,
+  ROUTES,
+  TItemUnit,
+} from "../types";
+import { useAddGroceryItemBackend, useFamilyGroceryItemsBackend } from "../hooks";
 import { addCustomCategory, subscribeToCategories, ICustomCategory } from "../services/categories";
 import { GROCERY_CATEGORIES } from "../features/grocery";
 import { InputField, PrimaryButton, Chip, StatusModal, LoadingOverlay } from "../components/ui";
 import { useAuthStore } from "../store/useAuthStore";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { getSuggestedPriceForItem } from "../services/analytics";
 
 const CATEGORIES: Category[] = [...GROCERY_CATEGORIES];
 const PRIORITIES: Priority[] = ["Low", "Medium", "Urgent"];
@@ -25,6 +32,19 @@ const MEAL_TYPES: ("General" | "Breakfast" | "Lunch" | "Dinner" | "Snacks")[] = 
   "Lunch",
   "Dinner",
   "Snacks",
+];
+const UNITS: TItemUnit[] = [
+  "pcs",
+  "kg",
+  "g",
+  "L",
+  "ml",
+  "pack",
+  "lb",
+  "oz",
+  "box",
+  "bottle",
+  "dozen",
 ];
 
 /**
@@ -44,6 +64,7 @@ const AddItemScreen = ({
     "General",
   );
   const [quantity, setQuantity] = useState("");
+  const [unit, setUnit] = useState<TItemUnit>("pcs");
   const [notes, setNotes] = useState("");
   const [recurrenceFrequency, setRecurrenceFrequency] = useState<"none" | "weekly" | "monthly">(
     "none",
@@ -58,7 +79,18 @@ const AddItemScreen = ({
   const [showAddCat, setShowAddCat] = useState(false);
 
   // TanStack Query Hook for Python Backend API
+  const { data: existingItems = [] } = useFamilyGroceryItemsBackend(familyId);
   const addMutation = useAddGroceryItemBackend(familyId);
+
+  // Auto-suggest price when typing item name
+  useEffect(() => {
+    if (name.trim() && !unitPriceInput) {
+      const suggestedPrice = getSuggestedPriceForItem(existingItems, name);
+      if (suggestedPrice !== null) {
+        setUnitPriceInput(suggestedPrice.toString());
+      }
+    }
+  }, [name, existingItems, unitPriceInput]);
 
   const [showSuccess, setShowSuccess] = useState(false);
   const [statusModal, setStatusModal] = useState<{
@@ -199,6 +231,7 @@ const AddItemScreen = ({
         category,
         priority,
         quantity: quantity.trim(),
+        unit,
         notes: notes.trim(),
         recurrenceFrequency,
         assignee: assigneeName.trim() ? { name: assigneeName.trim() } : null,
@@ -290,12 +323,13 @@ const AddItemScreen = ({
             inputClassName="h-16 text-lg font-bold"
           />
 
-          <View className="flex-row gap-4 mb-6">
+          <View className="flex-row gap-4 mb-3">
             <InputField
               label="QUANTITY"
-              placeholder="E.g. 2L, 1 Dozen"
+              placeholder="E.g. 2"
               value={quantity}
               onChangeText={setQuantity}
+              keyboardType="numeric"
               containerClassName="flex-1"
               inputClassName="h-14 font-bold"
             />
@@ -317,23 +351,44 @@ const AddItemScreen = ({
                     <TouchableOpacity
                       key={p}
                       onPress={() => setPriority(p)}
-                      activeOpacity={0.75}
-                      className={`flex-1 items-center justify-center rounded-xl h-full ${
+                      activeOpacity={0.7}
+                      className={`flex-1 h-full items-center justify-center rounded-xl ${
                         isActive ? activeStyle : ""
                       }`}
                     >
                       <Text
-                        className={`text-[10px] font-black uppercase tracking-wider ${
+                        className={`text-[12px] font-extrabold ${
                           isActive ? "text-white" : "text-text-muted"
                         }`}
                       >
-                        {p.charAt(0)}
+                        {p}
                       </Text>
                     </TouchableOpacity>
                   );
                 })}
               </View>
             </View>
+          </View>
+
+          {/* Unit Chips */}
+          <View className="mb-6">
+            <Text className="mb-2 ml-1 text-[11px] font-black uppercase tracking-[1.5px] text-text-muted">
+              UNIT OF MEASURE
+            </Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} className="flex-row py-1">
+              {UNITS.map((u) => {
+                const isActive = unit === u;
+                return (
+                  <Chip
+                    key={u}
+                    label={u}
+                    selected={isActive}
+                    onPress={() => setUnit(u)}
+                    className="mr-2 px-3.5 py-2"
+                  />
+                );
+              })}
+            </ScrollView>
           </View>
 
           {/* MEAL TYPE SELECTOR */}

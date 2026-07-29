@@ -1,5 +1,7 @@
 export type TPriority = "Urgent" | "High" | "Medium" | "Low";
 export type TItemStatus = "pending" | "in_cart" | "completed";
+export type TItemUnit =
+  "pcs" | "kg" | "g" | "L" | "ml" | "pack" | "lb" | "oz" | "box" | "bottle" | "dozen";
 
 export interface IGroceryActor {
   uid?: string;
@@ -14,6 +16,7 @@ export interface IGroceryItem {
   category: string;
   priority: TPriority;
   quantity?: string | null;
+  unit?: TItemUnit | null;
   notes?: string | null;
   status: TItemStatus;
   addedBy?: IGroceryActor | null;
@@ -30,6 +33,7 @@ export interface IGroceryItem {
   dueDate?: string | Date | null;
   reminderAt?: string | Date | null;
   unitPrice?: number | null;
+  actualPrice?: number | null;
   estimatedTotal?: number | null;
 
   // Meal & Consumption fields
@@ -57,6 +61,8 @@ export interface ICreateGroceryItemRequest {
   category?: string;
   priority?: TPriority;
   quantity?: string | null;
+  unit?: TItemUnit | null;
+  unitPrice?: number | null;
   notes?: string | null;
 }
 
@@ -65,6 +71,9 @@ export interface IUpdateGroceryItemRequest {
   category?: string | null;
   priority?: TPriority | null;
   quantity?: string | null;
+  unit?: TItemUnit | null;
+  unitPrice?: number | null;
+  actualPrice?: number | null;
   notes?: string | null;
   status?: TItemStatus | null;
   claimedBy?: IGroceryActor | null;
