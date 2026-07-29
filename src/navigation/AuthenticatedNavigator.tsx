@@ -13,6 +13,7 @@ import {
   AddItemScreen,
   AnalyticsScreen,
   NotificationScreen,
+  RecipePacksScreen,
 } from "../screens";
 
 const Stack = createNativeStackNavigator<AuthenticatedStackNavigatorParamList>();
@@ -35,6 +36,7 @@ const AuthenticatedNavigator = () => {
       <Stack.Screen name={ROUTES.HELP_SUPPORT} component={HelpSupportScreen} />
       <Stack.Screen name={ROUTES.ANALYZE} component={AnalyticsScreen} />
       <Stack.Screen name={ROUTES.NOTIFICATIONS} component={NotificationScreen} />
+      <Stack.Screen name={ROUTES.RECIPE_PACKS} component={RecipePacksScreen} />
 
       {/* Modal Overlay Screens */}
       <Stack.Screen name={ROUTES.ITEM_DETAIL} component={ItemDetailScreen} />

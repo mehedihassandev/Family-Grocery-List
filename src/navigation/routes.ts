@@ -27,6 +27,7 @@ export const ROUTES = {
   EDIT_ITEM: "EditItem",
   ANALYZE: "Analyze",
   NOTIFICATIONS: "Notifications",
+  RECIPE_PACKS: "RecipePacks",
 
   // ── Bottom tab screens ─────────────────────────────────────────────────────
   DASHBOARD: "Dashboard",

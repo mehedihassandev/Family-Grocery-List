@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useMemo } from "react";
 import { HomeStackScreenProps, ROUTES } from "../types";
 import { ScrollView, StatusBar, Text, View, TouchableOpacity, Image, Share } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -24,7 +24,6 @@ import {
   useTextFormatter,
 } from "../hooks";
 import { Card, ShortcutCard, ProgressBar, DonutChart, PriorityBadge } from "../components/ui";
-import { RecipePacksModal } from "../components/RecipePacksModal";
 import { useNotificationStore } from "../store/useNotificationStore";
 
 /**
@@ -35,8 +34,6 @@ const DashboardScreen = ({ navigation, onTabChange }: HomeStackScreenProps) => {
   const { user } = useAuthStore();
   const { toDate } = useDateFormatter();
   const { toInitial, toTrimmed } = useTextFormatter();
-
-  const [isRecipePacksOpen, setRecipePacksOpen] = useState(false);
 
   // TanStack Query Hooks
   const { data: family } = useFamilyDetails(user?.familyId);
@@ -293,7 +290,7 @@ const DashboardScreen = ({ navigation, onTabChange }: HomeStackScreenProps) => {
                   <ShortcutCard
                     icon={Sparkles}
                     label="Recipe AI"
-                    onPress={() => setRecipePacksOpen(true)}
+                    onPress={() => navigation.navigate(ROUTES.RECIPE_PACKS)}
                     iconBgColor="bg-purple-50/80"
                     iconColor="#7C3AED"
                   />
@@ -362,7 +359,7 @@ const DashboardScreen = ({ navigation, onTabChange }: HomeStackScreenProps) => {
               <View className="mb-5">
                 <TouchableOpacity
                   activeOpacity={0.88}
-                  onPress={() => setRecipePacksOpen(true)}
+                  onPress={() => navigation.navigate(ROUTES.RECIPE_PACKS)}
                   className="overflow-hidden rounded-3xl bg-primary-600 p-5 shadow-sm border border-primary-500"
                 >
                   <View className="flex-row items-center justify-between">
@@ -436,8 +433,6 @@ const DashboardScreen = ({ navigation, onTabChange }: HomeStackScreenProps) => {
           )}
         </View>
       </ScrollView>
-
-      <RecipePacksModal visible={isRecipePacksOpen} onClose={() => setRecipePacksOpen(false)} />
     </SafeAreaView>
   );
 };

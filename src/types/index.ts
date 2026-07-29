@@ -69,6 +69,8 @@ export type AuthenticatedStackNavigatorParamList = {
   [ROUTES.ANALYZE]: undefined;
   /** Notification feed */
   [ROUTES.NOTIFICATIONS]: undefined;
+  /** Recipe packs and AI builder screen */
+  [ROUTES.RECIPE_PACKS]: undefined;
 };
 
 /** Unauthenticated Stack — Screens available before login */
