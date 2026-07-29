@@ -14,6 +14,7 @@ import {
   IDataGrocerySummary,
   IGroceryItem,
   IUpdateGroceryItemRequest,
+  TItemStatus,
 } from "../../models/grocery";
 
 // ─── Query Keys ──────────────────────────────────────────────────────────────
@@ -82,6 +83,12 @@ export const useUpdateGroceryItemBackend = (familyId?: string | null) => {
   });
 };
 
+const getNextStatus = (currentStatus: TItemStatus): TItemStatus => {
+  if (currentStatus === "pending") return "in_cart";
+  if (currentStatus === "in_cart") return "completed";
+  return "pending";
+};
+
 export const useToggleItemCompletionBackend = (familyId?: string | null) => {
   const queryClient = useQueryClient();
 
@@ -91,11 +98,13 @@ export const useToggleItemCompletionBackend = (familyId?: string | null) => {
       currentStatus,
     }: {
       itemId: string;
-      currentStatus: "pending" | "completed";
-    }) =>
-      modifyGroceryItemApi(familyId ?? "", itemId, {
-        status: currentStatus === "pending" ? "completed" : "pending",
-      }),
+      currentStatus: TItemStatus;
+    }) => {
+      const nextStatus = getNextStatus(currentStatus);
+      return modifyGroceryItemApi(familyId ?? "", itemId, {
+        status: nextStatus,
+      });
+    },
     onMutate: async ({ itemId, currentStatus }) => {
       await queryClient.cancelQueries({ queryKey: [GROCERY_ITEMS_QUERY_KEY, familyId] });
 
@@ -104,14 +113,17 @@ export const useToggleItemCompletionBackend = (familyId?: string | null) => {
         familyId,
       ]);
 
+      const nextStatus = getNextStatus(currentStatus);
+
       if (previousItems) {
         queryClient.setQueryData<IGroceryItem[]>([GROCERY_ITEMS_QUERY_KEY, familyId], (old) =>
           (old || []).map((item) =>
             item.id === itemId
               ? {
                   ...item,
-                  status: currentStatus === "pending" ? "completed" : "pending",
-                  completedAt: currentStatus === "pending" ? new Date().toISOString() : null,
+                  status: nextStatus,
+                  completedAt: nextStatus === "completed" ? new Date().toISOString() : null,
+                  claimedAt: nextStatus === "in_cart" ? new Date().toISOString() : null,
                 }
               : item,
           ),

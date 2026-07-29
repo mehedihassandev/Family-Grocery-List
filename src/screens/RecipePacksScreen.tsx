@@ -9,6 +9,7 @@ import {
   TextInput,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import Animated, { FadeInDown } from "react-native-reanimated";
 import { Check, ShoppingBasket, Wand2 } from "lucide-react-native";
 
 import { useAddGroceryItemBackend, useRecipeToGrocery } from "../hooks";
@@ -163,6 +164,10 @@ const RECIPE_PACKS: IRecipePack[] = [
   },
 ];
 
+/**
+ * Cardless Recipe Packs Screen
+ * Why: Pure white canvas, zero boxed cards, hairline item rows.
+ */
 const RecipePacksScreen = ({ navigation }: any) => {
   const { user } = useAuthStore();
   const familyId = user?.familyId || "";
@@ -249,7 +254,7 @@ const RecipePacksScreen = ({ navigation }: any) => {
   };
 
   return (
-    <SafeAreaView edges={["top", "left", "right"]} className="flex-1 bg-slate-50">
+    <SafeAreaView edges={["top", "left", "right"]} className="flex-1 bg-white">
       <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
 
       {/* Header */}
@@ -263,158 +268,142 @@ const RecipePacksScreen = ({ navigation }: any) => {
 
       <ScrollView
         showsVerticalScrollIndicator={false}
-        className="flex-1 px-6 pt-4"
-        contentContainerStyle={{ paddingBottom: 100 }}
+        className="flex-1 px-6 pt-3 bg-white"
+        contentContainerStyle={{ paddingBottom: 140 }}
       >
-        {/* Subtitle/Description */}
-        <Text className="text-xs text-slate-500 mb-4 font-medium">
-          Quickly add curated meal bundles to your family grocery list, or use our smart AI to
-          translate any custom recipe into items instantly.
-        </Text>
-
-        {/* AI Recipe-to-Grocery REST API Converter Box */}
-        <View className="mb-5 bg-purple-50 border border-purple-200 rounded-2xl p-4 shadow-2xs">
-          <View className="flex-row items-center mb-2">
-            <Wand2 size={16} color="#8B5CF6" style={{ marginRight: 6 }} />
-            <Text className="text-xs font-bold text-purple-900">AI Recipe Converter</Text>
-          </View>
-          <View className="flex-row items-center bg-white rounded-xl border border-purple-200 px-3 py-1">
-            <TextInput
-              value={aiPrompt}
-              onChangeText={setAiPrompt}
-              placeholder="e.g. Beef Tehari for 6 people..."
-              placeholderTextColor="#94A3B8"
-              className="flex-1 text-xs font-medium text-slate-800 h-10"
-            />
-            <TouchableOpacity
-              onPress={handleAiRecipeConvert}
-              disabled={!aiPrompt.trim() || parseRecipeMutation.isPending}
-              className={`px-3.5 py-2 rounded-lg ${
-                aiPrompt.trim() ? "bg-purple-600" : "bg-slate-200"
-              }`}
-            >
-              {parseRecipeMutation.isPending ? (
-                <ActivityIndicator color="white" size="small" />
-              ) : (
-                <Text className="text-white font-bold text-[11px]">Convert</Text>
-              )}
-            </TouchableOpacity>
-          </View>
-        </View>
-
-        {/* Horizontal Pack Selector */}
-        <View className="mb-5">
-          <Text className="text-text-primary text-[14px] font-bold tracking-tight mb-3">
-            Select a Meal Pack
+        <Animated.View entering={FadeInDown.duration(350).springify()}>
+          <Text className="text-[13px] text-slate-500 mb-5 font-medium leading-5">
+            Quickly add curated meal bundles to your family grocery list, or use our smart AI to
+            translate any custom recipe into items instantly.
           </Text>
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={{ paddingRight: 16 }}
-          >
-            {RECIPE_PACKS.map((pack) => {
-              const isSelected = selectedPack.id === pack.id;
-              return (
-                <TouchableOpacity
-                  key={pack.id}
-                  onPress={() => handleSelectPack(pack)}
-                  activeOpacity={0.8}
-                  className={`mr-3 p-4 rounded-2xl border flex-row items-center min-w-[170px] ${
-                    isSelected
-                      ? "bg-primary-600 border-primary-600 shadow-sm"
-                      : "bg-white border-slate-200 shadow-2xs"
-                  }`}
-                >
-                  <Text className="text-2xl mr-3">{pack.icon}</Text>
-                  <View className="flex-1">
+
+          {/* AI Recipe Converter (Cardless & Non-Clipped) */}
+          <View className="mb-6 py-4 border-b border-slate-100">
+            <View className="flex-row items-center mb-3">
+              <Wand2 size={16} color="#7C3AED" style={{ marginRight: 6 }} />
+              <Text className="text-[14px] font-extrabold text-purple-900">
+                AI Recipe Converter
+              </Text>
+            </View>
+            <View className="flex-row items-center bg-slate-50 rounded-xl border border-slate-100 px-4 py-2">
+              <TextInput
+                value={aiPrompt}
+                onChangeText={setAiPrompt}
+                placeholder="e.g. Beef Tehari for 6 people..."
+                placeholderTextColor="#94A3B8"
+                className="flex-1 text-[14px] font-medium text-slate-800 py-2"
+              />
+              <TouchableOpacity
+                onPress={handleAiRecipeConvert}
+                disabled={!aiPrompt.trim() || parseRecipeMutation.isPending}
+                className={`px-4 py-2.5 rounded-lg ${
+                  aiPrompt.trim() ? "bg-purple-600" : "bg-slate-200"
+                }`}
+              >
+                {parseRecipeMutation.isPending ? (
+                  <ActivityIndicator color="white" size="small" />
+                ) : (
+                  <Text className="text-white font-extrabold text-[12px]">Convert</Text>
+                )}
+              </TouchableOpacity>
+            </View>
+          </View>
+
+          {/* Horizontal Pack Selector */}
+          <View className="mb-6">
+            <Text className="text-slate-900 text-[16px] font-extrabold tracking-tight mb-3">
+              Select a Meal Pack
+            </Text>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={{ paddingRight: 16 }}
+            >
+              {RECIPE_PACKS.map((pack) => {
+                const isSelected = selectedPack.id === pack.id;
+                return (
+                  <TouchableOpacity
+                    key={pack.id}
+                    onPress={() => handleSelectPack(pack)}
+                    activeOpacity={0.8}
+                    className={`mr-2.5 px-4 py-2.5 rounded-full flex-row items-center ${
+                      isSelected ? "bg-emerald-600" : "bg-slate-50"
+                    }`}
+                  >
+                    <Text className="text-lg mr-2">{pack.icon}</Text>
                     <Text
-                      className={`text-[14px] font-bold ${
-                        isSelected ? "text-white" : "text-text-primary"
+                      className={`text-[13px] font-extrabold ${
+                        isSelected ? "text-white" : "text-slate-700"
                       }`}
-                      numberOfLines={1}
                     >
                       {pack.title}
                     </Text>
-                    <Text
-                      className={`text-[10px] font-semibold mt-0.5 ${
-                        isSelected ? "text-primary-100" : "text-text-muted"
-                      }`}
-                    >
-                      {pack.items.length} items
-                    </Text>
-                  </View>
-                </TouchableOpacity>
-              );
-            })}
-          </ScrollView>
-        </View>
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
+          </View>
 
-        {/* Pack Details & Item Checkbox List */}
-        <View className="rounded-3xl border border-slate-200 bg-white p-5 shadow-2xs">
-          <View className="flex-row items-center justify-between mb-2">
-            <View className="flex-row items-center">
-              <Text className="text-2xl mr-2">{selectedPack.icon}</Text>
-              <Text className="text-[17px] font-bold text-text-primary">{selectedPack.title}</Text>
-            </View>
-            <View className="bg-primary-50 px-3 py-1 rounded-xl border border-primary-100">
-              <Text className="text-[10px] font-bold text-primary-700 uppercase tracking-wider">
+          {/* Pack Details & Items List (Spacious Cardless Rows) */}
+          <View className="py-2">
+            <View className="flex-row items-center justify-between mb-1.5">
+              <View className="flex-row items-center">
+                <Text className="text-2xl mr-2">{selectedPack.icon}</Text>
+                <Text className="text-[18px] font-black text-slate-900">{selectedPack.title}</Text>
+              </View>
+              <Text className="text-[11px] font-bold text-emerald-700 uppercase tracking-wider">
                 {selectedPack.tag}
               </Text>
             </View>
-          </View>
-          <Text className="text-[13px] text-text-secondary mb-4 leading-5">
-            {selectedPack.description}
-          </Text>
+            <Text className="text-[13px] text-slate-500 mb-5 leading-5 font-medium">
+              {selectedPack.description}
+            </Text>
 
-          <View className="h-[1px] bg-slate-100 mb-4" />
-
-          {/* Render all list items directly on screen (no double scroll) */}
-          <View>
-            {selectedPack.items.map((item: IRecipeItem) => {
-              const checked = selectedItemNames.includes(item.name);
-              return (
-                <TouchableOpacity
-                  key={item.name}
-                  onPress={() => toggleItemSelection(item.name)}
-                  activeOpacity={0.8}
-                  className="mb-2.5 flex-row items-center justify-between rounded-2xl border border-slate-100 bg-slate-50/60 p-3"
-                >
-                  <View className="flex-row items-center flex-1 mr-3">
-                    <View
-                      className={`h-6 w-6 items-center justify-center rounded-lg border mr-3 ${
-                        checked ? "bg-primary-500 border-primary-500" : "bg-white border-slate-300"
-                      }`}
-                    >
-                      {checked && <Check size={14} stroke="white" strokeWidth={3} />}
+            <View className="border-t border-slate-100 pt-1">
+              {selectedPack.items.map((item: IRecipeItem) => {
+                const checked = selectedItemNames.includes(item.name);
+                return (
+                  <TouchableOpacity
+                    key={item.name}
+                    onPress={() => toggleItemSelection(item.name)}
+                    activeOpacity={0.8}
+                    className="py-4 flex-row items-center justify-between border-b border-slate-100"
+                  >
+                    <View className="flex-row items-center flex-1 mr-3">
+                      <View
+                        className={`h-6 w-6 items-center justify-center rounded-full border mr-3 ${
+                          checked
+                            ? "bg-emerald-600 border-emerald-600"
+                            : "bg-white border-slate-300"
+                        }`}
+                      >
+                        {checked && <Check size={13} stroke="white" strokeWidth={3} />}
+                      </View>
+                      <Text
+                        className={`text-[15px] font-extrabold flex-1 ${
+                          checked ? "text-slate-900" : "text-slate-400 line-through"
+                        }`}
+                        numberOfLines={1}
+                      >
+                        {item.name}
+                      </Text>
                     </View>
-                    <Text
-                      className={`text-[14px] font-bold flex-1 ${
-                        checked ? "text-text-primary" : "text-text-muted line-through"
-                      }`}
-                      numberOfLines={1}
-                    >
-                      {item.name}
-                    </Text>
-                  </View>
 
-                  <View className="bg-white px-2.5 py-1 rounded-lg border border-slate-200">
-                    <Text className="text-[11px] font-bold text-text-secondary">
-                      {item.quantity}
-                    </Text>
-                  </View>
-                </TouchableOpacity>
-              );
-            })}
+                    <Text className="text-[13px] font-bold text-slate-600">{item.quantity}</Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
           </View>
-        </View>
+        </Animated.View>
       </ScrollView>
 
-      {/* Floating/Fixed Sticky Action Button */}
-      <View className="absolute bottom-0 left-0 right-0 bg-white border-t border-slate-100 px-6 py-4 shadow-lg">
+      {/* Floating Sticky Action Button */}
+      <View className="absolute bottom-0 left-0 right-0 bg-white border-t border-slate-100 px-6 py-3">
         {successCount !== null ? (
-          <View className="h-[52px] rounded-2xl bg-primary-500 items-center justify-center flex-row">
-            <Check size={20} stroke="white" strokeWidth={3} className="mr-2" />
-            <Text className="text-[15px] font-bold text-white">
+          <View className="h-[48px] rounded-xl bg-emerald-600 items-center justify-center flex-row">
+            <Check size={18} stroke="white" strokeWidth={3} className="mr-2" />
+            <Text className="text-[14px] font-bold text-white">
               Added {successCount} items to list!
             </Text>
           </View>
@@ -422,8 +411,8 @@ const RecipePacksScreen = ({ navigation }: any) => {
           <TouchableOpacity
             onPress={handleAddBundleToList}
             disabled={adding || selectedItemNames.length === 0}
-            activeOpacity={0.8}
-            className={`h-[52px] rounded-2xl bg-primary-600 items-center justify-center flex-row shadow-lg shadow-primary-500/25 ${
+            activeOpacity={0.85}
+            className={`h-[48px] rounded-xl bg-emerald-600 items-center justify-center flex-row ${
               selectedItemNames.length === 0 || adding ? "opacity-50" : ""
             }`}
           >
@@ -431,8 +420,8 @@ const RecipePacksScreen = ({ navigation }: any) => {
               <ActivityIndicator color="white" />
             ) : (
               <>
-                <ShoppingBasket size={18} stroke="white" className="mr-2" />
-                <Text className="text-[15px] font-bold text-white">
+                <ShoppingBasket size={17} stroke="white" className="mr-2" />
+                <Text className="text-[14px] font-bold text-white">
                   Add {selectedItemNames.length} Items to Family List
                 </Text>
               </>

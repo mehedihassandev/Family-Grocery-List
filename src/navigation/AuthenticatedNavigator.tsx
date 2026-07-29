@@ -25,7 +25,12 @@ const Stack = createNativeStackNavigator<AuthenticatedStackNavigatorParamList>()
  */
 const AuthenticatedNavigator = () => {
   return (
-    <Stack.Navigator screenOptions={{ headerShown: false }}>
+    <Stack.Navigator
+      screenOptions={{
+        headerShown: false,
+        contentStyle: { backgroundColor: "#FFFFFF" },
+      }}
+    >
       {/* Root Bottom Tab Navigator */}
       <Stack.Screen name={ROUTES.ROOT} component={TabNavigator} />
 

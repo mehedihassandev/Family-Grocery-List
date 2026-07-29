@@ -6,34 +6,56 @@ interface ICardProps {
   className?: string;
   style?: StyleProp<ViewStyle>;
   padding?: boolean;
+  variant?: "outlined" | "flat" | "ghost";
 }
 
 /**
-  Standard Card component with high-fidelity visual styling.
-  Why: Ensures consistent layout, rounded corners, and shadow elevation across the app.
+  Minimalist Card component with clean, elegant styling.
+  Why: Minimizes heavy card-based layouts and provides a borderless or soft-bordered aesthetic.
  */
-export const Card = ({ children, className, style, padding = true }: ICardProps) => {
+export const Card = ({
+  children,
+  className,
+  style,
+  padding = false,
+  variant = "ghost",
+}: ICardProps) => {
   return (
-    <View className={className} style={[styles.card, padding && styles.padding, style]}>
+    <View
+      className={className}
+      style={[
+        styles.base,
+        variant === "outlined" && styles.outlined,
+        variant === "flat" && styles.flat,
+        variant === "ghost" && styles.ghost,
+        padding && styles.padding,
+        style,
+      ]}
+    >
       {children}
     </View>
   );
 };
 
 const styles = StyleSheet.create({
-  card: {
-    borderRadius: 24,
+  base: {
+    backgroundColor: "transparent",
+  },
+  outlined: {
     borderWidth: 1,
-    borderColor: "#E2E8F0",
-    backgroundColor: "#FFFFFF",
-    shadowColor: "#0F172A",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.04,
-    shadowRadius: 12,
-    elevation: 2,
+    borderColor: "#F1F5F9",
+    borderRadius: 16,
+  },
+  flat: {
+    borderRadius: 16,
+    backgroundColor: "#FAFAFA",
+  },
+  ghost: {
+    backgroundColor: "transparent",
+    borderWidth: 0,
   },
   padding: {
-    padding: 20,
+    padding: 0,
   },
 });
 

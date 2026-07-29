@@ -9,6 +9,7 @@ import {
   RefreshControl,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import Animated, { FadeInDown } from "react-native-reanimated";
 import { Bell, Check, ShoppingBag, AlertCircle, Inbox, CheckCheck } from "lucide-react-native";
 
 import { ROUTES } from "../types";
@@ -19,9 +20,13 @@ import {
   useMarkAllNotificationsReadMutation,
 } from "../hooks/queries/useNotificationQueries";
 import { useDateFormatter } from "../hooks";
-import { AppHeader, Card } from "../components/ui";
+import { AppHeader } from "../components/ui";
 import { INotificationItem } from "../models/notification";
 
+/**
+ * Cardless Notifications Screen
+ * Why: Pure white canvas, hairline list dividers, zero boxed cards.
+ */
 const NotificationScreen = ({ navigation }: any) => {
   const { user } = useAuthStore();
   const { toRelativeTime } = useDateFormatter();
@@ -37,7 +42,6 @@ const NotificationScreen = ({ navigation }: any) => {
 
   const rawItems: INotificationItem[] = notifData?.items || [];
 
-  // Exclude actions performed by current user
   const feed = rawItems.filter((n) => n.actorUid !== myUid);
   const displayList = filter === "unread" ? feed.filter((n) => !n.isRead) : feed;
   const unreadItems = feed.filter((n) => !n.isRead);
@@ -72,19 +76,19 @@ const NotificationScreen = ({ navigation }: any) => {
   const getIconData = (type: string) => {
     const lowerType = type.toLowerCase();
     if (lowerType.includes("item_added") || lowerType.includes("add")) {
-      return { icon: ShoppingBag, color: "#3B82F6", bg: "bg-blue-50 border-blue-100" };
+      return { icon: ShoppingBag, color: "#2563EB", bg: "bg-blue-50" };
     }
     if (lowerType.includes("item_completed") || lowerType.includes("complete")) {
-      return { icon: Check, color: "#10B981", bg: "bg-emerald-50 border-emerald-100" };
+      return { icon: Check, color: "#059669", bg: "bg-emerald-50" };
     }
     if (lowerType.includes("urgent")) {
-      return { icon: AlertCircle, color: "#EF4444", bg: "bg-red-50 border-red-100" };
+      return { icon: AlertCircle, color: "#EF4444", bg: "bg-rose-50" };
     }
-    return { icon: Bell, color: "#64748B", bg: "bg-slate-50 border-slate-100" };
+    return { icon: Bell, color: "#475569", bg: "bg-slate-50" };
   };
 
   return (
-    <SafeAreaView edges={["top", "left", "right"]} className="flex-1 bg-slate-50">
+    <SafeAreaView edges={["top", "left", "right"]} className="flex-1 bg-white">
       <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
 
       {/* App Header with Back Button */}
@@ -96,17 +100,16 @@ const NotificationScreen = ({ navigation }: any) => {
         showNotification={false}
       />
 
-      {/* Sub-Header Controls */}
-      <View className="flex-row items-center justify-between px-6 py-3 bg-white border-b border-slate-200 shadow-xs">
-        {/* Tabs */}
-        <View className="flex-row items-center bg-slate-100 rounded-xl p-1 border border-slate-200">
+      {/* Sub-Header Controls with Breathing Space */}
+      <View className="flex-row items-center justify-between px-6 py-3 bg-white border-b border-slate-100">
+        <View className="flex-row items-center gap-2">
           <TouchableOpacity
             activeOpacity={0.7}
             onPress={() => setFilter("all")}
-            className={`rounded-lg px-4 py-1.5 ${filter === "all" ? "bg-white" : ""}`}
+            className={`rounded-full px-4 py-2 ${filter === "all" ? "bg-slate-900" : "bg-slate-50"}`}
           >
             <Text
-              className={`text-xs font-bold ${filter === "all" ? "text-emerald-700" : "text-slate-500"}`}
+              className={`text-[13px] font-extrabold ${filter === "all" ? "text-white" : "text-slate-600"}`}
             >
               All ({feed.length})
             </Text>
@@ -115,66 +118,56 @@ const NotificationScreen = ({ navigation }: any) => {
           <TouchableOpacity
             activeOpacity={0.7}
             onPress={() => setFilter("unread")}
-            className={`rounded-lg px-4 py-1.5 ${filter === "unread" ? "bg-white" : ""}`}
+            className={`rounded-full px-4 py-2 ${filter === "unread" ? "bg-slate-900" : "bg-slate-50"}`}
           >
-            <View className="flex-row items-center">
-              <Text
-                className={`text-xs font-bold ${filter === "unread" ? "text-emerald-700" : "text-slate-500"}`}
-              >
-                Unread
-              </Text>
-              {unreadItems.length > 0 && (
-                <View className="ml-1.5 px-1.5 py-0.5 rounded-full bg-emerald-600">
-                  <Text className="text-[10px] font-bold text-white">{unreadItems.length}</Text>
-                </View>
-              )}
-            </View>
+            <Text
+              className={`text-[13px] font-extrabold ${filter === "unread" ? "text-white" : "text-slate-600"}`}
+            >
+              Unread ({unreadItems.length})
+            </Text>
           </TouchableOpacity>
         </View>
 
-        {/* Mark All Read Action */}
         <TouchableOpacity
           activeOpacity={0.7}
           onPress={handleMarkAllRead}
           disabled={unreadItems.length === 0 || markAllReadMutation.isPending}
-          className={`flex-row items-center px-3 py-1.5 rounded-xl border border-emerald-200 bg-emerald-50 ${
-            unreadItems.length === 0 ? "opacity-40" : ""
-          }`}
+          className={`flex-row items-center ${unreadItems.length === 0 ? "opacity-40" : ""}`}
         >
-          <CheckCheck stroke="#059669" size={14} strokeWidth={2.5} style={{ marginRight: 4 }} />
-          <Text className="text-xs font-bold text-emerald-700">
+          <CheckCheck stroke="#059669" size={16} strokeWidth={2.5} style={{ marginRight: 5 }} />
+          <Text className="text-[13px] font-extrabold text-emerald-800">
             {markAllReadMutation.isPending ? "Updating..." : "Mark All Read"}
           </Text>
         </TouchableOpacity>
       </View>
 
       {errorMessage ? (
-        <View className="mx-6 mt-3 p-3 rounded-xl bg-red-50 border border-red-200">
-          <Text className="text-xs font-medium text-red-700">{errorMessage}</Text>
+        <View className="mx-6 mt-3 p-3 rounded-xl bg-rose-50 border border-rose-100">
+          <Text className="text-xs font-medium text-rose-700">{errorMessage}</Text>
         </View>
       ) : null}
 
       {/* Main Content */}
       {isLoading ? (
         <View className="flex-1 items-center justify-center">
-          <ActivityIndicator size="large" color="#10B981" />
+          <ActivityIndicator size="large" color="#059669" />
           <Text className="text-slate-400 text-xs mt-3 font-medium">Loading notifications...</Text>
         </View>
       ) : (
         <ScrollView
           showsVerticalScrollIndicator={false}
-          className="flex-1 px-6 pt-4"
-          contentContainerStyle={{ paddingBottom: 40 }}
+          className="flex-1 px-6 bg-white"
+          contentContainerStyle={{ paddingBottom: 100 }}
           refreshControl={
-            <RefreshControl refreshing={isRefetching} onRefresh={refetch} colors={["#10B981"]} />
+            <RefreshControl refreshing={isRefetching} onRefresh={refetch} colors={["#059669"]} />
           }
         >
           {displayList.length === 0 ? (
-            <View className="py-24 items-center justify-center">
-              <View className="h-20 w-20 items-center justify-center rounded-full bg-emerald-50 border border-emerald-100 mb-4">
-                <Inbox stroke="#10B981" size={32} strokeWidth={2} />
+            <View className="py-20 items-center justify-center">
+              <View className="h-14 w-14 items-center justify-center rounded-full bg-slate-50 mb-3">
+                <Inbox stroke="#059669" size={26} strokeWidth={2} />
               </View>
-              <Text className="text-lg font-black text-slate-800 text-center">
+              <Text className="text-base font-extrabold text-slate-900 text-center">
                 {filter === "unread" ? "No Unread Notifications" : "All Caught Up!"}
               </Text>
               <Text className="mt-1 text-xs leading-relaxed text-slate-500 text-center px-10">
@@ -184,57 +177,51 @@ const NotificationScreen = ({ navigation }: any) => {
               </Text>
             </View>
           ) : (
-            displayList.map((notif) => {
+            displayList.map((notif, index) => {
               const isUnread = !notif.isRead;
               const { icon: Icon, color, bg } = getIconData(notif.type);
 
               return (
-                <TouchableOpacity
+                <Animated.View
                   key={notif.id}
-                  activeOpacity={0.8}
-                  onPress={() => handleNotificationPress(notif)}
-                  className="mb-3"
+                  entering={FadeInDown.duration(250 + index * 30).springify()}
                 >
-                  <Card
-                    className={`p-4 rounded-2xl border ${
-                      isUnread
-                        ? "bg-white border-emerald-300 shadow-sm"
-                        : "bg-slate-50/70 border-slate-200 shadow-none"
-                    }`}
+                  <TouchableOpacity
+                    activeOpacity={0.8}
+                    onPress={() => handleNotificationPress(notif)}
+                    className="py-5 border-b border-slate-100 flex-row items-start"
                   >
-                    <View className="flex-row items-start">
-                      <View
-                        className={`mr-3.5 h-11 w-11 items-center justify-center rounded-2xl border ${bg}`}
-                      >
-                        <Icon stroke={color} size={20} strokeWidth={2.5} />
-                      </View>
-                      <View className="flex-1">
-                        <View className="flex-row items-center justify-between mb-0.5">
-                          <Text
-                            className={`text-sm tracking-tight ${
-                              isUnread ? "font-bold text-slate-900" : "font-semibold text-slate-600"
-                            }`}
-                          >
-                            {notif.title}
-                          </Text>
-                          <Text className="text-[10px] font-medium text-slate-400">
-                            {toRelativeTime(notif.createdAt, "Just now")}
-                          </Text>
-                        </View>
+                    <View
+                      className={`mr-4 h-11 w-11 items-center justify-center rounded-full ${bg} border border-slate-100`}
+                    >
+                      <Icon stroke={color} size={19} strokeWidth={2.2} />
+                    </View>
+                    <View className="flex-1">
+                      <View className="flex-row items-center justify-between mb-1.5">
                         <Text
-                          className={`text-xs leading-relaxed ${
-                            isUnread ? "text-slate-700 font-medium" : "text-slate-500"
+                          className={`text-[16px] tracking-tight ${
+                            isUnread ? "font-black text-slate-900" : "font-extrabold text-slate-800"
                           }`}
                         >
-                          {notif.body}
+                          {notif.title}
+                        </Text>
+                        <Text className="text-[12px] font-bold text-slate-400">
+                          {toRelativeTime(notif.createdAt, "Just now")}
                         </Text>
                       </View>
-                      {isUnread && (
-                        <View className="ml-2 mt-1.5 h-2.5 w-2.5 rounded-full bg-emerald-600" />
-                      )}
+                      <Text
+                        className={`text-[14px] leading-6 mt-1 ${
+                          isUnread ? "text-slate-800 font-medium" : "text-slate-500"
+                        }`}
+                      >
+                        {notif.body}
+                      </Text>
                     </View>
-                  </Card>
-                </TouchableOpacity>
+                    {isUnread && (
+                      <View className="ml-3 mt-2 h-2.5 w-2.5 rounded-full bg-emerald-600" />
+                    )}
+                  </TouchableOpacity>
+                </Animated.View>
               );
             })
           )}

@@ -11,6 +11,8 @@ import {
 } from "react-native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
+import Animated, { FadeInDown } from "react-native-reanimated";
+import * as Haptics from "expo-haptics";
 import { IGroceryItem, ListStackScreenProps, ROUTES } from "../types";
 
 import {
@@ -22,7 +24,6 @@ import {
   ChevronUp,
   X,
   CheckCircle2,
-  AlertCircle,
   ShoppingBag,
 } from "lucide-react-native";
 import { useAuthStore } from "../store/useAuthStore";
@@ -48,9 +49,6 @@ interface IUndoState {
   familyId: string;
 }
 
-/**
- * Maps Data API error messages to user-friendly strings
- */
 const getDataApiErrorMessage = (error: Error) => {
   const message = error.message || "";
   if (message.includes("status 500")) {
@@ -63,15 +61,18 @@ const getDataApiErrorMessage = (error: Error) => {
 };
 
 /**
- * Main grocery list screen
- * Why: To allow users to view, search, filter, and manage grocery items in their family list via Python backend API with a modern glassmorphic interface.
+ * Modern Grocery List Screen
+ * Why: Pure white background aesthetic, sleek search bar, and borderless layout.
  */
-const GroceryListScreen = ({ navigation, onTabChange }: ListStackScreenProps) => {
+const GroceryListScreen = ({ navigation }: ListStackScreenProps) => {
   const { user } = useAuthStore();
   const insets = useSafeAreaInsets();
   const [searchQuery, setSearchQuery] = useState("");
   const [undoState, setUndoState] = useState<IUndoState | null>(null);
 
+  const [statusFilter, setStatusFilter] = useState<"all" | "pending" | "in_cart" | "completed">(
+    "all",
+  );
   const [isRefreshing, setRefreshing] = useState(false);
   const [showCompleted, setShowCompleted] = useState(false);
   const undoTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -89,66 +90,62 @@ const GroceryListScreen = ({ navigation, onTabChange }: ListStackScreenProps) =>
 
   const sortedItems = useMemo(() => sortLegacyGroceryItemsForHome(items), [items]);
 
-  /**
-   * Checks if a completed item was completed within the past 30 days (from today to 30 days back)
-   * Note: toTimestampMs is defined inline here — it has no external deps so moving it
-   * inside the callback is the recommended React fix to avoid a new reference each render.
-   */
-  const isCompletedThisMonth = useCallback(
-    (item: IGroceryItem): boolean => {
-      const toTimestampMs = (value: unknown): number | null => {
-        if (!value) return null;
-        if (value instanceof Date) {
-          const t = value.getTime();
-          return Number.isNaN(t) ? null : t;
+  const isCompletedThisMonth = useCallback((item: IGroceryItem): boolean => {
+    const toTimestampMs = (value: unknown): number | null => {
+      if (!value) return null;
+      if (value instanceof Date) {
+        const t = value.getTime();
+        return Number.isNaN(t) ? null : t;
+      }
+      if (typeof value === "number") {
+        if (Number.isNaN(value)) return null;
+        return value > 1e11 ? value : value * 1000;
+      }
+      if (typeof value === "string") {
+        const parsed = new Date(value).getTime();
+        if (!Number.isNaN(parsed)) return parsed;
+      }
+      if (typeof value === "object") {
+        const obj = value as any;
+        if (typeof obj.toMillis === "function") {
+          const ms = obj.toMillis();
+          return typeof ms === "number" && !Number.isNaN(ms) ? ms : null;
         }
-        if (typeof value === "number") {
-          if (Number.isNaN(value)) return null;
-          return value > 1e11 ? value : value * 1000;
+        const seconds = obj.seconds ?? obj._seconds;
+        if (typeof seconds === "number") {
+          const nanos = obj.nanoseconds ?? obj._nanoseconds ?? 0;
+          return seconds * 1000 + Math.floor(nanos / 1_000_000);
         }
-        if (typeof value === "string") {
-          const parsed = new Date(value).getTime();
-          if (!Number.isNaN(parsed)) return parsed;
-        }
-        if (typeof value === "object") {
-          const obj = value as any;
-          if (typeof obj.toMillis === "function") {
-            const ms = obj.toMillis();
-            return typeof ms === "number" && !Number.isNaN(ms) ? ms : null;
-          }
-          const seconds = obj.seconds ?? obj._seconds;
-          if (typeof seconds === "number") {
-            const nanos = obj.nanoseconds ?? obj._nanoseconds ?? 0;
-            return seconds * 1000 + Math.floor(nanos / 1_000_000);
-          }
-        }
-        return null;
-      };
+      }
+      return null;
+    };
 
-      if (item.status !== "completed") return false;
-      const timestampMs =
-        toTimestampMs(item.completedAt) ??
-        toTimestampMs(item.updatedAt) ??
-        toTimestampMs(item.createdAt);
+    if (item.status !== "completed") return false;
+    const timestampMs =
+      toTimestampMs(item.completedAt) ??
+      toTimestampMs(item.updatedAt) ??
+      toTimestampMs(item.createdAt);
 
-      if (timestampMs === null) return false;
+    if (timestampMs === null) return false;
 
-      const now = Date.now();
-      const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
-      return timestampMs >= now - THIRTY_DAYS_MS && timestampMs <= now + 60000;
-    },
-    [], // no external deps — toTimestampMs is pure and inlined above
-  );
+    const now = Date.now();
+    const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
+    return timestampMs >= now - THIRTY_DAYS_MS && timestampMs <= now + 60000;
+  }, []);
 
   // Overall Statistics
   const totalCount = items.length;
   const pendingCount = useMemo(() => items.filter((i) => i.status === "pending").length, [items]);
+  const inCartCount = useMemo(() => items.filter((i) => i.status === "in_cart").length, [items]);
   const completedCount = useMemo(
     () => items.filter((i) => i.status === "completed").length,
     [items],
   );
   const urgentCount = useMemo(
-    () => items.filter((i) => i.status === "pending" && i.priority === "Urgent").length,
+    () =>
+      items.filter(
+        (i) => (i.status === "pending" || i.status === "in_cart") && i.priority === "Urgent",
+      ).length,
     [items],
   );
   const completionProgress = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
@@ -157,6 +154,11 @@ const GroceryListScreen = ({ navigation, onTabChange }: ListStackScreenProps) =>
     const query = searchQuery.trim().toLowerCase();
 
     return sortedItems.filter((item: IGroceryItem) => {
+      // Filter by status tab if not 'all'
+      if (statusFilter !== "all" && item.status !== statusFilter) {
+        return false;
+      }
+
       if (!query) {
         return true;
       }
@@ -167,6 +169,7 @@ const GroceryListScreen = ({ navigation, onTabChange }: ListStackScreenProps) =>
         item.notes ?? "",
         item.quantity ?? "",
         item.addedBy?.name ?? "",
+        item.claimedBy?.name ?? "",
         item.assignee?.name ?? "",
       ]
         .join(" ")
@@ -174,12 +177,21 @@ const GroceryListScreen = ({ navigation, onTabChange }: ListStackScreenProps) =>
 
       return searchText.includes(query);
     });
-  }, [sortedItems, searchQuery]);
+  }, [sortedItems, searchQuery, statusFilter]);
 
   const sections = useMemo<IGrocerySection[]>(() => {
     const pending = filteredItems.filter((item: IGroceryItem) => item.status === "pending");
+    const inCart = filteredItems.filter((item: IGroceryItem) => item.status === "in_cart");
     const completedThisMonth = filteredItems.filter(isCompletedThisMonth);
     const output: IGrocerySection[] = [];
+
+    if (inCart.length > 0) {
+      output.push({
+        key: "in_cart",
+        title: "🛒 Currently in Cart",
+        data: inCart,
+      });
+    }
 
     if (pending.length > 0) {
       const grouped = pending.reduce<Record<string, IGroceryItem[]>>(
@@ -203,21 +215,17 @@ const GroceryListScreen = ({ navigation, onTabChange }: ListStackScreenProps) =>
         });
     }
 
-    if (completedThisMonth.length > 0 && showCompleted) {
+    if (completedThisMonth.length > 0 && (showCompleted || statusFilter === "completed")) {
       output.push({
         key: "completed",
-        title: "Completed Items (This Month)",
+        title: "Completed Items",
         data: completedThisMonth,
       });
     }
 
     return output;
-  }, [filteredItems, isCompletedThisMonth, showCompleted]);
+  }, [filteredItems, isCompletedThisMonth, showCompleted, statusFilter]);
 
-  /**
-   * Toggles the completion status of a grocery item
-   * @param item - The grocery item to toggle
-   */
   const handleToggle = async (item: IGroceryItem) => {
     if (!user) return;
     const isCompleting = item.status === "pending";
@@ -257,9 +265,6 @@ const GroceryListScreen = ({ navigation, onTabChange }: ListStackScreenProps) =>
   );
   const visibleCount = filteredItems.length;
 
-  /**
-   * Manually refreshes the list data
-   */
   const handleRefresh = async () => {
     setRefreshing(true);
     await refetch();
@@ -290,7 +295,7 @@ const GroceryListScreen = ({ navigation, onTabChange }: ListStackScreenProps) =>
   }, []);
 
   return (
-    <SafeAreaView edges={["top", "left", "right"]} className="flex-1 bg-background">
+    <SafeAreaView edges={["top", "left", "right"]} className="flex-1 bg-white">
       <StatusBar barStyle="dark-content" />
 
       <AppHeader
@@ -309,7 +314,7 @@ const GroceryListScreen = ({ navigation, onTabChange }: ListStackScreenProps) =>
           <TouchableOpacity
             onPress={() => refetch()}
             activeOpacity={0.85}
-            className="mt-4 flex-row items-center rounded-full bg-emerald-600 px-5 py-3 shadow-md shadow-emerald-600/30"
+            className="mt-4 flex-row items-center rounded-full bg-emerald-600 px-5 py-3 shadow-md"
           >
             <RefreshCw color="white" size={16} strokeWidth={2.4} />
             <Text className="ml-2 text-sm font-semibold text-white">Retry</Text>
@@ -328,92 +333,155 @@ const GroceryListScreen = ({ navigation, onTabChange }: ListStackScreenProps) =>
               onRefresh={handleRefresh}
               tintColor="#059669"
               colors={["#059669"]}
-              progressBackgroundColor="#f8faf8"
+              progressBackgroundColor="#FFFFFF"
             />
           }
-          contentContainerStyle={{ paddingBottom: 160 }}
+          contentContainerStyle={{ paddingBottom: 180 }}
           ListHeaderComponent={
-            <View className="px-5 pt-4">
-              {/* Vibrant Linear Gradient Hero Banner */}
-              <View className="mb-5 overflow-hidden rounded-3xl shadow-md shadow-emerald-900/20">
-                <LinearGradient
-                  colors={["#064E3B", "#059669", "#10B981"]}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 1 }}
-                  className="p-4"
-                >
-                  <View className="flex-row items-center justify-between mb-3">
-                    <View className="flex-row items-center flex-1 mr-2">
-                      <View className="h-10 w-10 rounded-2xl bg-white/15 border border-white/25 items-center justify-center mr-3">
-                        <ShoppingBag stroke="#FFFFFF" size={20} strokeWidth={2.2} />
-                      </View>
-                      <View className="flex-1">
-                        <Text className="text-[17px] font-extrabold text-white tracking-tight">
-                          {pendingCount === 0
-                            ? "All items bought! 🎉"
-                            : `${pendingCount} item${pendingCount === 1 ? "" : "s"} remaining`}
-                        </Text>
-                        <Text className="text-[12px] font-medium text-emerald-100/90 mt-0.5">
-                          {completedCount} of {totalCount} items checked off
-                        </Text>
-                      </View>
-                    </View>
-                    {urgentCount > 0 && (
-                      <View className="flex-row items-center bg-rose-500/25 px-2.5 py-1 rounded-full border border-rose-300/40">
-                        <AlertCircle stroke="#FECDD3" size={12} className="mr-1" />
-                        <Text className="text-[11px] font-bold text-white">
-                          {urgentCount} urgent
-                        </Text>
-                      </View>
-                    )}
+            <Animated.View entering={FadeInDown.duration(350).springify()} className="px-6 pt-4">
+              {/* Flat Clean Summary Line with Breathing Space */}
+              <View className="mb-6 pb-5 border-b border-slate-100">
+                <View className="flex-row items-center justify-between mb-3">
+                  <View className="flex-row items-center flex-1">
+                    <ShoppingBag stroke="#059669" size={22} strokeWidth={2.2} className="mr-2.5" />
+                    <Text className="text-[18px] font-black text-slate-900 tracking-tight">
+                      {pendingCount === 0
+                        ? "All items bought! 🎉"
+                        : `${pendingCount} item${pendingCount === 1 ? "" : "s"} remaining`}
+                    </Text>
                   </View>
-
-                  {totalCount > 0 && (
-                    <View className="mt-1">
-                      <ProgressBar
-                        progress={completionProgress}
-                        color="#FFFFFF"
-                        backgroundColor="rgba(255, 255, 255, 0.2)"
-                        height={8}
-                      />
+                  {urgentCount > 0 && (
+                    <View className="bg-rose-50 px-3 py-1 rounded-full border border-rose-100">
+                      <Text className="text-[11px] font-bold text-rose-700">
+                        {urgentCount} urgent
+                      </Text>
                     </View>
                   )}
-                </LinearGradient>
+                </View>
+
+                <View className="flex-row items-center justify-between mb-2">
+                  <Text className="text-[13px] font-medium text-slate-500">
+                    {completedCount} of {totalCount} items checked off ({completionProgress}%)
+                  </Text>
+                </View>
+                {totalCount > 0 && (
+                  <ProgressBar
+                    progress={completionProgress}
+                    color="#059669"
+                    backgroundColor="#F1F5F9"
+                    height={5}
+                  />
+                )}
               </View>
 
-              {/* Glassmorphic Search Bar */}
-              <View className="mb-4 flex-row items-center rounded-2xl border border-slate-200/90 bg-white/95 px-3.5 shadow-xs">
-                <Search stroke="#059669" size={18} />
+              {/* Minimalist Flat Search Input with Breathing Space */}
+              <View className="mb-4 flex-row items-center rounded-full bg-slate-100/70 px-4 h-12">
+                <Search stroke="#059669" size={17} />
                 <TextInput
                   value={searchQuery}
                   onChangeText={setSearchQuery}
                   placeholder={SEARCH_PLACEHOLDER}
                   placeholderTextColor="#94A3B8"
-                  className="ml-2.5 h-[50px] flex-1 text-[14px] font-semibold text-slate-900"
+                  className="ml-2.5 flex-1 text-[14px] font-semibold text-slate-900"
                 />
                 {searchQuery.length > 0 && (
                   <TouchableOpacity onPress={() => setSearchQuery("")} activeOpacity={0.7}>
-                    <X stroke="#94A3B8" size={18} />
+                    <X stroke="#94A3B8" size={16} />
                   </TouchableOpacity>
                 )}
               </View>
 
-              <View className="flex-row items-center justify-between mt-3 mb-2">
-                <Text className="text-[11px] font-bold uppercase tracking-[1.2px] text-slate-400">
+              {/* Status Filter Pills */}
+              <View className="flex-row items-center gap-2 mb-3">
+                <TouchableOpacity
+                  onPress={() => setStatusFilter("all")}
+                  activeOpacity={0.7}
+                  className={`px-3 py-1.5 rounded-full border ${
+                    statusFilter === "all"
+                      ? "bg-slate-900 border-slate-900"
+                      : "bg-slate-100/80 border-slate-200"
+                  }`}
+                >
+                  <Text
+                    className={`text-[12px] font-bold ${
+                      statusFilter === "all" ? "text-white" : "text-slate-600"
+                    }`}
+                  >
+                    All ({totalCount})
+                  </Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  onPress={() => setStatusFilter("pending")}
+                  activeOpacity={0.7}
+                  className={`px-3 py-1.5 rounded-full border ${
+                    statusFilter === "pending"
+                      ? "bg-emerald-600 border-emerald-600"
+                      : "bg-emerald-50 border-emerald-100"
+                  }`}
+                >
+                  <Text
+                    className={`text-[12px] font-bold ${
+                      statusFilter === "pending" ? "text-white" : "text-emerald-800"
+                    }`}
+                  >
+                    To Buy ({pendingCount})
+                  </Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  onPress={() => setStatusFilter("in_cart")}
+                  activeOpacity={0.7}
+                  className={`px-3 py-1.5 rounded-full border ${
+                    statusFilter === "in_cart"
+                      ? "bg-amber-500 border-amber-500"
+                      : "bg-amber-50 border-amber-100"
+                  }`}
+                >
+                  <Text
+                    className={`text-[12px] font-bold ${
+                      statusFilter === "in_cart" ? "text-white" : "text-amber-800"
+                    }`}
+                  >
+                    In Cart ({inCartCount})
+                  </Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  onPress={() => setStatusFilter("completed")}
+                  activeOpacity={0.7}
+                  className={`px-3 py-1.5 rounded-full border ${
+                    statusFilter === "completed"
+                      ? "bg-slate-700 border-slate-700"
+                      : "bg-slate-100 border-slate-200"
+                  }`}
+                >
+                  <Text
+                    className={`text-[12px] font-bold ${
+                      statusFilter === "completed" ? "text-white" : "text-slate-600"
+                    }`}
+                  >
+                    Bought ({completedCount})
+                  </Text>
+                </TouchableOpacity>
+              </View>
+
+              <View className="flex-row items-center justify-between mt-2 mb-2">
+                <Text className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
                   Showing {visibleCount} item{visibleCount === 1 ? "" : "s"}
                 </Text>
               </View>
-            </View>
+            </Animated.View>
           }
           renderSectionHeader={({ section }) => (
-            <View className="px-5 pb-2 pt-3 bg-background flex-row items-center justify-between">
+            <View className="px-6 pb-2 pt-5 bg-white flex-row items-center justify-between">
               <View className="flex-row items-center">
-                <View className="h-2 w-2 rounded-full bg-emerald-500 mr-2" />
-                <Text className="text-[12px] font-extrabold tracking-wider uppercase text-slate-700">
+                <View className="h-1.5 w-1.5 rounded-full bg-emerald-500 mr-2" />
+                <Text className="text-[11px] font-extrabold tracking-wider uppercase text-slate-700">
                   {section.title}
                 </Text>
               </View>
-              <View className="bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">
+              <View className="bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-100">
                 <Text className="text-[10px] font-bold text-emerald-800">
                   {section.data.length}
                 </Text>
@@ -434,16 +502,16 @@ const GroceryListScreen = ({ navigation, onTabChange }: ListStackScreenProps) =>
           )}
           ListEmptyComponent={
             <View className="items-center px-10 pb-8 pt-12">
-              <View className="mb-5 h-20 w-20 items-center justify-center rounded-3xl bg-emerald-50 border border-emerald-100 shadow-xs">
-                <ShoppingBasket stroke="#059669" size={34} strokeWidth={2} />
+              <View className="mb-4 h-16 w-16 items-center justify-center rounded-2xl bg-emerald-50 border border-emerald-100">
+                <ShoppingBasket stroke="#059669" size={28} strokeWidth={2} />
               </View>
-              <Text className="text-center text-[22px] font-extrabold tracking-tight text-slate-900">
+              <Text className="text-center text-lg font-extrabold tracking-tight text-slate-900">
                 No items found
               </Text>
-              <Text className="mt-2 text-center text-[14px] leading-5 text-slate-500">
+              <Text className="mt-1.5 text-center text-xs leading-5 text-slate-500">
                 {searchQuery
                   ? "Try adjusting your search query."
-                  : 'Tap "Add Items" below to add your first grocery item!'}
+                  : 'Tap "+" below to add your first grocery item!'}
               </Text>
             </View>
           }
@@ -453,17 +521,17 @@ const GroceryListScreen = ({ navigation, onTabChange }: ListStackScreenProps) =>
                 <TouchableOpacity
                   onPress={() => setShowCompleted((prev) => !prev)}
                   activeOpacity={0.8}
-                  className="flex-row items-center justify-center py-3.5 bg-white rounded-2xl border border-slate-200/90 mt-3 shadow-xs"
+                  className="flex-row items-center justify-center py-3 bg-white rounded-xl border border-slate-100 mt-2"
                 >
-                  <Text className="mr-2 text-[13px] font-bold text-slate-700">
+                  <Text className="mr-2 text-[12px] font-bold text-slate-700">
                     {showCompleted
                       ? "Hide completed items"
                       : `Show completed this month (${filteredCompletedThisMonthCount})`}
                   </Text>
                   {showCompleted ? (
-                    <ChevronUp stroke="#64748B" size={16} strokeWidth={2.5} />
+                    <ChevronUp stroke="#64748B" size={15} strokeWidth={2.5} />
                   ) : (
-                    <ChevronDown stroke="#64748B" size={16} strokeWidth={2.5} />
+                    <ChevronDown stroke="#64748B" size={15} strokeWidth={2.5} />
                   )}
                 </TouchableOpacity>
               </View>
@@ -472,17 +540,67 @@ const GroceryListScreen = ({ navigation, onTabChange }: ListStackScreenProps) =>
         />
       )}
 
-      {/* Vibrant Linear Gradient Floating Add Items Pill Button */}
+      {/* Industry Standard Bulk Checkout Floating Banner */}
+      {inCartCount > 0 && !undoState ? (
+        <Animated.View
+          entering={FadeInDown.duration(300).springify()}
+          className="absolute left-5 right-20 flex-row items-center justify-between rounded-2xl bg-slate-900 px-4 py-3 shadow-xl"
+          style={{
+            bottom: insets.bottom + 12,
+            zIndex: 50,
+            elevation: 10,
+          }}
+        >
+          <View className="flex-row items-center flex-1 mr-2">
+            <View className="h-8 w-8 rounded-full bg-amber-500/20 items-center justify-center mr-2.5">
+              <ShoppingBag stroke="#F59E0B" size={16} strokeWidth={2.5} />
+            </View>
+            <View className="flex-1">
+              <Text className="text-white font-black text-[13px]" numberOfLines={1}>
+                {inCartCount} item{inCartCount > 1 ? "s" : ""} in Cart
+              </Text>
+              <Text className="text-slate-400 font-medium text-[11px]">Ready to finish trip?</Text>
+            </View>
+          </View>
+
+          <TouchableOpacity
+            onPress={async () => {
+              if (!user?.familyId || !user?.uid) return;
+              try {
+                Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
+                const inCartItemsList = items
+                  .filter((i) => i.status === "in_cart")
+                  .map((i) => ({ id: i.id, name: i.name }));
+
+                const { checkoutCartItems } = await import("../services/grocery");
+                await checkoutCartItems(user.familyId, inCartItemsList, {
+                  uid: user.uid,
+                  name: user.displayName || "Family Member",
+                });
+                refetch();
+              } catch (err) {
+                console.error("Checkout failed:", err);
+              }
+            }}
+            activeOpacity={0.85}
+            className="bg-emerald-500 px-3.5 py-2 rounded-xl"
+          >
+            <Text className="text-white font-extrabold text-[12px]">Checkout</Text>
+          </TouchableOpacity>
+        </Animated.View>
+      ) : null}
+
+      {/* Modern Floating Add Item Button */}
       <TouchableOpacity
         onPress={() => (navigation as any).navigate(ROUTES.ADD_ITEM)}
-        activeOpacity={0.85}
-        className="absolute right-6 h-[60px] w-[60px] overflow-hidden rounded-2xl shadow-lg"
+        activeOpacity={0.88}
+        className="absolute right-6 h-[54px] w-[54px] overflow-hidden rounded-full shadow-md"
         style={{
-          bottom: insets.bottom,
-          elevation: 10,
+          bottom: insets.bottom + 8,
+          elevation: 8,
           shadowColor: "#059669",
-          shadowOpacity: 0.35,
-          shadowRadius: 10,
+          shadowOpacity: 0.3,
+          shadowRadius: 8,
         }}
       >
         <LinearGradient
@@ -491,27 +609,27 @@ const GroceryListScreen = ({ navigation, onTabChange }: ListStackScreenProps) =>
           end={{ x: 1, y: 1 }}
           className="h-full w-full items-center justify-center"
         >
-          <Plus color="white" size={28} strokeWidth={2.8} />
+          <Plus color="white" size={26} strokeWidth={2.5} />
         </LinearGradient>
       </TouchableOpacity>
 
       {undoState ? (
         <View
-          className="absolute left-5 right-5 flex-row items-center justify-between rounded-2xl border border-emerald-200 bg-white px-4 py-3 shadow-xl"
+          className="absolute left-5 right-5 flex-row items-center justify-between rounded-xl border border-emerald-200 bg-white px-4 py-3 shadow-lg"
           style={{
             bottom: 20,
             zIndex: 60,
-            elevation: 12,
+            elevation: 10,
           }}
         >
           <View className="flex-row items-center flex-1 mr-2">
-            <CheckCircle2 stroke="#059669" size={18} className="mr-2" />
-            <Text className="flex-1 text-[13px] font-semibold text-slate-900" numberOfLines={1}>
+            <CheckCircle2 stroke="#059669" size={16} className="mr-2" />
+            <Text className="flex-1 text-[12px] font-semibold text-slate-900" numberOfLines={1}>
               {`Marked "${undoState.itemName}" complete`}
             </Text>
           </View>
           <TouchableOpacity onPress={handleUndoComplete} activeOpacity={0.8}>
-            <Text className="text-[13px] font-bold uppercase tracking-wider text-emerald-600">
+            <Text className="text-[12px] font-bold uppercase tracking-wider text-emerald-600">
               Undo
             </Text>
           </TouchableOpacity>

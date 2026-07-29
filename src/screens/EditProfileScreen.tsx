@@ -97,7 +97,7 @@ const EditProfileScreen = ({
   };
 
   return (
-    <SafeAreaView edges={["top", "left", "right"]} className="flex-1 bg-background">
+    <SafeAreaView edges={["top", "left", "right"]} className="flex-1 bg-white">
       <LoadingOverlay visible={loading} />
       <StatusModal
         visible={statusModal.visible}

@@ -51,27 +51,27 @@ const AppHeader = ({
           <TouchableOpacity
             onPress={onBackPress}
             activeOpacity={0.7}
-            className="mr-4 h-11 w-11 items-center justify-center rounded-2xl bg-white border border-border shadow-xs"
+            className="mr-3 h-9 w-9 items-center justify-center rounded-full bg-slate-50 border border-slate-100"
             hitSlop={{ top: 10, right: 10, bottom: 10, left: 10 }}
           >
-            <ArrowLeft stroke="#475569" size={20} strokeWidth={2.5} />
+            <ArrowLeft stroke="#475569" size={18} strokeWidth={2.2} />
           </TouchableOpacity>
         )}
         <View className="flex-1">
           {eyebrow ? (
-            <Text className="mb-0.5 text-[11px] font-bold uppercase tracking-[0.08em] text-primary-500">
+            <Text className="mb-0.5 text-[10px] font-bold uppercase tracking-[0.08em] text-emerald-600">
               {eyebrow}
             </Text>
           ) : null}
           <Text
-            className="text-[28px] font-bold tracking-tight text-text-900 leading-tight"
+            className="text-[26px] font-extrabold tracking-tight text-slate-900 leading-tight"
             numberOfLines={1}
             adjustsFontSizeToFit
           >
             {title}
           </Text>
           {subtitle ? (
-            <Text className="mt-1 text-[13px] font-medium text-text-muted leading-5">
+            <Text className="mt-1 text-[13px] font-medium text-slate-500 leading-5">
               {subtitle}
             </Text>
           ) : null}
@@ -83,12 +83,12 @@ const AppHeader = ({
           <TouchableOpacity
             onPress={onNotificationPress}
             activeOpacity={0.7}
-            className="h-11 w-11 items-center justify-center rounded-2xl border border-border bg-white relative shadow-xs"
+            className="h-9 w-9 items-center justify-center rounded-full border border-slate-100 bg-slate-50 relative"
           >
-            <Bell stroke="#10B981" size={22} strokeWidth={2.2} />
+            <Bell stroke="#059669" size={18} strokeWidth={2} />
             {unreadCount > 0 && (
-              <View className="absolute -right-1 -top-1 h-5 min-w-[20px] items-center justify-center rounded-full bg-danger px-1 border-2 border-white">
-                <Text className="text-[9px] font-bold text-white">
+              <View className="absolute -right-1 -top-1 h-3.5 min-w-[14px] items-center justify-center rounded-full bg-rose-500 px-1 border border-white">
+                <Text className="text-[8px] font-bold text-white">
                   {unreadCount > 99 ? "99+" : unreadCount}
                 </Text>
               </View>

@@ -9,7 +9,13 @@ import {
   ActivityIndicator,
 } from "react-native";
 import { X, Check, Trash2 } from "lucide-react-native";
-import { AuthenticatedStackNavigatorScreenProps, Category, Priority, ROUTES } from "../types";
+import {
+  AuthenticatedStackNavigatorScreenProps,
+  Category,
+  Priority,
+  ROUTES,
+  TItemStatus,
+} from "../types";
 import {
   useGroceryItemBackend,
   useUpdateGroceryItemBackend,
@@ -42,7 +48,7 @@ const EditItemScreen = ({
   const [name, setName] = useState("");
   const [category, setCategory] = useState<string>("Other");
   const [priority, setPriority] = useState<Priority>("Medium");
-  const [itemStatus, setItemStatus] = useState<"pending" | "completed">("pending");
+  const [itemStatus, setItemStatus] = useState<TItemStatus>("pending");
   const [quantity, setQuantity] = useState("");
   const [notes, setNotes] = useState("");
   const [recurrenceFrequency, setRecurrenceFrequency] = useState<"none" | "weekly" | "monthly">(
@@ -290,7 +296,7 @@ const EditItemScreen = ({
 
   if (!itemId) {
     return (
-      <View className="flex-1 items-center justify-center bg-background">
+      <View className="flex-1 items-center justify-center bg-white">
         <Text className="text-text-muted">No item ID provided</Text>
         <TouchableOpacity onPress={() => navigation.goBack()} className="mt-4">
           <Text className="text-primary-600 font-bold">Go Back</Text>
@@ -301,7 +307,7 @@ const EditItemScreen = ({
 
   if (initialLoading) {
     return (
-      <View className="flex-1 items-center justify-center bg-background">
+      <View className="flex-1 items-center justify-center bg-white">
         <ActivityIndicator color="#10B981" size="large" />
       </View>
     );
@@ -309,7 +315,7 @@ const EditItemScreen = ({
 
   if (!item) {
     return (
-      <View className="flex-1 items-center justify-center bg-background">
+      <View className="flex-1 items-center justify-center bg-white">
         <Text className="text-text-muted">Item not found</Text>
         <TouchableOpacity onPress={() => navigation.goBack()} className="mt-4">
           <Text className="text-primary-600 font-bold">Go Back</Text>

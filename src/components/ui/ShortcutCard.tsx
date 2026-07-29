@@ -29,7 +29,7 @@ const ShortcutCard = ({
       className="flex-1 items-center justify-center py-1"
     >
       <View
-        className={`mb-1.5 h-12 w-12 items-center justify-center rounded-2xl border border-slate-100 shadow-2xs ${iconBgColor}`}
+        className={`mb-1.5 h-11 w-11 items-center justify-center rounded-full ${iconBgColor}`}
       >
         <Icon stroke={iconColor} size={20} strokeWidth={2} />
       </View>

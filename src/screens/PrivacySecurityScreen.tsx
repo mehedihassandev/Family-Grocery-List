@@ -2,24 +2,20 @@ import React from "react";
 import { View, Text, ScrollView, Linking, TouchableOpacity } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Shield, ExternalLink } from "lucide-react-native";
-import { SubHeader, Card } from "../components/ui";
+import { SubHeader } from "../components/ui";
 import { AuthenticatedStackNavigatorScreenProps, ROUTES } from "../types";
 
 interface IBulletListProps {
   items: string[];
 }
 
-/**
- * Renders a list of items with bullet points
- * @param props - Component props containing the array of strings to display
- */
 const BulletList = ({ items }: IBulletListProps) => {
   return (
-    <View className="gap-3">
+    <View className="gap-2.5 mt-2">
       {items.map((item) => (
         <View key={item} className="flex-row items-start">
-          <View className="mt-2 h-1.5 w-1.5 rounded-full bg-primary-500" />
-          <Text className="ml-3 flex-1 text-[13px] leading-5 text-text-secondary">{item}</Text>
+          <View className="mt-2 h-1.5 w-1.5 rounded-full bg-emerald-500 mr-2.5" />
+          <Text className="flex-1 text-[13px] leading-5 text-slate-600 font-medium">{item}</Text>
         </View>
       ))}
     </View>
@@ -27,16 +23,12 @@ const BulletList = ({ items }: IBulletListProps) => {
 };
 
 /**
- * Screen displaying privacy policy and security information
- * Why: To provide transparency to users about how their data is handled and secured within the Firebase ecosystem.
+ * Flat Privacy & Security Screen
+ * Why: Pure white canvas, readable typography, zero card clutter.
  */
 const PrivacySecurityScreen = ({
   navigation,
 }: AuthenticatedStackNavigatorScreenProps<typeof ROUTES.PRIVACY_SECURITY>) => {
-  /**
-   * Opens an external URL in the default browser
-   * @param url - The URL to open
-   */
   const openUrl = async (url: string) => {
     const canOpen = await Linking.canOpenURL(url);
     if (canOpen) {
@@ -45,92 +37,89 @@ const PrivacySecurityScreen = ({
   };
 
   return (
-    <SafeAreaView edges={["top", "left", "right"]} className="flex-1 bg-background">
+    <SafeAreaView edges={["top", "left", "right"]} className="flex-1 bg-white">
       <SubHeader title="Privacy & Security" onBackPress={() => navigation.goBack()} />
 
-      <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
-        <View className="p-6">
-          <View className="items-center mb-6">
-            <View className="h-16 w-16 items-center justify-center rounded-full bg-primary-50 mb-4">
-              <Shield stroke="#10B981" size={32} />
+      <ScrollView className="flex-1 bg-white" showsVerticalScrollIndicator={false}>
+        <View className="px-6 py-6">
+          <View className="items-center mb-8 pb-6 border-b border-slate-100">
+            <View className="h-16 w-16 items-center justify-center rounded-full bg-emerald-50 mb-3 border border-emerald-100">
+              <Shield stroke="#059669" size={30} />
             </View>
-            <Text className="text-[24px] font-black text-text-primary mb-2 text-center">
-              Your privacy matters
+            <Text className="text-[22px] font-black text-slate-900 mb-1 text-center">
+              Your Privacy Matters
             </Text>
-            <Text className="text-[15px] text-text-secondary text-center px-4">
-              Family Grocery List uses Firebase Authentication and Cloud Firestore to sync your data
-              across devices.
+            <Text className="text-[13px] text-slate-500 text-center leading-5 px-4 font-medium">
+              Family Grocery List uses Firebase Authentication and Cloud Firestore to securely sync
+              your list.
             </Text>
           </View>
 
-          <Card className="p-5 mb-4">
-            <Text className="text-[16px] font-bold text-text-900 mb-2">What data we store</Text>
-            <BulletList
-              items={[
-                "Account profile: your UID, email, display name, and photo.",
-                "Family membership: your family group ID and your role.",
-                "Grocery data: items, categories, and family notifications.",
-              ]}
-            />
-          </Card>
-
-          <Card className="p-5 mb-4">
-            <Text className="text-[16px] font-bold text-text-900 mb-2">
-              How access is protected
+          {/* Section 1 */}
+          <View className="mb-6 pb-6 border-b border-slate-100">
+            <Text className="text-[16px] font-extrabold text-slate-900 mb-1">
+              What Data We Store
             </Text>
             <BulletList
               items={[
-                "Sign-in is required for all application data access.",
-                "Firestore Security Rules scope data to your family group only.",
-                "Data is transmitted over encrypted (TLS) connections.",
+                "Account Profile: UID, email address, display name, and photo.",
+                "Family Membership: Group ID and assigned role.",
+                "Grocery Data: Items, categories, and family activity logs.",
               ]}
             />
-          </Card>
+          </View>
 
-          <Card className="p-5 mb-4">
-            <Text className="text-[16px] font-bold text-text-900 mb-2">Local storage</Text>
-            <Text className="text-[13px] leading-5 text-text-secondary">
-              The app persists your session on your device using AsyncStorage so you don&apos;t need
-              to log in every time you open the app. Avoid using shared devices for sensitive
-              accounts.
+          {/* Section 2 */}
+          <View className="mb-6 pb-6 border-b border-slate-100">
+            <Text className="text-[16px] font-extrabold text-slate-900 mb-1">
+              How Access is Protected
             </Text>
-          </Card>
+            <BulletList
+              items={[
+                "Authentication is required for all data endpoints.",
+                "Firestore Security Rules strictly scope data to your family group.",
+                "Data transmission is protected via TLS encryption.",
+              ]}
+            />
+          </View>
 
-          <Card className="p-5 mb-4">
-            <Text className="text-[16px] font-bold text-text-900 mb-2">Third-party services</Text>
-            <Text className="text-[13px] leading-5 text-text-secondary mb-4">
+          {/* Section 3 */}
+          <View className="mb-6 pb-6 border-b border-slate-100">
+            <Text className="text-[16px] font-extrabold text-slate-900 mb-1.5">Local Storage</Text>
+            <Text className="text-[13px] leading-5 text-slate-500 font-medium">
+              The app persists your session on your device using AsyncStorage for quick access.
+              Avoid using shared devices for sensitive accounts.
+            </Text>
+          </View>
+
+          {/* Section 4 */}
+          <View className="mb-6 pb-6 border-b border-slate-100">
+            <Text className="text-[16px] font-extrabold text-slate-900 mb-1.5">
+              Third-Party Policies
+            </Text>
+            <Text className="text-[13px] leading-5 text-slate-500 font-medium mb-3">
               This app relies on Google Sign-In and Firebase (Auth + Firestore). Their privacy
-              policies also apply to your data.
+              policies apply to your account data.
             </Text>
 
             <TouchableOpacity
               activeOpacity={0.7}
               onPress={() => openUrl("https://firebase.google.com/support/privacy")}
-              className="flex-row items-center justify-between rounded-md bg-surface-alt border border-border px-4 py-3"
+              className="flex-row items-center justify-between py-3 border-b border-slate-100"
             >
-              <Text className="text-[14px] font-bold text-text-900">Firebase Privacy</Text>
-              <ExternalLink stroke="#4A5568" size={18} />
+              <Text className="text-[13px] font-bold text-slate-800">Firebase Privacy Policy</Text>
+              <ExternalLink stroke="#94A3B8" size={16} />
             </TouchableOpacity>
-
-            <View className="h-3" />
 
             <TouchableOpacity
               activeOpacity={0.7}
               onPress={() => openUrl("https://policies.google.com/privacy")}
-              className="flex-row items-center justify-between rounded-md bg-surface-alt border border-border px-4 py-3"
+              className="flex-row items-center justify-between py-3"
             >
-              <Text className="text-[14px] font-bold text-text-900">Google Privacy</Text>
-              <ExternalLink stroke="#4A5568" size={18} />
+              <Text className="text-[13px] font-bold text-slate-800">Google Privacy Policy</Text>
+              <ExternalLink stroke="#94A3B8" size={16} />
             </TouchableOpacity>
-          </Card>
-
-          <Card className="p-5">
-            <Text className="text-[16px] font-bold text-text-900 mb-2">Important Note</Text>
-            <Text className="text-[13px] leading-5 text-text-secondary">
-              We use industry-standard safeguards to protect your data. While no internet service
-              can guarantee 100% security, we work hard to keep your information safe and private.
-            </Text>
-          </Card>
+          </View>
         </View>
       </ScrollView>
     </SafeAreaView>

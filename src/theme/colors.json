@@ -30,18 +30,18 @@
     "300": "#94A3B8"
   },
   "background": {
-    "DEFAULT": "#F8FAFC",
-    "alt": "#F1F5F9"
+    "DEFAULT": "#FFFFFF",
+    "alt": "#FFFFFF"
   },
   "surface": {
     "DEFAULT": "#FFFFFF",
-    "muted": "#F8FAFC",
-    "alt": "#F1F5F9",
-    "subtle": "#E2E8F0"
+    "muted": "#FAFAFA",
+    "alt": "#F8FAFC",
+    "subtle": "#F1F5F9"
   },
   "border": {
-    "DEFAULT": "#E2E8F0",
-    "muted": "#F1F5F9"
+    "DEFAULT": "#F1F5F9",
+    "muted": "#F8FAFC"
   },
   "status": {
     "urgent": "#EF4444",

@@ -1,5 +1,5 @@
 export type TPriority = "Urgent" | "High" | "Medium" | "Low";
-export type TItemStatus = "pending" | "completed";
+export type TItemStatus = "pending" | "in_cart" | "completed";
 
 export interface IGroceryActor {
   uid?: string;
@@ -17,9 +17,11 @@ export interface IGroceryItem {
   notes?: string | null;
   status: TItemStatus;
   addedBy?: IGroceryActor | null;
+  claimedBy?: IGroceryActor | null;
   completedBy?: IGroceryActor | null;
   createdAt?: string | Date | null;
   updatedAt?: string | Date | null;
+  claimedAt?: string | Date | null;
   completedAt?: string | Date | null;
 
   // Extended app fields for UI compatibility
@@ -41,6 +43,7 @@ export interface IGrocerySummary {
   familyId: string;
   totalItems: number;
   pendingItems: number;
+  inCartItems: number;
   completedItems: number;
   urgentItems: number;
   categoryTotals: Record<string, number>;
@@ -64,4 +67,6 @@ export interface IUpdateGroceryItemRequest {
   quantity?: string | null;
   notes?: string | null;
   status?: TItemStatus | null;
+  claimedBy?: IGroceryActor | null;
+  completedBy?: IGroceryActor | null;
 }

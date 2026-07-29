@@ -196,7 +196,7 @@ const FamilySetupScreen = ({ navigation }: any) => {
   if (mode === "selection") {
     const firstName = user?.displayName ? user.displayName.split(" ")[0] : "Friend";
     return (
-      <SafeAreaView className="flex-1 bg-background">
+      <SafeAreaView className="flex-1 bg-white">
         <ScrollView
           contentContainerStyle={{ paddingBottom: 40 }}
           showsVerticalScrollIndicator={false}
@@ -272,7 +272,7 @@ const FamilySetupScreen = ({ navigation }: any) => {
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-background">
+    <SafeAreaView className="flex-1 bg-white">
       <LoadingOverlay visible={loading} />
       <StatusModal
         visible={statusModal.visible}

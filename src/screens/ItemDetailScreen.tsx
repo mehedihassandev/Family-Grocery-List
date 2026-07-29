@@ -42,7 +42,7 @@ const ItemDetailScreen = ({
 
   if (loading) {
     return (
-      <View className="flex-1 items-center justify-center bg-background">
+      <View className="flex-1 items-center justify-center bg-white">
         <ActivityIndicator color="#10B981" size="large" />
       </View>
     );
@@ -50,7 +50,7 @@ const ItemDetailScreen = ({
 
   if (!item) {
     return (
-      <View className="flex-1 items-center justify-center bg-background">
+      <View className="flex-1 items-center justify-center bg-white">
         <Text className="text-text-muted">Item not found</Text>
         <TouchableOpacity onPress={() => navigation.goBack()} className="mt-4">
           <Text className="text-primary-600 font-bold">Go Back</Text>
@@ -63,7 +63,7 @@ const ItemDetailScreen = ({
     item.priority === "Urgent" ? "urgent" : item.priority === "Medium" ? "medium" : "low";
 
   return (
-    <View className="flex-1 bg-background" style={{ paddingTop: Math.max(insets.top, 20) }}>
+    <View className="flex-1 bg-white" style={{ paddingTop: Math.max(insets.top, 20) }}>
       <View className="flex-1 px-6">
         <View className="mb-8 flex-row items-start justify-between">
           <View className="flex-1 pr-4">

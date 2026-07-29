@@ -10,13 +10,14 @@ import {
   ActivityIndicator,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import Animated, { FadeInDown } from "react-native-reanimated";
 import { LogOut, Shield, HelpCircle, ChevronRight, Edit3, Users } from "lucide-react-native";
 
 import { useAuthStore } from "../store/useAuthStore";
 import { signOut } from "../services/auth";
 import { leaveFamily } from "../services/family";
 import { useTextFormatter } from "../hooks";
-import { AppHeader, Card, StatusModal } from "../components/ui";
+import { AppHeader, StatusModal } from "../components/ui";
 
 type TStatusModalType = "success" | "error" | "warning" | "confirm";
 
@@ -30,10 +31,12 @@ interface IStatusModalState {
 interface IMenuItemProps {
   icon: React.ComponentType<{ stroke?: string; size?: number; strokeWidth?: number }>;
   title: string;
+  subtitle?: string;
   onPress: () => void;
   isDestructive?: boolean;
   showChevron?: boolean;
-  rightElement?: React.ReactNode;
+  iconBgColor?: string;
+  iconColor?: string;
   loading?: boolean;
 }
 
@@ -46,6 +49,10 @@ const getFamilyActionErrorMessage = (error: unknown, fallback: string) => {
   return rawMessage.trim() || fallback;
 };
 
+/**
+ * Declutter-focused Profile & Settings Screen
+ * Why: Centered hero layout, spacious pastel menu rows, zero clutter.
+ */
 const ProfileScreen = ({ navigation }: ProfileStackScreenProps) => {
   const { user, setUser } = useAuthStore();
   const { toInitials } = useTextFormatter();
@@ -101,52 +108,47 @@ const ProfileScreen = ({ navigation }: ProfileStackScreenProps) => {
     }
   };
 
-  const SectionHeader = ({ title }: { title: string }) => (
-    <View className="mb-3 mt-6 px-1">
-      <Text className="text-[11px] font-bold uppercase tracking-[0.08em] text-primary-500">
-        {title}
-      </Text>
-    </View>
-  );
-
   const MenuItem = ({
     icon: Icon,
     title,
+    subtitle,
     onPress,
     isDestructive = false,
     showChevron = true,
-    rightElement,
+    iconBgColor = "bg-slate-50",
+    iconColor = "#475569",
     loading = false,
   }: IMenuItemProps) => (
     <TouchableOpacity
       activeOpacity={0.7}
       onPress={onPress}
       disabled={loading}
-      className="flex-row items-center py-4 px-5 border-b border-border last:border-b-0"
+      className="flex-row items-center py-4 border-b border-slate-100"
     >
       <View
-        className={
-          "mr-4 h-9 w-9 items-center justify-center rounded-md border border-border " +
-          (isDestructive ? "bg-danger-light" : "bg-surface-alt")
-        }
+        className={`mr-4 h-10 w-10 items-center justify-center rounded-full ${
+          isDestructive ? "bg-rose-50" : iconBgColor
+        }`}
       >
         {loading ? (
-          <ActivityIndicator size="small" color={isDestructive ? "#E55C5C" : "#10B981"} />
+          <ActivityIndicator size="small" color={isDestructive ? "#EF4444" : iconColor} />
         ) : (
-          <Icon stroke={isDestructive ? "#E55C5C" : "#4A5568"} size={18} strokeWidth={2.5} />
+          <Icon stroke={isDestructive ? "#EF4444" : iconColor} size={18} strokeWidth={2} />
         )}
       </View>
-      <Text
-        className={
-          "flex-1 text-[15px] font-bold " + (isDestructive ? "text-danger-dark" : "text-text-900")
-        }
-      >
-        {title}
-      </Text>
-      {rightElement}
-      {showChevron && !rightElement && (
-        <ChevronRight stroke="#9AA3AF" size={18} strokeWidth={2.5} />
-      )}
+      <View className="flex-1">
+        <Text
+          className={`text-[15px] font-extrabold ${
+            isDestructive ? "text-rose-600" : "text-slate-900"
+          }`}
+        >
+          {title}
+        </Text>
+        {subtitle ? (
+          <Text className="text-[11px] font-medium text-slate-400 mt-0.5">{subtitle}</Text>
+        ) : null}
+      </View>
+      {showChevron && <ChevronRight stroke="#CBD5E1" size={18} strokeWidth={2} />}
     </TouchableOpacity>
   );
 
@@ -156,7 +158,7 @@ const ProfileScreen = ({ navigation }: ProfileStackScreenProps) => {
       : "Are you sure you want to leave this family group?";
 
   return (
-    <SafeAreaView edges={["top", "left", "right"]} className="flex-1 bg-background">
+    <SafeAreaView edges={["top", "left", "right"]} className="flex-1 bg-white">
       <StatusBar barStyle="dark-content" />
       <AppHeader title="Profile" eyebrow="Settings" showNotification={false} />
 
@@ -182,84 +184,99 @@ const ProfileScreen = ({ navigation }: ProfileStackScreenProps) => {
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: 100 }}
-        className="flex-1"
+        className="flex-1 bg-white px-6"
       >
-        <View className="px-6 pt-4">
-          <Card className="mb-6 p-5 border-primary-100 bg-primary-50/30">
-            <View className="flex-row items-center">
-              <View className="mr-4 h-16 w-16 items-center justify-center overflow-hidden rounded-2xl bg-white border border-border shadow-xs">
-                {user?.photoURL ? (
-                  <Image source={{ uri: user.photoURL }} className="h-full w-full" />
-                ) : (
-                  <Text className="text-[24px] font-bold text-primary-600">
-                    {toInitials(user?.displayName)}
-                  </Text>
-                )}
-              </View>
-              <View className="flex-1">
-                <Text className="text-[20px] font-bold tracking-tight text-text-900">
-                  {user?.displayName || "User"}
-                </Text>
-                <Text className="text-[13px] font-medium text-text-muted mt-0.5">
-                  {user?.email || "No email"}
-                </Text>
-              </View>
-              <TouchableOpacity
-                activeOpacity={0.7}
-                onPress={() => navigation.navigate(ROUTES.EDIT_PROFILE)}
-                className="h-10 w-10 items-center justify-center rounded-full bg-white border border-border"
-              >
-                <Edit3 stroke="#4A5568" size={18} strokeWidth={2.5} />
-              </TouchableOpacity>
-            </View>
-          </Card>
+        {/* Spacious Centered User Profile Hero */}
+        <Animated.View
+          entering={FadeInDown.duration(350).springify()}
+          className="py-8 items-center border-b border-slate-100 mb-2"
+        >
+          <View className="h-20 w-20 items-center justify-center overflow-hidden rounded-full bg-emerald-50 border-2 border-emerald-100 mb-3 shadow-xs">
+            {user?.photoURL ? (
+              <Image source={{ uri: user.photoURL }} className="h-full w-full" />
+            ) : (
+              <Text className="text-[26px] font-black text-emerald-700">
+                {toInitials(user?.displayName)}
+              </Text>
+            )}
+          </View>
+          <Text className="text-[22px] font-black text-slate-900 tracking-tight">
+            {user?.displayName || "User"}
+          </Text>
+          <Text className="text-[13px] font-medium text-slate-400 mt-0.5 mb-4">
+            {user?.email || "No email"}
+          </Text>
 
-          <SectionHeader title="Preferences" />
-          <Card padding={false} className="mb-2">
+          <TouchableOpacity
+            activeOpacity={0.8}
+            onPress={() => navigation.navigate(ROUTES.EDIT_PROFILE)}
+            className="flex-row items-center bg-slate-100 px-4 py-2 rounded-full"
+          >
+            <Edit3 stroke="#475569" size={14} strokeWidth={2} className="mr-1.5" />
+            <Text className="text-[13px] font-bold text-slate-700">Edit Profile</Text>
+          </TouchableOpacity>
+        </Animated.View>
+
+        {/* Streamlined Menu Sections */}
+        <Animated.View entering={FadeInDown.duration(400).springify()}>
+          {/* General Section */}
+          <View className="mt-4 mb-1">
+            <Text className="text-[11px] font-extrabold uppercase tracking-wider text-emerald-600 mb-1">
+              General
+            </Text>
             <MenuItem
               icon={Shield}
               title="Privacy & Security"
+              subtitle="Data protection and access rules"
               onPress={() => navigation.navigate(ROUTES.PRIVACY_SECURITY)}
+              iconBgColor="bg-emerald-50"
+              iconColor="#059669"
             />
             <MenuItem
               icon={HelpCircle}
               title="Help & Support"
+              subtitle="FAQ, guides, and bug reporting"
               onPress={() => navigation.navigate(ROUTES.HELP_SUPPORT)}
+              iconBgColor="bg-blue-50"
+              iconColor="#2563EB"
             />
-          </Card>
+          </View>
 
-          {user?.familyId && (
-            <>
-              <SectionHeader title="Family" />
-              <Card padding={false} className="mb-2">
-                <MenuItem
-                  icon={Users}
-                  title="Leave Family"
-                  onPress={handleLeaveFamilyRequest}
-                  isDestructive
-                  loading={leavingFamily}
-                />
-              </Card>
-            </>
-          )}
+          {/* Account & Group Section */}
+          <View className="mt-6 mb-1">
+            <Text className="text-[11px] font-extrabold uppercase tracking-wider text-slate-400 mb-1">
+              Account & Group
+            </Text>
+            {user?.familyId ? (
+              <MenuItem
+                icon={Users}
+                title="Leave Family Group"
+                subtitle="Exit your current shared list"
+                onPress={handleLeaveFamilyRequest}
+                isDestructive
+                loading={leavingFamily}
+                iconBgColor="bg-rose-50"
+                iconColor="#EF4444"
+              />
+            ) : null}
 
-          <SectionHeader title="Account" />
-          <Card padding={false} className="mb-2">
             <MenuItem
               icon={LogOut}
-              title="Logout"
+              title="Log Out"
               onPress={() => signOut()}
               isDestructive
               showChevron={false}
+              iconBgColor="bg-rose-50"
+              iconColor="#EF4444"
             />
-          </Card>
+          </View>
 
           <View className="mt-12 items-center">
-            <Text className="text-[11px] font-bold tracking-widest text-text-muted uppercase opacity-40">
+            <Text className="text-[10px] font-bold tracking-widest text-slate-300 uppercase">
               Family Grocery · v2.1.0
             </Text>
           </View>
-        </View>
+        </Animated.View>
       </ScrollView>
     </SafeAreaView>
   );

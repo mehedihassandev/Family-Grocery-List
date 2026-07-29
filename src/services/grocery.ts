@@ -11,7 +11,7 @@ import {
   getDoc,
 } from "firebase/firestore";
 import { db } from "./firebaseConfig";
-import { IGroceryItem } from "../types";
+import { IGroceryItem, TItemStatus } from "../types";
 import { createNotification } from "./notification";
 
 const parseDateInput = (value: unknown) => {
@@ -152,7 +152,7 @@ export const toggleItemCompletion = async (
   item: {
     id: string;
     name: string;
-    status: "pending" | "completed";
+    status: TItemStatus;
     familyId: string;
     category?: string;
     priority?: IGroceryItem["priority"];
@@ -168,14 +168,43 @@ export const toggleItemCompletion = async (
 ) => {
   try {
     const itemRef = doc(db, "grocery_items", item.id);
-    const isCompleting = item.status === "pending";
 
-    await updateDoc(itemRef, {
-      status: isCompleting ? "completed" : "pending",
-      completedBy: isCompleting ? user : null,
-      completedAt: isCompleting ? serverTimestamp() : null,
-      updatedAt: serverTimestamp(),
-    });
+    let nextStatus: TItemStatus = "completed";
+    let updates: Record<string, unknown> = {};
+
+    if (item.status === "pending") {
+      nextStatus = "in_cart";
+      updates = {
+        status: "in_cart",
+        claimedBy: user,
+        claimedAt: serverTimestamp(),
+        completedBy: null,
+        completedAt: null,
+        updatedAt: serverTimestamp(),
+      };
+    } else if (item.status === "in_cart") {
+      nextStatus = "completed";
+      updates = {
+        status: "completed",
+        completedBy: user,
+        completedAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+      };
+    } else {
+      nextStatus = "pending";
+      updates = {
+        status: "pending",
+        claimedBy: null,
+        claimedAt: null,
+        completedBy: null,
+        completedAt: null,
+        updatedAt: serverTimestamp(),
+      };
+    }
+
+    await updateDoc(itemRef, updates);
+
+    const isCompleting = nextStatus === "completed";
 
     if (isCompleting && item.recurrenceFrequency && item.recurrenceFrequency !== "none") {
       const recurrenceRef = doc(collection(db, "grocery_items"));
@@ -213,7 +242,19 @@ export const toggleItemCompletion = async (
       await setDoc(recurrenceRef, nextItem);
     }
 
-    if (isCompleting) {
+    if (nextStatus === "in_cart") {
+      try {
+        await createNotification(
+          item.familyId,
+          "item_added",
+          `${user.name} put ${item.name} in their cart`,
+          user,
+          { id: item.id, name: item.name },
+        );
+      } catch (error) {
+        console.warn("In-cart status notification failed:", error);
+      }
+    } else if (isCompleting) {
       try {
         await createNotification(
           item.familyId,
@@ -242,6 +283,47 @@ export const deleteGroceryItem = async (itemId: string) => {
     await deleteDoc(itemRef);
   } catch (error) {
     console.error("Delete Item Error:", error);
+    throw error;
+  }
+};
+
+/**
+ * Bulk completes all items currently marked as in_cart
+ * @param familyId - The ID of the family
+ * @param items - List of items to checkout
+ * @param user - The user completing checkout
+ */
+export const checkoutCartItems = async (
+  familyId: string,
+  items: { id: string; name: string }[],
+  user: { uid: string; name: string },
+) => {
+  try {
+    const promises = items.map((item) => {
+      const itemRef = doc(db, "grocery_items", item.id);
+      return updateDoc(itemRef, {
+        status: "completed",
+        completedBy: user,
+        completedAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+      });
+    });
+
+    await Promise.all(promises);
+
+    try {
+      await createNotification(
+        familyId,
+        "item_completed",
+        `${user.name} completed checkout for ${items.length} item${items.length > 1 ? "s" : ""}`,
+        user,
+        { id: items[0]?.id || "cart", name: `${items.length} cart items` },
+      );
+    } catch (error) {
+      console.warn("Notification failed for checkout:", error);
+    }
+  } catch (error) {
+    console.error("Checkout Cart Error:", error);
     throw error;
   }
 };

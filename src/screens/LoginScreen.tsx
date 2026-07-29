@@ -9,6 +9,7 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import Animated, { FadeInDown } from "react-native-reanimated";
 import { RhfTextfield } from "../components/ui";
 import {
   ArrowRight,
@@ -37,18 +38,14 @@ import {
 } from "../utils/validationSchemas";
 import { EFormModelKey, getFormDefaultValues } from "../utils";
 
-// ---------------------------------------------------------------------------
-// Constants
-// ---------------------------------------------------------------------------
-
 type AuthMode = "signIn" | "signUp";
 
-const fieldIconColor = "#95a39a";
+const fieldIconColor = "#94A3B8";
 
-// ---------------------------------------------------------------------------
-// Screen
-// ---------------------------------------------------------------------------
-
+/**
+ * Modern Login Screen
+ * Why: Pure white aesthetic, sleek form inputs, and smooth entrance animation.
+ */
 const LoginScreen = () => {
   const [authMode, setAuthMode] = useState<AuthMode>("signIn");
   const [showPassword, setShowPassword] = useState(false);
@@ -59,30 +56,18 @@ const LoginScreen = () => {
 
   const isBusy = emailBusy || googleBusy;
 
-  // ---------------------------------------------------------------------------
-  // React Hook Form — Sign In
-  // useForm is initialised with the matching Yup resolver so the schema drives
-  // all validation; no manual validate* functions needed.
-  // ---------------------------------------------------------------------------
   const signInForm = useForm<SignInFormValues>({
     resolver: yupResolver(getValidationSchema(EFormModelKey.AUTH_SIGN_IN)),
-    mode: "onTouched", // validate on blur, re-validate on change after first touch
+    mode: "onTouched",
     defaultValues: getFormDefaultValues(EFormModelKey.AUTH_SIGN_IN),
   });
 
-  // ---------------------------------------------------------------------------
-  // React Hook Form — Sign Up
-  // A separate form instance so switching tabs resets the inactive form state.
-  // ---------------------------------------------------------------------------
   const signUpForm = useForm<SignUpFormValues>({
     resolver: yupResolver(getValidationSchema(EFormModelKey.AUTH_SIGN_UP)),
     mode: "onTouched",
     defaultValues: getFormDefaultValues(EFormModelKey.AUTH_SIGN_UP),
   });
 
-  // ---------------------------------------------------------------------------
-  // Switch tabs — reset both forms to avoid stale errors flashing
-  // ---------------------------------------------------------------------------
   const switchMode = (mode: AuthMode) => {
     if (isBusy) return;
     setAuthMode(mode);
@@ -108,16 +93,6 @@ const LoginScreen = () => {
     }
   };
 
-  // ---------------------------------------------------------------------------
-  // Email Auth — called by handleSubmit which has already run Yup validation
-  // ---------------------------------------------------------------------------
-
-  /**
-   * Handles email sign-in. Only called when Yup validation has passed,
-   * so values are guaranteed to be valid here.
-   *
-   * @param values - Validated form values from RHF handleSubmit
-   */
   const handleSignIn = async (values: SignInFormValues) => {
     try {
       setEmailBusy(true);
@@ -129,11 +104,6 @@ const LoginScreen = () => {
     }
   };
 
-  /**
-   * Handles email sign-up. Only called when Yup validation has passed.
-   *
-   * @param values - Validated form values from RHF handleSubmit
-   */
   const handleSignUp = async (values: SignUpFormValues) => {
     try {
       setEmailBusy(true);
@@ -149,52 +119,50 @@ const LoginScreen = () => {
     }
   };
 
-  // handleSubmit validates first; only fires the callback when all fields pass
   const onSubmitPress =
     authMode === "signIn"
       ? signInForm.handleSubmit(handleSignIn)
       : signUpForm.handleSubmit(handleSignUp);
 
-  // ---------------------------------------------------------------------------
-  // Render
-  // ---------------------------------------------------------------------------
-
   return (
-    <SafeAreaView className="flex-1 bg-background">
+    <SafeAreaView className="flex-1 bg-white">
       <KeyboardAvoidingView
-        className="flex-1"
+        className="flex-1 bg-white"
         behavior={Platform.OS === "ios" ? "padding" : undefined}
       >
-        <View className="flex-1 justify-center px-8 py-10">
-          {/* ── Header ── */}
+        <Animated.View
+          entering={FadeInDown.duration(400).springify()}
+          className="flex-1 justify-center px-8 py-10"
+        >
+          {/* Header */}
           <View className="items-center">
-            <View className="mb-7 h-14 w-14 items-center justify-center rounded-2xl border border-primary-500/20 bg-primary-600 shadow-sm shadow-primary-200">
+            <View className="mb-6 h-14 w-14 items-center justify-center rounded-2xl bg-emerald-600 shadow-sm border border-emerald-500">
               <ShoppingBasket size={24} color="white" strokeWidth={2.2} />
             </View>
 
-            <Text className="text-[11px] font-semibold uppercase tracking-[2.4px] text-text-subtle">
+            <Text className="text-[10px] font-bold uppercase tracking-[2.4px] text-slate-400">
               Family Grocery
             </Text>
-            <Text className="mt-2 text-center text-[29px] font-bold tracking-tight text-text-primary">
+            <Text className="mt-1.5 text-center text-[28px] font-extrabold tracking-tight text-slate-900">
               {authMode === "signIn" ? "Welcome Back" : "Create Account"}
             </Text>
-            <Text className="mt-2 px-5 text-center text-[14px] leading-6 text-text-secondary">
+            <Text className="mt-1.5 px-4 text-center text-[13px] leading-5 text-slate-500">
               {authMode === "signIn"
                 ? "Sign in to manage groceries with your family in real time."
                 : "Create your account to start your shared family grocery list."}
             </Text>
           </View>
 
-          {/* ── Mode toggle (Sign In / Create) ── */}
-          <View className="mt-10 flex-row rounded-2xl border border-border bg-surface-alt p-1.5">
+          {/* Mode toggle */}
+          <View className="mt-8 flex-row rounded-2xl border border-slate-100 bg-slate-50 p-1">
             <TouchableOpacity
               activeOpacity={0.9}
               onPress={() => switchMode("signIn")}
               disabled={isBusy}
-              className={`flex-1 rounded-xl py-3 ${authMode === "signIn" ? "bg-primary-600 shadow-xs" : ""}`}
+              className={`flex-1 rounded-xl py-2.5 ${authMode === "signIn" ? "bg-emerald-600 shadow-2xs" : ""}`}
             >
               <Text
-                className={`text-center text-[14px] font-bold ${authMode === "signIn" ? "text-white" : "text-text-secondary"}`}
+                className={`text-center text-[13px] font-bold ${authMode === "signIn" ? "text-white" : "text-slate-500"}`}
               >
                 Sign In
               </Text>
@@ -204,23 +172,23 @@ const LoginScreen = () => {
               activeOpacity={0.9}
               onPress={() => switchMode("signUp")}
               disabled={isBusy}
-              className={`flex-1 rounded-xl py-3 ${authMode === "signUp" ? "bg-primary-600 shadow-xs" : ""}`}
+              className={`flex-1 rounded-xl py-2.5 ${authMode === "signUp" ? "bg-emerald-600 shadow-2xs" : ""}`}
             >
               <Text
-                className={`text-center text-[14px] font-bold ${authMode === "signUp" ? "text-white" : "text-text-secondary"}`}
+                className={`text-center text-[13px] font-bold ${authMode === "signUp" ? "text-white" : "text-slate-500"}`}
               >
                 Create
               </Text>
             </TouchableOpacity>
           </View>
 
-          {/* ── Display Name (sign-up only) ── */}
+          {/* Display Name (sign-up only) */}
           {authMode === "signUp" && (
-            <View className="mt-5">
+            <View className="mt-4">
               <RhfTextfield
                 control={signUpForm.control}
                 name="displayName"
-                icon={<UserRound size={17} color={fieldIconColor} />}
+                icon={<UserRound size={16} color={fieldIconColor} />}
                 autoCapitalize="words"
                 autoCorrect={false}
                 placeholder="Full name"
@@ -228,13 +196,13 @@ const LoginScreen = () => {
             </View>
           )}
 
-          {/* ── Email — rendered per-mode so the control type is never a union ── */}
-          <View className="mt-5">
+          {/* Email */}
+          <View className="mt-4">
             {authMode === "signIn" ? (
               <RhfTextfield
                 control={signInForm.control}
                 name="email"
-                icon={<Mail size={17} color={fieldIconColor} />}
+                icon={<Mail size={16} color={fieldIconColor} />}
                 autoCapitalize="none"
                 autoCorrect={false}
                 keyboardType="email-address"
@@ -245,7 +213,7 @@ const LoginScreen = () => {
               <RhfTextfield
                 control={signUpForm.control}
                 name="email"
-                icon={<Mail size={17} color={fieldIconColor} />}
+                icon={<Mail size={16} color={fieldIconColor} />}
                 autoCapitalize="none"
                 autoCorrect={false}
                 keyboardType="email-address"
@@ -255,13 +223,13 @@ const LoginScreen = () => {
             )}
           </View>
 
-          {/* ── Password — rendered per-mode so the control type is never a union ── */}
-          <View className="mt-5">
+          {/* Password */}
+          <View className="mt-4">
             {authMode === "signIn" ? (
               <RhfTextfield
                 control={signInForm.control}
                 name="password"
-                icon={<Lock size={17} color={fieldIconColor} />}
+                icon={<Lock size={16} color={fieldIconColor} />}
                 secureTextEntry={!showPassword}
                 autoCapitalize="none"
                 textContentType="password"
@@ -269,9 +237,9 @@ const LoginScreen = () => {
                 rightIcon={
                   <TouchableOpacity onPress={() => setShowPassword((prev) => !prev)} hitSlop={12}>
                     {showPassword ? (
-                      <EyeOff size={17} color={fieldIconColor} />
+                      <EyeOff size={16} color={fieldIconColor} />
                     ) : (
-                      <Eye size={17} color={fieldIconColor} />
+                      <Eye size={16} color={fieldIconColor} />
                     )}
                   </TouchableOpacity>
                 }
@@ -280,7 +248,7 @@ const LoginScreen = () => {
               <RhfTextfield
                 control={signUpForm.control}
                 name="password"
-                icon={<Lock size={17} color={fieldIconColor} />}
+                icon={<Lock size={16} color={fieldIconColor} />}
                 secureTextEntry={!showPassword}
                 autoCapitalize="none"
                 textContentType="newPassword"
@@ -288,9 +256,9 @@ const LoginScreen = () => {
                 rightIcon={
                   <TouchableOpacity onPress={() => setShowPassword((prev) => !prev)} hitSlop={12}>
                     {showPassword ? (
-                      <EyeOff size={17} color={fieldIconColor} />
+                      <EyeOff size={16} color={fieldIconColor} />
                     ) : (
-                      <Eye size={17} color={fieldIconColor} />
+                      <Eye size={16} color={fieldIconColor} />
                     )}
                   </TouchableOpacity>
                 }
@@ -298,13 +266,13 @@ const LoginScreen = () => {
             )}
           </View>
 
-          {/* ── Confirm Password (sign-up only) ── */}
+          {/* Confirm Password */}
           {authMode === "signUp" && (
-            <View className="mt-5">
+            <View className="mt-4">
               <RhfTextfield
                 control={signUpForm.control}
                 name="confirmPassword"
-                icon={<Lock size={17} color={fieldIconColor} />}
+                icon={<Lock size={16} color={fieldIconColor} />}
                 secureTextEntry={!showConfirmPassword}
                 autoCapitalize="none"
                 textContentType="newPassword"
@@ -315,9 +283,9 @@ const LoginScreen = () => {
                     hitSlop={12}
                   >
                     {showConfirmPassword ? (
-                      <EyeOff size={17} color={fieldIconColor} />
+                      <EyeOff size={16} color={fieldIconColor} />
                     ) : (
-                      <Eye size={17} color={fieldIconColor} />
+                      <Eye size={16} color={fieldIconColor} />
                     )}
                   </TouchableOpacity>
                 }
@@ -325,14 +293,14 @@ const LoginScreen = () => {
             </View>
           )}
 
-          {/* ── Submit ── */}
+          {/* Submit Button */}
           <TouchableOpacity
             onPress={onSubmitPress}
             activeOpacity={0.88}
             disabled={isBusy}
-            className="mt-7 flex-row items-center justify-center rounded-2xl bg-primary-600 h-[52px] shadow-sm shadow-primary-500/20 disabled:opacity-60"
+            className="mt-6 flex-row items-center justify-center rounded-xl bg-emerald-600 h-[48px] shadow-sm disabled:opacity-60"
           >
-            <Text className="text-[15px] font-bold text-white">
+            <Text className="text-[14px] font-bold text-white">
               {emailBusy
                 ? authMode === "signIn"
                   ? "Signing In..."
@@ -341,46 +309,46 @@ const LoginScreen = () => {
                   ? "Sign In"
                   : "Create Account"}
             </Text>
-            <ArrowRight size={17} color="#FFFFFF" strokeWidth={2.3} className="ml-2" />
+            <ArrowRight size={16} color="#FFFFFF" strokeWidth={2.3} className="ml-2" />
           </TouchableOpacity>
 
-          {/* ── Divider ── */}
-          <View className="my-7 flex-row items-center">
-            <View className="h-px flex-1 bg-border" />
-            <Text className="mx-3 text-[11px] font-semibold uppercase tracking-[2px] text-text-subtle">
+          {/* Divider */}
+          <View className="my-6 flex-row items-center">
+            <View className="h-px flex-1 bg-slate-100" />
+            <Text className="mx-3 text-[10px] font-bold uppercase tracking-[2px] text-slate-400">
               or
             </Text>
-            <View className="h-px flex-1 bg-border" />
+            <View className="h-px flex-1 bg-slate-100" />
           </View>
 
-          {/* ── Google Sign-In ── */}
+          {/* Google Sign-In */}
           <TouchableOpacity
             onPress={handleGoogleSignIn}
             activeOpacity={0.88}
             disabled={isBusy || !googleConfigured}
-            className="flex-row items-center justify-center rounded-2xl border border-border bg-white h-[52px] disabled:opacity-60"
+            className="flex-row items-center justify-center rounded-xl border border-slate-200 bg-white h-[48px] disabled:opacity-60"
           >
             <Image
               source={{
                 uri: "https://developers.google.com/identity/images/g-logo.png",
               }}
-              className="mr-3 h-5 w-5"
+              className="mr-2.5 h-5 w-5"
             />
-            <Text className="text-[14px] font-semibold text-text-secondary">
+            <Text className="text-[13px] font-bold text-slate-700">
               {googleBusy ? "Opening Google..." : "Continue with Google"}
             </Text>
           </TouchableOpacity>
 
           {!googleConfigured && (
-            <Text className="mt-2 text-center text-[11px] text-medium">
+            <Text className="mt-2 text-center text-[10px] text-slate-400">
               Google Sign-In needs setup for this build.
             </Text>
           )}
 
-          <Text className="mt-7 text-center text-[11px] uppercase tracking-[2px] text-text-subtle">
-            Family Grocery • v1.0.0
+          <Text className="mt-6 text-center text-[10px] uppercase tracking-[2px] text-slate-300">
+            Family Grocery • v2.1.0
           </Text>
-        </View>
+        </Animated.View>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
