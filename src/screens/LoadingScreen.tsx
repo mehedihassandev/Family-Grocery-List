@@ -1,94 +1,153 @@
 import React, { useEffect, useRef } from "react";
-import { Animated, Easing, Image, View } from "react-native";
+import { Animated, Easing, Image, View, StyleSheet } from "react-native";
 import { useAppTheme } from "../hooks";
 
-const SPLASH_ICON = require("../../assets/adaptive-icon.png");
+const APP_LOGO = require("../../assets/adaptive-icon.png");
 
 /**
  * Animated app-loading splash screen
- * Why: Preserve branded launch feel while auth/session state initializes.
+ * Features increased app logo size (84px), soft ambient accent glow aura, and spring zoom entrance.
  */
 const LoadingScreen = () => {
   const { colors } = useAppTheme();
-  const fadeIn = useRef(new Animated.Value(0)).current;
-  const breathe = useRef(new Animated.Value(0.9)).current;
-  const spin = useRef(new Animated.Value(0)).current;
+
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const zoomAnim = useRef(new Animated.Value(0.4)).current;
+  const pulseAnim = useRef(new Animated.Value(0.93)).current;
+  const glowPulse = useRef(new Animated.Value(0.85)).current;
 
   useEffect(() => {
-    const entranceAnimation = Animated.timing(fadeIn, {
-      toValue: 1,
-      duration: 380,
-      easing: Easing.out(Easing.cubic),
-      useNativeDriver: true,
-    });
+    const entranceAnimation = Animated.parallel([
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 220,
+        useNativeDriver: true,
+      }),
+      Animated.spring(zoomAnim, {
+        toValue: 1,
+        friction: 6,
+        tension: 90,
+        useNativeDriver: true,
+      }),
+    ]);
 
-    const breatheLoop = Animated.loop(
+    const pulseLoop = Animated.loop(
       Animated.sequence([
-        Animated.timing(breathe, {
-          toValue: 1,
-          duration: 900,
+        Animated.timing(pulseAnim, {
+          toValue: 1.07,
+          duration: 750,
+          easing: Easing.inOut(Easing.cubic),
+          useNativeDriver: true,
+        }),
+        Animated.timing(pulseAnim, {
+          toValue: 0.93,
+          duration: 750,
+          easing: Easing.inOut(Easing.cubic),
+          useNativeDriver: true,
+        }),
+      ]),
+    );
+
+    const glowLoop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(glowPulse, {
+          toValue: 1.25,
+          duration: 750,
           easing: Easing.inOut(Easing.ease),
           useNativeDriver: true,
         }),
-        Animated.timing(breathe, {
-          toValue: 0.9,
-          duration: 900,
+        Animated.timing(glowPulse, {
+          toValue: 0.85,
+          duration: 750,
           easing: Easing.inOut(Easing.ease),
           useNativeDriver: true,
         }),
       ]),
     );
 
-    const spinLoop = Animated.loop(
-      Animated.timing(spin, {
-        toValue: 1,
-        duration: 2200,
-        easing: Easing.linear,
-        useNativeDriver: true,
-      }),
-    );
-
     entranceAnimation.start();
-    breatheLoop.start();
-    spinLoop.start();
+    pulseLoop.start();
+    glowLoop.start();
 
     return () => {
       entranceAnimation.stop();
-      breatheLoop.stop();
-      spinLoop.stop();
+      pulseLoop.stop();
+      glowLoop.stop();
     };
-  }, [fadeIn, breathe, spin]);
-
-  const spinInterpolation = spin.interpolate({
-    inputRange: [0, 1],
-    outputRange: ["0deg", "360deg"],
-  });
+  }, [fadeAnim, zoomAnim, pulseAnim, glowPulse]);
 
   return (
-    <View className="flex-1 items-center justify-center bg-transparent">
+    <View style={[styles.container, { backgroundColor: colors.bgCanvas }]}>
       <Animated.View
-        style={{
-          opacity: fadeIn,
-          transform: [{ scale: breathe }],
-        }}
-        className="items-center justify-center"
+        style={[
+          styles.content,
+          {
+            opacity: fadeAnim,
+            transform: [{ scale: zoomAnim }],
+          },
+        ]}
       >
+        {/* Soft Ambient Accent Glow Aura */}
         <Animated.View
-          style={{
-            transform: [{ rotate: spinInterpolation }],
-            borderColor: `${colors.accentLight}59`,
-          }}
-          className="absolute h-[132px] w-[132px] rounded-full border"
+          style={[
+            styles.glowAura,
+            {
+              backgroundColor: colors.accent,
+              transform: [{ scale: glowPulse }],
+            },
+          ]}
         />
-        <Image
-          source={SPLASH_ICON}
-          className="h-[96px] w-[96px]"
-          resizeMode="contain"
-          style={{ tintColor: colors.accentLight }}
-        />
+
+        {/* Pulsing Modern App Logo */}
+        <Animated.View
+          style={[
+            styles.logoWrapper,
+            {
+              transform: [{ scale: pulseAnim }],
+            },
+          ]}
+        >
+          <Image
+            source={APP_LOGO}
+            style={[styles.logoImage, { tintColor: colors.accent }]}
+            resizeMode="contain"
+          />
+        </Animated.View>
       </Animated.View>
     </View>
   );
 };
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  content: {
+    width: 110,
+    height: 110,
+    alignItems: "center",
+    justifyContent: "center",
+    position: "relative",
+  },
+  glowAura: {
+    position: "absolute",
+    width: 96,
+    height: 96,
+    borderRadius: 48,
+    opacity: 0.2,
+  },
+  logoWrapper: {
+    width: 84,
+    height: 84,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  logoImage: {
+    width: 84,
+    height: 84,
+  },
+});
 
 export default LoadingScreen;

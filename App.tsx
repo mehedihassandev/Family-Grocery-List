@@ -18,6 +18,7 @@ import { queryClient } from "./src/lib/react-query";
 import { useAuthStore } from "./src/store/useAuthStore";
 import { listenToAuthChanges } from "./src/services/auth";
 import { LoadingScreen } from "./src/screens";
+import { GlobalLoadingOverlay } from "./src/components/ui";
 import { NavigationContainer } from "@react-navigation/native";
 
 // Keep the splash screen visible while we fetch resources
@@ -27,7 +28,7 @@ const MIN_LOADING_SCREEN_MS = 800;
 
 /**
  * Main application component
- * Why: Orchestrates the root configuration including fonts, providers, NavigationContainer, and main navigator.
+ * Why: Orchestrates the root configuration including fonts, providers, NavigationContainer, main navigator, and global app logo loader overlay.
  */
 export default function App() {
   const [fontsLoaded, fontError] = useFonts({
@@ -85,6 +86,7 @@ export default function App() {
           <NavigationContainer>
             {!isAppReady ? <LoadingScreen /> : <Navigator />}
           </NavigationContainer>
+          <GlobalLoadingOverlay />
         </SafeAreaProvider>
       </QueryClientProvider>
     </GestureHandlerRootView>

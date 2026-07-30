@@ -49,11 +49,11 @@ const getFamilyErrorMessage = (error: FamilyErrorLike) => {
 };
 
 async function withFamilyActionTimeout<T>(operation: Promise<T>, timeoutMessage: string) {
-  let timeoutId;
+  let timeoutId: NodeJS.Timeout | undefined;
   try {
     return await Promise.race([
       operation,
-      new Promise((_, reject) => {
+      new Promise<never>((_, reject) => {
         timeoutId = setTimeout(() => {
           reject(new Error(timeoutMessage));
         }, FAMILY_ACTION_TIMEOUT_MS);
@@ -181,16 +181,16 @@ const FamilySetupScreen = ({ navigation }: any) => {
     <TouchableOpacity
       activeOpacity={0.8}
       onPress={onPress}
-      className={"w-full rounded-[28px] border p-5 mb-4 " + borderClass}
+      className={"w-full rounded-3xl border p-5 mb-4 " + borderClass}
       style={{ backgroundColor: colors.bgCard }}
     >
       <View className="flex-row items-center">
-        <View className={"h-12 w-12 rounded-xl items-center justify-center " + colorClass}>
+        <View className={"h-12 w-12 rounded-2xl items-center justify-center " + colorClass}>
           <Icon stroke="white" size={22} strokeWidth={2.5} />
         </View>
         <View className="ml-4 flex-1">
           <Text
-            className="text-[18px] font-bold tracking-tight"
+            className="text-[17px] font-bold tracking-tight"
             style={{ color: colors.textPrimary }}
           >
             {title}
@@ -205,6 +205,8 @@ const FamilySetupScreen = ({ navigation }: any) => {
 
   if (mode === "selection") {
     const firstName = user?.displayName ? user.displayName.split(" ")[0] : "Friend";
+    const canGoBack = navigation?.canGoBack && navigation.canGoBack();
+
     return (
       <SafeAreaView className="flex-1" style={{ backgroundColor: colors.bgCanvas }}>
         <ScrollView
@@ -212,37 +214,53 @@ const FamilySetupScreen = ({ navigation }: any) => {
           showsVerticalScrollIndicator={false}
           className="flex-1"
         >
-          <View className="px-6 py-4 flex-row justify-between items-center">
-            <View
-              className="rounded-full border px-3 py-1.5"
-              style={{ backgroundColor: colors.accentLightSubtle, borderColor: colors.border }}
-            >
-              <Text
-                className="text-[10px] font-bold uppercase tracking-[2px]"
-                style={{ color: colors.accent }}
+          {/* Header Bar with perfect alignment */}
+          <View className="px-5 pt-3 pb-2 flex-row justify-between items-center h-14">
+            <View className="flex-row items-center gap-3">
+              {canGoBack && (
+                <TouchableOpacity
+                  onPress={() => navigation.goBack()}
+                  className="h-10 w-10 items-center justify-center rounded-full border"
+                  style={{ backgroundColor: colors.bgCard, borderColor: colors.border }}
+                >
+                  <ArrowLeft stroke={colors.icon} size={18} strokeWidth={2.2} />
+                </TouchableOpacity>
+              )}
+              <View
+                className="rounded-full border px-3.5 py-1.5"
+                style={{ backgroundColor: colors.accentLightSubtle, borderColor: colors.border }}
               >
-                Family Grocery
-              </Text>
+                <Text
+                  className="text-[10px] font-bold uppercase tracking-[2px]"
+                  style={{ color: colors.accent }}
+                >
+                  Family Grocery
+                </Text>
+              </View>
             </View>
+
             <TouchableOpacity
               onPress={() => signOut()}
-              className="flex-row items-center px-4 py-2 rounded-full border"
+              className="flex-row items-center px-3.5 py-2 rounded-full border h-10"
               style={{ backgroundColor: colors.badgeRoseBg, borderColor: colors.badgeRoseBorder }}
             >
-              <LogOut stroke={colors.danger} size={14} strokeWidth={3} />
-              <Text className="ml-2 font-bold text-[12px]" style={{ color: colors.badgeRoseText }}>
+              <LogOut stroke={colors.danger} size={14} strokeWidth={2.5} />
+              <Text
+                className="ml-1.5 font-bold text-[12px]"
+                style={{ color: colors.badgeRoseText }}
+              >
                 Logout
               </Text>
             </TouchableOpacity>
           </View>
 
-          <View className="px-6 mt-2">
+          <View className="px-5 mt-2">
             <View
-              className="rounded-[28px] border p-6"
+              className="rounded-3xl border p-6"
               style={{ backgroundColor: colors.bgCard, borderColor: colors.border }}
             >
               <Text
-                className="text-[34px] font-black tracking-tight leading-tight"
+                className="text-[32px] font-black tracking-tight leading-tight"
                 style={{ color: colors.textPrimary }}
               >
                 One more step,
@@ -254,7 +272,7 @@ const FamilySetupScreen = ({ navigation }: any) => {
               </Text>
             </View>
 
-            <View className="mt-6">
+            <View className="mt-5">
               <SetupCard
                 title="Create Family"
                 description="Start group and share invite code with members."
@@ -275,7 +293,7 @@ const FamilySetupScreen = ({ navigation }: any) => {
             </View>
 
             <View
-              className="mt-3 rounded-[24px] border p-5"
+              className="mt-1 rounded-3xl border p-5"
               style={{ backgroundColor: colors.bgCard, borderColor: colors.border }}
             >
               <Text
@@ -321,61 +339,85 @@ const FamilySetupScreen = ({ navigation }: any) => {
           contentContainerStyle={{ paddingBottom: 40 }}
           className="flex-1"
         >
-          <View className="px-6 pt-4">
-            <View className="flex-row items-center justify-between mb-6">
+          <View className="px-5 pt-3">
+            {/* Balanced Clean Top Header Bar */}
+            <View className="flex-row items-center justify-between h-12 mb-4">
               <TouchableOpacity
                 onPress={() => {
                   setActionError(null);
                   setMode("selection");
                 }}
-                className="h-11 w-11 items-center justify-center rounded-xl border"
+                className="h-10 w-10 items-center justify-center rounded-full border"
                 style={{ backgroundColor: colors.bgCard, borderColor: colors.border }}
               >
-                <ArrowLeft stroke={colors.icon} size={20} strokeWidth={2.5} />
+                <ArrowLeft stroke={colors.icon} size={18} strokeWidth={2.2} />
               </TouchableOpacity>
 
-              <View
-                className="flex-row rounded-full border p-1"
-                style={{ backgroundColor: colors.bgInput, borderColor: colors.border }}
+              <Text
+                className="text-[17px] font-bold tracking-tight"
+                style={{ color: colors.textPrimary }}
               >
-                <TouchableOpacity
-                  onPress={() => setMode("create")}
-                  className={
-                    "px-4 py-2 rounded-full " + (mode === "create" ? "bg-emerald-600" : "")
-                  }
-                >
-                  <Text
-                    className="text-[12px] font-bold"
-                    style={{ color: mode === "create" ? colors.white : colors.textMuted }}
-                  >
-                    Create
-                  </Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  onPress={() => setMode("join")}
-                  className={"px-4 py-2 rounded-full " + (mode === "join" ? "bg-emerald-600" : "")}
-                >
-                  <Text
-                    className="text-[12px] font-bold"
-                    style={{ color: mode === "join" ? colors.white : colors.textMuted }}
-                  >
-                    Join
-                  </Text>
-                </TouchableOpacity>
-              </View>
+                {mode === "create" ? "Create Family" : "Join Family"}
+              </Text>
+
+              {/* Spacer element for 3-point centered balance */}
+              <View style={{ width: 40 }} />
             </View>
 
+            {/* Segmented Mode Switcher Control */}
             <View
-              className="rounded-[28px] border p-6"
+              className="flex-row rounded-2xl border p-1 mb-5"
+              style={{ backgroundColor: colors.bgInput, borderColor: colors.border }}
+            >
+              <TouchableOpacity
+                onPress={() => {
+                  setActionError(null);
+                  setMode("create");
+                }}
+                className={
+                  "flex-1 py-2.5 rounded-xl items-center justify-center " +
+                  (mode === "create" ? "bg-emerald-600" : "")
+                }
+              >
+                <Text
+                  className="text-[13px] font-bold"
+                  style={{ color: mode === "create" ? colors.white : colors.textMuted }}
+                >
+                  Create Family
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                onPress={() => {
+                  setActionError(null);
+                  setMode("join");
+                }}
+                className={
+                  "flex-1 py-2.5 rounded-xl items-center justify-center " +
+                  (mode === "join" ? "bg-emerald-600" : "")
+                }
+              >
+                <Text
+                  className="text-[13px] font-bold"
+                  style={{ color: mode === "join" ? colors.white : colors.textMuted }}
+                >
+                  Join Family
+                </Text>
+              </TouchableOpacity>
+            </View>
+
+            {/* Main Form Card */}
+            <View
+              className="rounded-3xl border p-6"
               style={{ backgroundColor: colors.bgCard, borderColor: colors.border }}
             >
               <Text
-                className="text-[28px] font-bold tracking-tight"
+                className="text-[26px] font-bold tracking-tight"
                 style={{ color: colors.textPrimary }}
               >
                 {mode === "create" ? "Create Family Group" : "Join Family Group"}
               </Text>
-              <Text className="text-[15px] mt-2 leading-6" style={{ color: colors.textSecondary }}>
+              <Text className="text-[14px] mt-2 leading-6" style={{ color: colors.textSecondary }}>
                 {mode === "create"
                   ? "Create shared space for groceries, members, and live updates."
                   : "Enter invite code exactly as shared by family owner."}
@@ -394,7 +436,7 @@ const FamilySetupScreen = ({ navigation }: any) => {
                     name="familyName"
                     placeholder="The Smith Family"
                     autoCapitalize="words"
-                    onChangeText={(text) => {
+                    onChangeText={() => {
                       setFamilyNameError(null);
                       setActionError(null);
                     }}
@@ -436,7 +478,7 @@ const FamilySetupScreen = ({ navigation }: any) => {
                       opacity: !toTrimmed(familyNameValue) ? 0.4 : 1,
                     }}
                   >
-                    <Text className="text-white font-bold text-lg">Create Family</Text>
+                    <Text className="text-white font-bold text-lg">Create Family Group</Text>
                   </TouchableOpacity>
                 </View>
               ) : (
@@ -452,7 +494,7 @@ const FamilySetupScreen = ({ navigation }: any) => {
                     name="inviteCode"
                     placeholder="A B C 1 2 3"
                     transform={toInviteCode}
-                    onChangeText={(text) => {
+                    onChangeText={() => {
                       setInviteCodeError(null);
                       setActionError(null);
                     }}
@@ -491,6 +533,7 @@ const FamilySetupScreen = ({ navigation }: any) => {
                     </View>
                   )}
 
+                  {/* Prominent, perfectly placed Join Family Group Submit Button */}
                   <TouchableOpacity
                     onPress={handleJoinFamily}
                     disabled={loading || normalizedInviteCodeValue.length < 6}
@@ -500,7 +543,7 @@ const FamilySetupScreen = ({ navigation }: any) => {
                       opacity: normalizedInviteCodeValue.length < 6 ? 0.4 : 1,
                     }}
                   >
-                    <Text className="text-white font-bold text-lg">Join Family</Text>
+                    <Text className="text-white font-bold text-lg">Join Family Group</Text>
                   </TouchableOpacity>
                 </View>
               )}

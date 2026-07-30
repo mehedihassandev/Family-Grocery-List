@@ -1,59 +1,193 @@
 import React, { useEffect, useRef } from "react";
-import { View, StyleSheet, Animated, Easing } from "react-native";
+import { StyleSheet, Animated, Easing, Image } from "react-native";
+import { useAppTheme } from "../../hooks";
+
+const APP_LOGO = require("../../../assets/adaptive-icon.png");
 
 interface ILoadingOverlayProps {
   visible: boolean;
 }
 
 /**
- * Elegant, modern loading overlay
- * Why: To provide a clean, visually premium loading state for async actions.
- * @param props - Component props including visibility flag
+ * Modern, Elegant Transparent App Logo Loader Overlay
+ * Features the exact app logo with increased size, soft ambient accent glow aura,
+ * elastic spring zoom entrance/exit, and silky breathing pulse animation.
  */
 const LoadingOverlay = ({ visible }: ILoadingOverlayProps) => {
-  const rotateAnim = useRef(new Animated.Value(0)).current;
+  const { colors } = useAppTheme();
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const zoomAnim = useRef(new Animated.Value(0.4)).current;
+  const pulseAnim = useRef(new Animated.Value(0.93)).current;
+  const glowPulse = useRef(new Animated.Value(0.85)).current;
 
   useEffect(() => {
+    let pulseLoop: Animated.CompositeAnimation | null = null;
+    let glowLoop: Animated.CompositeAnimation | null = null;
+
     if (visible) {
-      Animated.loop(
-        Animated.timing(rotateAnim, {
+      // 1. Elastic Spring Zoom & Fade-In Entrance
+      Animated.parallel([
+        Animated.timing(fadeAnim, {
           toValue: 1,
-          duration: 1000,
-          easing: Easing.linear,
+          duration: 220,
           useNativeDriver: true,
         }),
-      ).start();
+        Animated.spring(zoomAnim, {
+          toValue: 1,
+          friction: 6,
+          tension: 90,
+          useNativeDriver: true,
+        }),
+      ]).start();
+
+      // 2. Silky Breathing Pulse for App Logo
+      pulseLoop = Animated.loop(
+        Animated.sequence([
+          Animated.timing(pulseAnim, {
+            toValue: 1.07,
+            duration: 750,
+            easing: Easing.inOut(Easing.cubic),
+            useNativeDriver: true,
+          }),
+          Animated.timing(pulseAnim, {
+            toValue: 0.93,
+            duration: 750,
+            easing: Easing.inOut(Easing.cubic),
+            useNativeDriver: true,
+          }),
+        ]),
+      );
+
+      // 3. Ambient Glow Aura Pulse
+      glowLoop = Animated.loop(
+        Animated.sequence([
+          Animated.timing(glowPulse, {
+            toValue: 1.25,
+            duration: 750,
+            easing: Easing.inOut(Easing.ease),
+            useNativeDriver: true,
+          }),
+          Animated.timing(glowPulse, {
+            toValue: 0.85,
+            duration: 750,
+            easing: Easing.inOut(Easing.ease),
+            useNativeDriver: true,
+          }),
+        ]),
+      );
+
+      pulseLoop.start();
+      glowLoop.start();
     } else {
-      rotateAnim.setValue(0);
+      // Smooth Fade & Zoom-Out Exit
+      Animated.parallel([
+        Animated.timing(fadeAnim, {
+          toValue: 0,
+          duration: 180,
+          useNativeDriver: true,
+        }),
+        Animated.timing(zoomAnim, {
+          toValue: 0.4,
+          duration: 180,
+          easing: Easing.in(Easing.cubic),
+          useNativeDriver: true,
+        }),
+      ]).start(() => {
+        pulseAnim.setValue(0.93);
+        glowPulse.setValue(0.85);
+      });
     }
-  }, [visible, rotateAnim]);
 
-  if (!visible) return null;
+    return () => {
+      pulseLoop?.stop();
+      glowLoop?.stop();
+    };
+  }, [visible, fadeAnim, zoomAnim, pulseAnim, glowPulse]);
 
-  const rotate = rotateAnim.interpolate({
-    inputRange: [0, 1],
-    outputRange: ["0deg", "360deg"],
-  });
+  if (!visible && (fadeAnim as unknown as { _value?: number })._value === 0) {
+    return null;
+  }
 
   return (
-    <View style={styles.overlay}>
-      <View className="h-20 w-20 items-center justify-center rounded-3xl bg-white shadow-lg">
+    <Animated.View
+      pointerEvents={visible ? "auto" : "none"}
+      style={[
+        styles.overlay,
+        {
+          opacity: fadeAnim,
+        },
+      ]}
+    >
+      <Animated.View
+        style={[
+          styles.container,
+          {
+            transform: [{ scale: zoomAnim }],
+          },
+        ]}
+      >
+        {/* Soft Ambient Accent Glow Aura */}
         <Animated.View
-          style={{ transform: [{ rotate }] }}
-          className="h-10 w-10 rounded-full border-4 border-primary-50 border-t-primary-500"
+          style={[
+            styles.glowAura,
+            {
+              backgroundColor: colors.accent,
+              transform: [{ scale: glowPulse }],
+            },
+          ]}
         />
-      </View>
-    </View>
+
+        {/* Pulsing Modern App Logo */}
+        <Animated.View
+          style={[
+            styles.logoWrapper,
+            {
+              transform: [{ scale: pulseAnim }],
+            },
+          ]}
+        >
+          <Image
+            source={APP_LOGO}
+            style={[styles.logoImage, { tintColor: colors.accent }]}
+            resizeMode="contain"
+          />
+        </Animated.View>
+      </Animated.View>
+    </Animated.View>
   );
 };
 
 const styles = StyleSheet.create({
   overlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: "rgba(0,0,0,0.1)",
-    zIndex: 9999,
+    backgroundColor: "rgba(15, 23, 42, 0.45)",
+    zIndex: 99999,
     alignItems: "center",
     justifyContent: "center",
+  },
+  container: {
+    width: 110,
+    height: 110,
+    alignItems: "center",
+    justifyContent: "center",
+    position: "relative",
+  },
+  glowAura: {
+    position: "absolute",
+    width: 96,
+    height: 96,
+    borderRadius: 48,
+    opacity: 0.2,
+  },
+  logoWrapper: {
+    width: 84,
+    height: 84,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  logoImage: {
+    width: 84,
+    height: 84,
   },
 });
 
