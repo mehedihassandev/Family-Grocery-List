@@ -7,6 +7,11 @@ updates:
       day: "monday"
     open-pull-requests-limit: 5
 
+    groups:
+      all-npm-dependencies:
+        patterns:
+          - "*"
+
     # Why this exists:
     # Core framework packages (React, React Native, Expo) must stay aligned with
     # the Expo SDK 55 release level. Upgrading these directly will break the framework foundation.
@@ -37,3 +42,8 @@ updates:
       interval: "weekly"
       day: "monday"
     open-pull-requests-limit: 5
+    groups:
+      all-github-actions:
+        patterns:
+          - "*"
+
