@@ -1,6 +1,7 @@
 import React from "react";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { AuthenticatedStackNavigatorParamList, ROUTES } from "../types";
+import { useAppTheme } from "../hooks";
 
 import TabNavigator from "./TabNavigator";
 import {
@@ -24,11 +25,13 @@ const Stack = createNativeStackNavigator<AuthenticatedStackNavigatorParamList>()
  * Hosts the bottom tab navigator as its root screen alongside secondary screens and modals.
  */
 const AuthenticatedNavigator = () => {
+  const { colors } = useAppTheme();
+
   return (
     <Stack.Navigator
       screenOptions={{
         headerShown: false,
-        contentStyle: { backgroundColor: "#FFFFFF" },
+        contentStyle: { backgroundColor: colors.bgCanvas },
       }}
     >
       {/* Root Bottom Tab Navigator */}

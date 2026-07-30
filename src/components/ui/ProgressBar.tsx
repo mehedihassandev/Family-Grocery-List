@@ -1,6 +1,8 @@
 import React, { useEffect, useRef } from "react";
 import { View, Text, Animated, StyleSheet } from "react-native";
 
+import { useAppTheme } from "../../hooks";
+
 interface IProgressBarProps {
   progress: number; // 0 to 100
   color?: string;
@@ -17,12 +19,13 @@ interface IProgressBarProps {
  */
 const ProgressBar = ({
   progress,
-  color = "#10B981",
-  backgroundColor = "#F0F2F5",
+  color,
+  backgroundColor,
   height = 8,
   label,
   showPercentage = false,
 }: IProgressBarProps) => {
+  const { colors } = useAppTheme();
   const animatedWidth = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
@@ -38,6 +41,9 @@ const ProgressBar = ({
     outputRange: ["0%", "100%"],
   });
 
+  const barColor = color || colors.accent;
+  const barBg = backgroundColor || colors.bgInput;
+
   return (
     <View className="mb-4">
       {(label || showPercentage) && (
@@ -48,12 +54,14 @@ const ProgressBar = ({
           )}
         </View>
       )}
-      <View style={[styles.container, { backgroundColor, height, borderRadius: height / 2 }]}>
+      <View
+        style={[styles.container, { backgroundColor: barBg, height, borderRadius: height / 2 }]}
+      >
         <Animated.View
           style={[
             styles.bar,
             {
-              backgroundColor: color,
+              backgroundColor: barColor,
               width: widthInterpolation,
               borderRadius: height / 2,
             },

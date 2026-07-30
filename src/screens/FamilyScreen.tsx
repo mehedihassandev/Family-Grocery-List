@@ -21,6 +21,7 @@ import {
   useInviteMember,
   useUpdateMemberRole,
   useTextFormatter,
+  useAppTheme,
 } from "../hooks";
 import { AppHeader, StatusModal, LoadingOverlay } from "../components/ui";
 
@@ -42,6 +43,7 @@ const getFamilyActionErrorMessage = (error: unknown, fallback: string) => {
 const FamilyScreen = ({ navigation }: FamilyStackScreenProps) => {
   const { user } = useAuthStore();
   const { toInitial } = useTextFormatter();
+  const { isDark, colors } = useAppTheme();
 
   // TanStack Query Hooks
   const { data: family, isLoading: familyLoading } = useFamilyDetails(user?.familyId);
@@ -175,8 +177,12 @@ const FamilyScreen = ({ navigation }: FamilyStackScreenProps) => {
   };
 
   return (
-    <SafeAreaView edges={["top", "left", "right"]} className="flex-1 bg-white">
-      <StatusBar barStyle="dark-content" />
+    <SafeAreaView
+      edges={["top", "left", "right"]}
+      className="flex-1"
+      style={{ backgroundColor: colors.bgCanvas }}
+    >
+      <StatusBar barStyle={isDark ? "light-content" : "dark-content"} />
       <LoadingOverlay
         visible={removeMemberMutation.isPending || (familyLoading && membersLoading)}
       />
@@ -195,21 +201,27 @@ const FamilyScreen = ({ navigation }: FamilyStackScreenProps) => {
         onNotificationPress={() => navigation.navigate(ROUTES.NOTIFICATIONS)}
       />
 
-      <View className="px-6 flex-1 bg-white">
+      <View className="px-6 flex-1" style={{ backgroundColor: colors.bgCanvas }}>
         {/* Invite Code Section (Cardless with Breathing Space) */}
-        <Animated.View
-          entering={FadeInDown.duration(350).springify()}
-          className="py-6 border-b border-slate-100"
-        >
-          <Text className="mb-3 text-[11px] font-bold uppercase tracking-wider text-emerald-600">
+        <Animated.View entering={FadeInDown.duration(350).springify()} className="py-6">
+          <Text
+            className="mb-3 text-[11px] font-bold uppercase tracking-wider"
+            style={{ color: colors.accent }}
+          >
             Invite Your Family
           </Text>
           <View className="flex-row items-center justify-between mb-4">
             <View>
-              <Text className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-1">
+              <Text
+                className="text-[11px] font-bold uppercase tracking-widest mb-1"
+                style={{ color: colors.textMuted }}
+              >
                 Family Code
               </Text>
-              <Text className="text-[32px] font-black tracking-[5px] text-slate-900">
+              <Text
+                className="text-[32px] font-black tracking-[5px]"
+                style={{ color: colors.textPrimary }}
+              >
                 {inviteCodeToDisplay}
               </Text>
             </View>
@@ -223,25 +235,38 @@ const FamilyScreen = ({ navigation }: FamilyStackScreenProps) => {
           </View>
 
           {/* Email Invite Action */}
-          <View className="flex-row items-center bg-slate-50 rounded-xl border border-slate-100 px-3.5 py-1.5 h-12">
-            <Mail size={17} color="#94A3B8" style={{ marginLeft: 2, marginRight: 8 }} />
+          <View
+            className="flex-row items-center rounded-xl border px-3.5 h-12"
+            style={{ backgroundColor: colors.bgInput, borderColor: colors.border }}
+          >
+            <Mail size={17} color={colors.accent} style={{ marginLeft: 2, marginRight: 8 }} />
             <TextInput
               value={inviteEmail}
               onChangeText={setInviteEmail}
               placeholder="Invite member by email..."
-              placeholderTextColor="#94A3B8"
+              placeholderTextColor={colors.iconMuted}
               keyboardType="email-address"
               autoCapitalize="none"
-              className="flex-1 text-[13px] font-medium text-slate-800"
+              className="flex-1 text-[13px] font-medium"
+              style={{
+                color: colors.textPrimary,
+                paddingVertical: 0,
+                height: "100%",
+                textAlignVertical: "center",
+              }}
             />
             <TouchableOpacity
               onPress={handleInviteEmail}
               disabled={!inviteEmail.trim() || inviteMemberMutation.isPending}
-              className={`px-4 py-2 rounded-lg ${
-                inviteEmail.trim() ? "bg-emerald-600" : "bg-slate-200"
-              }`}
+              className="px-4 py-2 rounded-xl"
+              style={{
+                backgroundColor: inviteEmail.trim() ? colors.accent : colors.bgSurfaceMuted,
+              }}
             >
-              <Text className="text-white font-extrabold text-[12px]">
+              <Text
+                className="font-extrabold text-[12px]"
+                style={{ color: inviteEmail.trim() ? colors.white : colors.textMuted }}
+              >
                 {inviteMemberMutation.isPending ? "Sending..." : "Invite"}
               </Text>
             </TouchableOpacity>
@@ -250,10 +275,15 @@ const FamilyScreen = ({ navigation }: FamilyStackScreenProps) => {
 
         {/* Group Members List (Cardless Rows with Breathing Space) */}
         <View className="flex-row items-center justify-between pt-6 pb-3">
-          <Text className="text-[18px] font-extrabold tracking-tight text-slate-900">
+          <Text
+            className="text-[18px] font-extrabold tracking-tight"
+            style={{ color: colors.textPrimary }}
+          >
             Group Members
           </Text>
-          <Text className="text-[12px] font-bold text-slate-400">{members.length} Total</Text>
+          <Text className="text-[12px] font-bold" style={{ color: colors.textMuted }}>
+            {members.length} Total
+          </Text>
         </View>
 
         <FlatList
@@ -263,21 +293,30 @@ const FamilyScreen = ({ navigation }: FamilyStackScreenProps) => {
           contentContainerStyle={{ paddingBottom: 140 }}
           renderItem={({ item, index }) => (
             <Animated.View entering={FadeInDown.duration(300 + index * 40).springify()}>
-              <View className="flex-row items-center py-4 border-b border-slate-100">
-                <View className="mr-3.5 h-11 w-11 items-center justify-center overflow-hidden rounded-full bg-emerald-50 border border-emerald-100">
+              <View className="flex-row items-center py-4">
+                <View
+                  className="mr-3.5 h-11 w-11 items-center justify-center overflow-hidden rounded-full border"
+                  style={{ backgroundColor: colors.accentMuted, borderColor: colors.border }}
+                >
                   {item.photoURL ? (
                     <Image source={{ uri: item.photoURL }} className="h-full w-full" />
                   ) : (
-                    <Text className="text-emerald-700 text-base font-black">
+                    <Text className="text-base font-black" style={{ color: colors.accent }}>
                       {toInitial(item.displayName)}
                     </Text>
                   )}
                 </View>
                 <View className="flex-1">
-                  <Text className="text-[16px] font-extrabold text-slate-900">
+                  <Text
+                    className="text-[16px] font-extrabold"
+                    style={{ color: colors.textPrimary }}
+                  >
                     {item.displayName || "Unknown User"} {item.uid === user?.uid ? "(You)" : ""}
                   </Text>
-                  <Text className="text-[13px] text-slate-400 font-medium mt-0.5">
+                  <Text
+                    className="text-[13px] font-medium mt-0.5"
+                    style={{ color: colors.textSecondary }}
+                  >
                     {item.email}
                   </Text>
                 </View>
@@ -286,19 +325,36 @@ const FamilyScreen = ({ navigation }: FamilyStackScreenProps) => {
                   {isOwner && item.uid !== user?.uid && (
                     <TouchableOpacity
                       onPress={() => handleToggleRole(item)}
-                      className="px-2 py-1 rounded-md flex-row items-center bg-purple-50"
+                      className="px-2 py-1 rounded-md flex-row items-center border"
+                      style={{
+                        backgroundColor: colors.badgePurpleBg,
+                        borderColor: colors.badgePurpleBorder,
+                      }}
                     >
-                      <UserCheck size={10} color="#7C3AED" style={{ marginRight: 3 }} />
-                      <Text className="text-[9px] font-extrabold uppercase text-purple-700">
+                      <UserCheck
+                        size={10}
+                        color={colors.badgePurpleText}
+                        style={{ marginRight: 3 }}
+                      />
+                      <Text
+                        className="text-[9px] font-extrabold uppercase"
+                        style={{ color: colors.badgePurpleText }}
+                      >
                         {item.role === "owner" ? "Demote" : "Promote"}
                       </Text>
                     </TouchableOpacity>
                   )}
 
                   {item.role === "owner" ? (
-                    <View className="px-2 py-1 rounded-md flex-row items-center bg-emerald-50">
-                      <Crown stroke="#059669" size={10} strokeWidth={2.5} />
-                      <Text className="ml-1 text-[9px] font-black uppercase text-emerald-700">
+                    <View
+                      className="px-2 py-1 rounded-md flex-row items-center"
+                      style={{ backgroundColor: colors.accentLightSubtle }}
+                    >
+                      <Crown stroke={colors.accent} size={10} strokeWidth={2.5} />
+                      <Text
+                        className="ml-1 text-[9px] font-black uppercase"
+                        style={{ color: colors.accent }}
+                      >
                         Owner
                       </Text>
                     </View>
@@ -308,10 +364,15 @@ const FamilyScreen = ({ navigation }: FamilyStackScreenProps) => {
                       activeOpacity={0.7}
                       className="h-8 w-8 items-center justify-center rounded-full bg-rose-50"
                     >
-                      <Trash2 stroke="#EF4444" size={14} strokeWidth={2} />
+                      <Trash2 stroke={colors.danger} size={14} strokeWidth={2} />
                     </TouchableOpacity>
                   ) : (
-                    <Text className="text-[9px] font-bold uppercase text-slate-400">Member</Text>
+                    <Text
+                      className="text-[9px] font-bold uppercase"
+                      style={{ color: colors.textMuted }}
+                    >
+                      Member
+                    </Text>
                   )}
                 </View>
               </View>

@@ -1,5 +1,6 @@
 import React, { ReactNode } from "react";
 import { View, StyleProp, ViewStyle, StyleSheet } from "react-native";
+import { useAppTheme } from "../../hooks";
 
 interface ICardProps {
   children: ReactNode;
@@ -20,13 +21,16 @@ export const Card = ({
   padding = false,
   variant = "ghost",
 }: ICardProps) => {
+  const { colors } = useAppTheme();
+
   return (
     <View
       className={className}
       style={[
         styles.base,
-        variant === "outlined" && styles.outlined,
-        variant === "flat" && styles.flat,
+        { borderRadius: 16 },
+        variant === "outlined" && { borderWidth: 1, borderColor: colors.border },
+        variant === "flat" && { backgroundColor: colors.bgSurface },
         variant === "ghost" && styles.ghost,
         padding && styles.padding,
         style,
@@ -40,15 +44,6 @@ export const Card = ({
 const styles = StyleSheet.create({
   base: {
     backgroundColor: "transparent",
-  },
-  outlined: {
-    borderWidth: 1,
-    borderColor: "#F1F5F9",
-    borderRadius: 16,
-  },
-  flat: {
-    borderRadius: 16,
-    backgroundColor: "#FAFAFA",
   },
   ghost: {
     backgroundColor: "transparent",

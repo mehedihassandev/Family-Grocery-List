@@ -8,15 +8,26 @@ import {
   ScrollView,
   StatusBar,
   ActivityIndicator,
+  StyleSheet,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import Animated, { FadeInDown } from "react-native-reanimated";
-import { LogOut, Shield, HelpCircle, ChevronRight, Edit3, Users } from "lucide-react-native";
+import {
+  LogOut,
+  Shield,
+  HelpCircle,
+  ChevronRight,
+  Edit3,
+  Users,
+  Sun,
+  Moon,
+  Monitor,
+} from "lucide-react-native";
 
 import { useAuthStore } from "../store/useAuthStore";
 import { signOut } from "../services/auth";
 import { leaveFamily } from "../services/family";
-import { useTextFormatter } from "../hooks";
+import { useTextFormatter, useAppTheme } from "../hooks";
 import { AppHeader, StatusModal } from "../components/ui";
 
 type TStatusModalType = "success" | "error" | "warning" | "confirm";
@@ -36,6 +47,7 @@ interface IMenuItemProps {
   isDestructive?: boolean;
   showChevron?: boolean;
   iconBgColor?: string;
+  bgColor?: string;
   iconColor?: string;
   loading?: boolean;
 }
@@ -56,6 +68,7 @@ const getFamilyActionErrorMessage = (error: unknown, fallback: string) => {
 const ProfileScreen = ({ navigation }: ProfileStackScreenProps) => {
   const { user, setUser } = useAuthStore();
   const { toInitials } = useTextFormatter();
+  const { isDark, colors, themeMode, setThemeMode } = useAppTheme();
   const [leavingFamily, setLeavingFamily] = useState(false);
   const [confirmLeaveModal, setConfirmLeaveModal] = useState(false);
   const [statusModal, setStatusModal] = useState<IStatusModalState>({
@@ -113,42 +126,42 @@ const ProfileScreen = ({ navigation }: ProfileStackScreenProps) => {
     title,
     subtitle,
     onPress,
-    isDestructive = false,
     showChevron = true,
-    iconBgColor = "bg-slate-50",
-    iconColor = "#475569",
+    isDestructive = false,
+    bgColor,
+    iconColor = colors.icon,
     loading = false,
   }: IMenuItemProps) => (
     <TouchableOpacity
       activeOpacity={0.7}
       onPress={onPress}
       disabled={loading}
-      className="flex-row items-center py-4 border-b border-slate-100"
+      className="flex-row items-center py-4"
     >
       <View
-        className={`mr-4 h-10 w-10 items-center justify-center rounded-full ${
-          isDestructive ? "bg-rose-50" : iconBgColor
-        }`}
+        className="mr-4 h-10 w-10 items-center justify-center rounded-full"
+        style={{ backgroundColor: isDestructive ? colors.badgeRoseBg : bgColor || colors.bgInput }}
       >
         {loading ? (
-          <ActivityIndicator size="small" color={isDestructive ? "#EF4444" : iconColor} />
+          <ActivityIndicator size="small" color={isDestructive ? colors.danger : iconColor} />
         ) : (
-          <Icon stroke={isDestructive ? "#EF4444" : iconColor} size={18} strokeWidth={2} />
+          <Icon stroke={isDestructive ? colors.danger : iconColor} size={18} strokeWidth={2} />
         )}
       </View>
       <View className="flex-1">
         <Text
-          className={`text-[15px] font-extrabold ${
-            isDestructive ? "text-rose-600" : "text-slate-900"
-          }`}
+          className="text-[15px] font-extrabold"
+          style={{ color: isDestructive ? colors.danger : colors.textPrimary }}
         >
           {title}
         </Text>
         {subtitle ? (
-          <Text className="text-[11px] font-medium text-slate-400 mt-0.5">{subtitle}</Text>
+          <Text className="text-[11px] font-medium mt-0.5" style={{ color: colors.textMuted }}>
+            {subtitle}
+          </Text>
         ) : null}
       </View>
-      {showChevron && <ChevronRight stroke="#CBD5E1" size={18} strokeWidth={2} />}
+      {showChevron && <ChevronRight stroke={colors.icon} size={18} strokeWidth={2} />}
     </TouchableOpacity>
   );
 
@@ -158,8 +171,12 @@ const ProfileScreen = ({ navigation }: ProfileStackScreenProps) => {
       : "Are you sure you want to leave this family group?";
 
   return (
-    <SafeAreaView edges={["top", "left", "right"]} className="flex-1 bg-white">
-      <StatusBar barStyle="dark-content" />
+    <SafeAreaView
+      edges={["top", "left", "right"]}
+      className="flex-1"
+      style={{ backgroundColor: colors.bgCanvas }}
+    >
+      <StatusBar barStyle={isDark ? "light-content" : "dark-content"} />
       <AppHeader title="Profile" eyebrow="Settings" showNotification={false} />
 
       <StatusModal
@@ -184,44 +201,146 @@ const ProfileScreen = ({ navigation }: ProfileStackScreenProps) => {
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: 100 }}
-        className="flex-1 bg-white px-6"
+        className="flex-1 px-6"
+        style={{ backgroundColor: colors.bgCanvas }}
       >
         {/* Spacious Centered User Profile Hero */}
         <Animated.View
           entering={FadeInDown.duration(350).springify()}
-          className="py-8 items-center border-b border-slate-100 mb-2"
+          className="py-8 items-center mb-2"
         >
-          <View className="h-20 w-20 items-center justify-center overflow-hidden rounded-full bg-emerald-50 border-2 border-emerald-100 mb-3 shadow-xs">
+          <View
+            className="h-20 w-20 items-center justify-center overflow-hidden rounded-full border-2 mb-3 shadow-xs"
+            style={{ backgroundColor: colors.accentMuted, borderColor: colors.border }}
+          >
             {user?.photoURL ? (
               <Image source={{ uri: user.photoURL }} className="h-full w-full" />
             ) : (
-              <Text className="text-[26px] font-black text-emerald-700">
+              <Text className="text-[26px] font-black" style={{ color: colors.accent }}>
                 {toInitials(user?.displayName)}
               </Text>
             )}
           </View>
-          <Text className="text-[22px] font-black text-slate-900 tracking-tight">
-            {user?.displayName || "User"}
+          <Text
+            className="text-[22px] font-black tracking-tight"
+            style={{ color: colors.textPrimary }}
+          >
+            {user?.displayName || "Family Member"}
           </Text>
-          <Text className="text-[13px] font-medium text-slate-400 mt-0.5 mb-4">
-            {user?.email || "No email"}
+          <Text
+            className="text-[13px] font-medium mt-0.5 mb-4"
+            style={{ color: colors.textSecondary }}
+          >
+            {user?.email}
           </Text>
 
           <TouchableOpacity
             activeOpacity={0.8}
             onPress={() => navigation.navigate(ROUTES.EDIT_PROFILE)}
-            className="flex-row items-center bg-slate-100 px-4 py-2 rounded-full"
+            className="flex-row items-center px-4 py-2 rounded-full"
+            style={{ backgroundColor: colors.bgInput }}
           >
-            <Edit3 stroke="#475569" size={14} strokeWidth={2} className="mr-1.5" />
-            <Text className="text-[13px] font-bold text-slate-700">Edit Profile</Text>
+            <Edit3 stroke={colors.icon} size={14} strokeWidth={2} className="mr-1.5" />
+            <Text className="text-[13px] font-bold" style={{ color: colors.textPrimary }}>
+              Edit Profile
+            </Text>
           </TouchableOpacity>
         </Animated.View>
 
         {/* Streamlined Menu Sections */}
         <Animated.View entering={FadeInDown.duration(400).springify()}>
+          {/* Appearance Section */}
+          <View className="mt-4 mb-4">
+            <Text
+              className="text-[11px] font-extrabold uppercase tracking-wider mb-2"
+              style={{ color: colors.accent }}
+            >
+              Appearance
+            </Text>
+            <View
+              className="flex-row items-center justify-between p-1.5 rounded-xl border"
+              style={{ backgroundColor: colors.bgInput, borderColor: colors.border }}
+            >
+              <TouchableOpacity
+                activeOpacity={0.8}
+                onPress={() => setThemeMode("light")}
+                accessibilityRole="button"
+                accessibilityLabel="Switch to Light Theme"
+                className="flex-1 flex-row items-center justify-center py-2.5 rounded-xl"
+                style={[
+                  themeMode === "light" ? { backgroundColor: colors.bgCard } : undefined,
+                  themeMode === "light" ? shadowStyles.xs : undefined,
+                ]}
+              >
+                <Sun
+                  stroke={themeMode === "light" ? colors.accent : colors.icon}
+                  size={16}
+                  strokeWidth={2}
+                />
+                <Text
+                  className="ml-2 text-[12px] font-bold"
+                  style={{ color: themeMode === "light" ? colors.accent : colors.textMuted }}
+                >
+                  Light
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                activeOpacity={0.8}
+                onPress={() => setThemeMode("dark")}
+                accessibilityRole="button"
+                accessibilityLabel="Switch to Dark Theme"
+                className="flex-1 flex-row items-center justify-center py-2.5 rounded-xl"
+                style={[
+                  themeMode === "dark" ? { backgroundColor: colors.accent } : undefined,
+                  themeMode === "dark" ? shadowStyles.xs : undefined,
+                ]}
+              >
+                <Moon
+                  stroke={themeMode === "dark" ? colors.white : colors.icon}
+                  size={16}
+                  strokeWidth={2}
+                />
+                <Text
+                  className="ml-2 text-[12px] font-bold"
+                  style={{ color: themeMode === "dark" ? colors.white : colors.textMuted }}
+                >
+                  Dark
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                activeOpacity={0.8}
+                onPress={() => setThemeMode("system")}
+                accessibilityRole="button"
+                accessibilityLabel="Use System Theme Preference"
+                className="flex-1 flex-row items-center justify-center py-2.5 rounded-xl"
+                style={[
+                  themeMode === "system" ? { backgroundColor: colors.bgCard } : undefined,
+                  themeMode === "system" ? shadowStyles.xs : undefined,
+                ]}
+              >
+                <Monitor
+                  stroke={themeMode === "system" ? colors.accent : colors.icon}
+                  size={16}
+                  strokeWidth={2}
+                />
+                <Text
+                  className="ml-2 text-[12px] font-bold"
+                  style={{ color: themeMode === "system" ? colors.accent : colors.textMuted }}
+                >
+                  System
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+
           {/* General Section */}
-          <View className="mt-4 mb-1">
-            <Text className="text-[11px] font-extrabold uppercase tracking-wider text-emerald-600 mb-1">
+          <View className="mt-2 mb-1">
+            <Text
+              className="text-[11px] font-extrabold uppercase tracking-wider mb-1"
+              style={{ color: colors.textMuted }}
+            >
               General
             </Text>
             <MenuItem
@@ -229,22 +348,25 @@ const ProfileScreen = ({ navigation }: ProfileStackScreenProps) => {
               title="Privacy & Security"
               subtitle="Data protection and access rules"
               onPress={() => navigation.navigate(ROUTES.PRIVACY_SECURITY)}
-              iconBgColor="bg-emerald-50"
-              iconColor="#059669"
+              bgColor={colors.accentMuted}
+              iconColor={colors.accent}
             />
             <MenuItem
               icon={HelpCircle}
               title="Help & Support"
               subtitle="FAQ, guides, and bug reporting"
               onPress={() => navigation.navigate(ROUTES.HELP_SUPPORT)}
-              iconBgColor="bg-blue-50"
-              iconColor="#2563EB"
+              bgColor={colors.infoLight}
+              iconColor={colors.info}
             />
           </View>
 
           {/* Account & Group Section */}
           <View className="mt-6 mb-1">
-            <Text className="text-[11px] font-extrabold uppercase tracking-wider text-slate-400 mb-1">
+            <Text
+              className="text-[11px] font-extrabold uppercase tracking-wider mb-1"
+              style={{ color: colors.textMuted }}
+            >
               Account & Group
             </Text>
             {user?.familyId ? (
@@ -256,7 +378,7 @@ const ProfileScreen = ({ navigation }: ProfileStackScreenProps) => {
                 isDestructive
                 loading={leavingFamily}
                 iconBgColor="bg-rose-50"
-                iconColor="#EF4444"
+                iconColor={colors.danger}
               />
             ) : null}
 
@@ -267,7 +389,7 @@ const ProfileScreen = ({ navigation }: ProfileStackScreenProps) => {
               isDestructive
               showChevron={false}
               iconBgColor="bg-rose-50"
-              iconColor="#EF4444"
+              iconColor={colors.danger}
             />
           </View>
 
@@ -281,5 +403,20 @@ const ProfileScreen = ({ navigation }: ProfileStackScreenProps) => {
     </SafeAreaView>
   );
 };
+
+/**
+ * Why inline styles instead of NativeWind `shadow-xs`:
+ * NativeWind v4 CSS interop breaks React's Context tree when shadow classes
+ * are conditionally toggled, causing React Navigation to lose NavigationStateContext.
+ */
+const shadowStyles = StyleSheet.create({
+  xs: {
+    shadowColor: "#0F172A",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.04,
+    shadowRadius: 2,
+    elevation: 1,
+  },
+});
 
 export default ProfileScreen;

@@ -1,27 +1,42 @@
 import React from "react";
 import { Text, View } from "react-native";
+import { useAppTheme } from "../../hooks";
 
 interface IPriorityBadgeProps {
   priority: string;
 }
 
-const styleMap: Record<string, { bg: string; text: string; border: string }> = {
-  Urgent: { bg: "bg-danger-light", text: "text-danger-dark", border: "border-danger-light" },
-  Medium: { bg: "bg-warning-light", text: "text-warning-dark", border: "border-warning-light" },
-  Low: { bg: "bg-primary-100", text: "text-primary-600", border: "border-primary-100" },
-};
-
 /**
- * Premium PriorityBadge
- * Why: To display item priority in a visually clean and consistent way across the app.
- * @param props - Component props including the priority level string
+ * Premium Theme-Aware Priority Badge Component
+ * Features clean rounded pills with theme-aware tints for Urgent, Medium, and Low.
  */
-const PriorityBadge = ({ priority }: IPriorityBadgeProps) => {
-  const styles = styleMap[priority] || styleMap.Low;
+export const PriorityBadge = ({ priority }: IPriorityBadgeProps) => {
+  const { colors } = useAppTheme();
+
+  let bg = colors.bgInput;
+  let text = colors.textSecondary;
+  let border = colors.border;
+
+  if (priority === "Urgent" || priority === "high") {
+    bg = colors.dangerLight;
+    text = colors.danger;
+    border = colors.danger;
+  } else if (priority === "Medium" || priority === "medium") {
+    bg = colors.warningLight;
+    text = colors.warning;
+    border = colors.warning;
+  } else if (priority === "Low" || priority === "low") {
+    bg = colors.accentLightSubtle;
+    text = colors.accent;
+    border = colors.accent;
+  }
 
   return (
-    <View className={`px-2.5 py-1 rounded-lg border ${styles.bg} ${styles.border}`}>
-      <Text className={`${styles.text} text-[10px] font-black uppercase tracking-widest`}>
+    <View
+      className="px-2.5 py-0.5 rounded-full border items-center justify-center"
+      style={{ backgroundColor: bg, borderColor: border }}
+    >
+      <Text className="text-[9px] font-black uppercase tracking-wider" style={{ color: text }}>
         {priority}
       </Text>
     </View>

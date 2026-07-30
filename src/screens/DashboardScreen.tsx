@@ -15,7 +15,6 @@ import {
   Sparkles,
   Plus,
   Share2,
-  ChevronRight,
 } from "lucide-react-native";
 import { useAuthStore } from "../store/useAuthStore";
 import {
@@ -24,6 +23,7 @@ import {
   useFamilyGroceryItemsBackend,
   useDateFormatter,
   useTextFormatter,
+  useAppTheme,
 } from "../hooks";
 import { ShortcutCard, ProgressBar, DonutChart, PriorityBadge } from "../components/ui";
 import { useNotificationStore } from "../store/useNotificationStore";
@@ -124,39 +124,75 @@ const DashboardScreen = ({ navigation }: HomeStackScreenProps) => {
     return normalized.split(/\s+/)[0];
   }, [toTrimmed, user?.displayName]);
 
-  return (
-    <SafeAreaView edges={["top", "left", "right"]} className="flex-1 bg-white">
-      <StatusBar barStyle="dark-content" />
+  const { isDark, colors } = useAppTheme();
 
-      {/* Header Row */}
+  return (
+    <SafeAreaView
+      edges={["top", "left", "right"]}
+      className="flex-1"
+      style={{ backgroundColor: colors.bgCanvas }}
+    >
+      <StatusBar barStyle={isDark ? "light-content" : "dark-content"} />
+
+      {/* Header Row with Sleek Avatar Ring & Unread Bell */}
       <Animated.View
         entering={FadeInDown.duration(300).springify()}
-        className="px-6 py-3 flex-row items-center justify-between border-b border-slate-100"
+        className="px-6 py-3.5 flex-row items-center justify-between border-b"
+        style={{ borderBottomColor: colors.borderSubtle }}
       >
         <View className="flex-row items-center">
-          <View className="h-10 w-10 rounded-full bg-emerald-600 items-center justify-center overflow-hidden border border-emerald-500">
+          <View
+            className="h-11 w-11 rounded-full items-center justify-center overflow-hidden border-2"
+            style={{ borderColor: colors.accent }}
+          >
             {user?.photoURL ? (
               <Image source={{ uri: user.photoURL }} className="h-full w-full" />
             ) : (
-              <Text className="text-white font-bold text-base">{toInitial(firstName)}</Text>
+              <View
+                className="h-full w-full items-center justify-center"
+                style={{ backgroundColor: colors.accent }}
+              >
+                <Text className="text-white font-black text-base">{toInitial(firstName)}</Text>
+              </View>
             )}
           </View>
           <View className="ml-3">
-            <Text className="text-slate-400 text-[11px] font-medium">{getGreeting()}</Text>
-            <Text className="text-slate-900 text-[17px] font-extrabold tracking-tight">
-              {user?.displayName} 👋
+            <View className="flex-row items-center">
+              <Text
+                className="text-[11px] font-bold uppercase tracking-wider mr-1.5"
+                style={{ color: colors.accent }}
+              >
+                {getGreeting()}
+              </Text>
+              <Text
+                className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full"
+                style={{ backgroundColor: colors.accentLightSubtle, color: colors.accent }}
+              >
+                Online
+              </Text>
+            </View>
+            <Text
+              className="text-[18px] font-black tracking-tight"
+              style={{ color: colors.textPrimary }}
+            >
+              {user?.displayName || firstName} 👋
             </Text>
           </View>
         </View>
 
         <TouchableOpacity
           onPress={() => navigation.navigate(ROUTES.NOTIFICATIONS)}
-          className="h-9 w-9 rounded-full bg-slate-50 items-center justify-center border border-slate-100"
+          activeOpacity={0.75}
+          className="h-10 w-10 rounded-xl items-center justify-center border shadow-xs relative"
+          style={{ backgroundColor: colors.bgSurface, borderColor: colors.border }}
         >
-          <Bell size={17} stroke="#059669" />
+          <Bell size={18} stroke={colors.accent} strokeWidth={2} />
           {unreadCount > 0 ? (
-            <View className="absolute -right-1 -top-1 h-3.5 min-w-[14px] items-center justify-center rounded-full bg-rose-500 px-1 border border-white">
-              <Text className="text-[8px] font-bold text-white">
+            <View
+              className="absolute -right-1 -top-1 h-4 min-w-[16px] items-center justify-center rounded-full px-1 border"
+              style={{ backgroundColor: colors.danger, borderColor: colors.bgCanvas }}
+            >
+              <Text className="text-[9px] font-black text-white">
                 {unreadCount > 99 ? "99+" : unreadCount}
               </Text>
             </View>
@@ -167,14 +203,21 @@ const DashboardScreen = ({ navigation }: HomeStackScreenProps) => {
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: 100 }}
-        className="flex-1 bg-white"
+        className="flex-1"
+        style={{ backgroundColor: colors.bgCanvas }}
       >
-        <View className="px-6 pt-3">
+        <View className="px-6 pt-4">
           {notificationError ? (
-            <View className="mb-3 p-3 rounded-xl border border-amber-200 bg-amber-50">
+            <View
+              className="mb-4 p-3.5 rounded-2xl border"
+              style={{ borderColor: colors.badgeAmberBorder, backgroundColor: colors.badgeAmberBg }}
+            >
               <View className="flex-row items-start">
-                <AlertTriangle size={15} stroke="#D97706" />
-                <Text className="ml-2 flex-1 text-[11px] font-medium leading-4 text-amber-900">
+                <AlertTriangle size={16} stroke={colors.warning} className="mr-2" />
+                <Text
+                  className="flex-1 text-[12px] font-medium leading-4"
+                  style={{ color: colors.badgeAmberText }}
+                >
                   Live activity feed issue: {notificationError}
                 </Text>
               </View>
@@ -183,99 +226,155 @@ const DashboardScreen = ({ navigation }: HomeStackScreenProps) => {
 
           {user?.familyId ? (
             <>
-              {/* Family Hub Header (Cardless with Breathing Space) */}
+              {/* Ultra-Aesthetic Hero Family Group Card */}
               <Animated.View
                 entering={FadeInDown.duration(350).springify()}
-                className="py-6 border-b border-slate-100"
+                className="rounded-xl p-5 border shadow-sm mb-6"
+                style={{ backgroundColor: colors.bgCard, borderColor: colors.border }}
               >
                 <View className="flex-row items-center justify-between mb-4">
-                  <View>
-                    <Text className="text-emerald-600 text-[11px] font-extrabold uppercase tracking-wider mb-0.5">
-                      Family Group
-                    </Text>
-                    <Text className="text-slate-900 text-2xl font-black tracking-tight">
+                  <View className="flex-1 pr-2">
+                    <View className="flex-row items-center mb-1">
+                      <View
+                        className="px-2 py-0.5 rounded-full flex-row items-center mr-1.5"
+                        style={{ backgroundColor: colors.accentLightSubtle }}
+                      >
+                        <Users size={11} stroke={colors.accent} style={{ marginRight: 4 }} />
+                        <Text
+                          className="text-[10px] font-black uppercase tracking-wider"
+                          style={{ color: colors.accent }}
+                        >
+                          FAMILY HUB
+                        </Text>
+                      </View>
+                    </View>
+                    <Text
+                      className="text-2xl font-black tracking-tight"
+                      style={{ color: colors.textPrimary }}
+                      numberOfLines={1}
+                    >
                       {familyName}
                     </Text>
                   </View>
 
-                  <View className="flex-row items-center bg-slate-50 px-3 py-1.5 rounded-full border border-slate-100">
+                  <View
+                    className="flex-row items-center px-3 py-1.5 rounded-full border shadow-xs"
+                    style={{ backgroundColor: colors.bgInput, borderColor: colors.borderSubtle }}
+                  >
                     <View className="flex-row mr-2">
                       {(members || []).slice(0, 3).map((m, i) => (
                         <View
                           key={m.uid}
-                          className={`h-5 w-5 rounded-full border border-white items-center justify-center ${
-                            i > 0 ? "-ml-2" : ""
+                          className={`h-6 w-6 rounded-full border items-center justify-center ${
+                            i > 0 ? "-ml-2.5" : ""
                           }`}
                           style={{
-                            backgroundColor: i === 0 ? "#10B981" : i === 1 ? "#3B82F6" : "#F59E0B",
+                            backgroundColor:
+                              i === 0
+                                ? colors.accent
+                                : i === 1
+                                  ? colors.info
+                                  : colors.badgePurpleText,
+                            borderColor: colors.bgCard,
                           }}
                         >
-                          <Text className="text-white text-[8px] font-bold">
+                          <Text className="text-white text-[9px] font-extrabold">
                             {toInitial(m.displayName)}
                           </Text>
                         </View>
                       ))}
                     </View>
-                    <Text className="text-[11px] font-bold text-slate-600">
-                      {(members || []).length} member{(members || []).length !== 1 ? "s" : ""}
+                    <Text
+                      className="text-[11px] font-extrabold"
+                      style={{ color: colors.textSecondary }}
+                    >
+                      {(members || []).length} Member{(members || []).length !== 1 ? "s" : ""}
                     </Text>
                   </View>
                 </View>
 
-                {/* Progress Bar & Financial Spend */}
+                {/* Progress Bar & Financial Spend Summary */}
                 <View className="mb-4">
                   <View className="flex-row justify-between items-center mb-2">
-                    <Text className="text-[13px] font-bold text-slate-800">Shopping Progress</Text>
-                    <Text className="text-[13px] font-extrabold text-emerald-600">
+                    <Text className="text-[13px] font-bold" style={{ color: colors.textPrimary }}>
+                      Shopping Progress
+                    </Text>
+                    <Text className="text-[13px] font-black" style={{ color: colors.accent }}>
                       {completionRate}% ({completedCount}/{totalCount})
                     </Text>
                   </View>
-                  <ProgressBar progress={completionRate} height={6} />
-                  <View className="flex-row justify-between items-center mt-2">
-                    <Text className="text-[12px] text-slate-500 font-medium">
-                      Est. Spend:{" "}
-                      <Text className="font-bold text-slate-900">৳{estimatedSpend.toFixed(0)}</Text>
-                    </Text>
-                    <Text className="text-[12px] text-amber-700 font-bold">
+                  <ProgressBar progress={completionRate} height={7} />
+                  <View className="flex-row justify-between items-center mt-2.5">
+                    <View
+                      className="flex-row items-center px-2.5 py-1 rounded-lg"
+                      style={{ backgroundColor: colors.bgInput }}
+                    >
+                      <Text
+                        className="text-[11px] font-semibold"
+                        style={{ color: colors.textSecondary }}
+                      >
+                        Est. Spend:{" "}
+                        <Text className="font-extrabold" style={{ color: colors.textPrimary }}>
+                          ৳{estimatedSpend.toFixed(0)}
+                        </Text>
+                      </Text>
+                    </View>
+                    <Text className="text-[12px] font-bold" style={{ color: colors.accent }}>
                       {pendingCount} left to buy
                     </Text>
                   </View>
                 </View>
 
-                {/* 3-Stat Metric Grid */}
-                <View className="flex-row py-3 justify-between items-center">
-                  <View className="flex-1 items-center">
-                    <Clock size={16} stroke="#3B82F6" className="mb-1" />
-                    <Text className="text-xl font-black text-slate-900">{pendingCount}</Text>
-                    <Text className="text-[10px] font-bold text-slate-400 uppercase mt-0.5">
+                {/* 3-Stat Metric Row (Flat, No Sub-Cards) */}
+                <View
+                  className="flex-row pt-3 justify-between items-center border-t"
+                  style={{ borderTopColor: colors.borderSubtle }}
+                >
+                  <View className="flex-1 items-center py-1">
+                    <Clock size={16} stroke={colors.icon} className="mb-1" />
+                    <Text className="text-lg font-black" style={{ color: colors.textPrimary }}>
+                      {pendingCount}
+                    </Text>
+                    <Text
+                      className="text-[10px] font-bold uppercase mt-0.5"
+                      style={{ color: colors.textMuted }}
+                    >
                       Pending
                     </Text>
                   </View>
-                  <View className="w-[1px] h-8 bg-slate-100" />
-                  <View className="flex-1 items-center">
-                    <CheckCircle2 size={16} stroke="#10B981" className="mb-1" />
-                    <Text className="text-xl font-black text-slate-900">{completedCount}</Text>
-                    <Text className="text-[10px] font-bold text-slate-400 uppercase mt-0.5">
+                  <View className="flex-1 items-center py-1">
+                    <CheckCircle2 size={16} stroke={colors.accent} className="mb-1" />
+                    <Text className="text-lg font-black" style={{ color: colors.accent }}>
+                      {completedCount}
+                    </Text>
+                    <Text
+                      className="text-[10px] font-bold uppercase mt-0.5"
+                      style={{ color: colors.accent }}
+                    >
                       Done
                     </Text>
                   </View>
-                  <View className="w-[1px] h-8 bg-slate-100" />
-                  <View className="flex-1 items-center">
-                    <AlertCircle size={16} stroke="#EF4444" className="mb-1" />
-                    <Text className="text-xl font-black text-slate-900">{urgentCount}</Text>
-                    <Text className="text-[10px] font-bold text-slate-400 uppercase mt-0.5">
+                  <View className="flex-1 items-center py-1">
+                    <AlertCircle size={16} stroke={colors.danger} className="mb-1" />
+                    <Text className="text-lg font-black" style={{ color: colors.danger }}>
+                      {urgentCount}
+                    </Text>
+                    <Text
+                      className="text-[10px] font-bold uppercase mt-0.5"
+                      style={{ color: colors.danger }}
+                    >
                       Urgent
                     </Text>
                   </View>
                 </View>
               </Animated.View>
 
-              {/* Quick Actions Shortcuts */}
-              <Animated.View
-                entering={FadeInDown.duration(400).springify()}
-                className="py-6 border-b border-slate-100"
-              >
-                <Text className="text-slate-900 text-[14px] font-extrabold tracking-tight mb-4">
+              {/* Quick Actions Shortcuts with Unified Theme Color */}
+              <Animated.View entering={FadeInDown.duration(400).springify()} className="mb-6">
+                <Text
+                  className="text-[14px] font-extrabold tracking-tight mb-3"
+                  style={{ color: colors.textPrimary }}
+                >
                   Quick Shortcuts
                 </Text>
                 <View className="flex-row items-center justify-between">
@@ -283,157 +382,219 @@ const DashboardScreen = ({ navigation }: HomeStackScreenProps) => {
                     icon={Plus}
                     label="Add Item"
                     onPress={() => navigation.navigate(ROUTES.ADD_ITEM)}
-                    iconBgColor="bg-emerald-50"
-                    iconColor="#059669"
+                    bgColor={colors.accentLightSubtle}
+                    iconColor={colors.accent}
                   />
                   <ShortcutCard
                     icon={Sparkles}
                     label="Recipe AI"
                     onPress={() => navigation.navigate(ROUTES.RECIPE_PACKS)}
-                    iconBgColor="bg-purple-50"
-                    iconColor="#7C3AED"
+                    bgColor={colors.accentLightSubtle}
+                    iconColor={colors.accent}
                   />
                   <ShortcutCard
                     icon={Users}
                     label="Family"
                     onPress={() => (navigation as any).navigate(ROUTES.FAMILY)}
-                    iconBgColor="bg-amber-50"
-                    iconColor="#D97706"
+                    bgColor={colors.accentLightSubtle}
+                    iconColor={colors.accent}
                   />
                   <ShortcutCard
                     icon={Share2}
                     label="Invite"
                     onPress={handleShareInvite}
-                    iconBgColor="bg-blue-50"
-                    iconColor="#2563EB"
+                    bgColor={colors.accentLightSubtle}
+                    iconColor={colors.accent}
                   />
                 </View>
               </Animated.View>
 
-              {/* Priority Focus Section */}
+              {/* Priority Focus Section (Sleek Aesthetic Highlight Card) */}
               <Animated.View
                 entering={FadeInDown.duration(450).springify()}
-                className="py-6 border-b border-slate-100"
+                className="mb-6 rounded-xl p-4 border-l-4 border"
+                style={{
+                  backgroundColor: colors.bgInput,
+                  borderColor: colors.borderSubtle,
+                  borderLeftColor: colors.accent,
+                }}
               >
-                <Text className="text-slate-900 text-[14px] font-extrabold tracking-tight mb-3">
-                  Priority Focus
-                </Text>
+                <View className="flex-row items-center justify-between mb-2">
+                  <Text
+                    className="text-[11px] font-black uppercase tracking-wider"
+                    style={{ color: colors.accent }}
+                  >
+                    PRIORITY FOCUS
+                  </Text>
+                  {nextItem ? <PriorityBadge priority={nextItem.priority} /> : null}
+                </View>
+
                 {nextItem ? (
                   <TouchableOpacity
                     activeOpacity={0.85}
                     onPress={() => (navigation as any).navigate(ROUTES.GROCERIES)}
                   >
-                    <View className="py-2">
-                      <View className="flex-row items-center justify-between mb-1">
-                        <Text className="text-emerald-700 text-[10px] font-black uppercase tracking-wider">
-                          Next Up
-                        </Text>
-                        <PriorityBadge priority={nextItem.priority} />
-                      </View>
-                      <Text className="text-slate-900 text-[16px] font-extrabold leading-tight">
-                        {nextItem.name} —{" "}
-                        <Text className="text-slate-500 font-medium text-xs">
-                          {nextItem.category}
-                        </Text>
+                    <Text
+                      className="text-[16px] font-extrabold leading-tight"
+                      style={{ color: colors.textPrimary }}
+                    >
+                      {nextItem.name}{" "}
+                      <Text
+                        className="font-semibold text-xs"
+                        style={{ color: colors.textSecondary }}
+                      >
+                        ({nextItem.category})
                       </Text>
-                      <View className="flex-row justify-between items-center mt-2">
-                        <Text className="text-slate-400 text-[11px] font-medium">
-                          Added by {nextItem.addedBy?.name || "Member"}
+                    </Text>
+                    <View
+                      className="flex-row justify-between items-center mt-2.5 pt-2 border-t"
+                      style={{ borderTopColor: colors.borderSubtle }}
+                    >
+                      <Text className="text-[11px] font-medium" style={{ color: colors.textMuted }}>
+                        Added by {nextItem.addedBy?.name || "Member"}
+                      </Text>
+                      <View
+                        className="flex-row items-center px-2.5 py-1 rounded-full"
+                        style={{ backgroundColor: colors.accentLightSubtle }}
+                      >
+                        <Text
+                          className="text-[11px] font-black mr-1"
+                          style={{ color: colors.accent }}
+                        >
+                          View List
                         </Text>
-                        <View className="flex-row items-center">
-                          <Text className="text-emerald-600 text-[11px] font-bold mr-1">
-                            Open List
-                          </Text>
-                          <ArrowRight size={13} stroke="#059669" />
-                        </View>
+                        <ArrowRight size={12} stroke={colors.accent} strokeWidth={2.5} />
                       </View>
                     </View>
                   </TouchableOpacity>
                 ) : (
-                  <View className="py-3 flex-row items-center">
-                    <CheckCircle2 size={18} stroke="#10B981" className="mr-2" />
-                    <Text className="text-[13px] font-bold text-slate-800">
+                  <View className="py-2 flex-row items-center">
+                    <CheckCircle2 size={18} stroke={colors.accent} className="mr-2" />
+                    <Text className="text-[13px] font-bold" style={{ color: colors.textPrimary }}>
                       All caught up! No pending items.
                     </Text>
                   </View>
                 )}
               </Animated.View>
 
-              {/* 1-Click Meal Packs Banner (Fixed & Non-Clipped) */}
-              <Animated.View
-                entering={FadeInDown.duration(500).springify()}
-                className="py-6 border-b border-slate-100"
-              >
-                <TouchableOpacity
-                  activeOpacity={0.88}
-                  onPress={() => navigation.navigate(ROUTES.RECIPE_PACKS)}
-                  className="overflow-hidden rounded-2xl bg-emerald-800 p-5 shadow-xs"
+              {/* Category Breakdown Visual Widget */}
+              <Animated.View entering={FadeInDown.duration(550).springify()} className="mb-6">
+                <Text
+                  className="text-[14px] font-extrabold tracking-tight mb-3"
+                  style={{ color: colors.textPrimary }}
                 >
-                  <View className="flex-row items-center justify-between">
-                    <View className="flex-1 pr-4">
-                      <Text className="text-[17px] font-black text-white tracking-tight">
-                        1-Click Meal Packs 🌮🍝
-                      </Text>
-                      <Text className="mt-1.5 text-[12px] font-medium text-emerald-100 leading-5">
-                        Instant ingredients for Taco Night, Pasta, & Healthy Prep.
-                      </Text>
-                    </View>
-                    <View className="h-9 px-3.5 rounded-xl bg-white items-center justify-center flex-row">
-                      <Text className="text-[12px] font-extrabold text-emerald-900 mr-1">
-                        Explore
-                      </Text>
-                      <ChevronRight size={15} stroke="#064E3B" />
-                    </View>
-                  </View>
-                </TouchableOpacity>
-              </Animated.View>
-
-              {/* Category Breakdown */}
-              <Animated.View entering={FadeInDown.duration(550).springify()} className="py-6">
-                <Text className="text-slate-900 text-[16px] font-extrabold tracking-tight mb-4">
                   Category Breakdown
                 </Text>
-                <View className="flex-row items-center">
-                  <DonutChart
-                    total={totalCount}
-                    data={[
-                      { value: completedCount, color: "#10B981" },
-                      { value: Math.max(0, pendingCount - urgentCount), color: "#F59E0B" },
-                      { value: urgentCount, color: "#EF4444" },
-                    ]}
-                    size={75}
-                    strokeWidth={8}
-                  />
-                  <View className="ml-4 flex-1">
-                    {categoryStats.map(([cat, count]) => (
-                      <ProgressBar
-                        key={cat}
-                        label={cat}
-                        progress={(count / (totalCount || 1)) * 100}
-                        color={cat === "Beauty" ? "#10B981" : "#F59E0B"}
-                        height={5}
-                      />
-                    ))}
+
+                <View
+                  className="flex-row items-center justify-between mb-4 pb-3 border-b"
+                  style={{ borderBottomColor: colors.borderSubtle }}
+                >
+                  <View className="flex-row items-center">
+                    <DonutChart
+                      total={totalCount}
+                      data={[
+                        { value: completedCount, color: colors.accent },
+                        { value: Math.max(0, pendingCount - urgentCount), color: colors.warning },
+                        { value: urgentCount, color: colors.danger },
+                      ]}
+                      size={64}
+                      strokeWidth={7}
+                    />
+                    <View className="ml-3.5">
+                      <Text
+                        className="text-[14px] font-black"
+                        style={{ color: colors.textPrimary }}
+                      >
+                        Total {totalCount} Items
+                      </Text>
+                      <Text
+                        className="text-[11px] font-medium mt-0.5"
+                        style={{ color: colors.textMuted }}
+                      >
+                        {completedCount} bought · {pendingCount} remaining
+                      </Text>
+                    </View>
                   </View>
+                </View>
+
+                <View className="gap-3.5">
+                  {categoryStats.map(([cat, count], idx) => {
+                    const categoryColors = [
+                      colors.accent,
+                      colors.badgePurpleText,
+                      colors.info,
+                      colors.warning,
+                      colors.danger,
+                    ];
+                    const itemColor = categoryColors[idx % categoryColors.length];
+                    const percentage = Math.round((count / (totalCount || 1)) * 100);
+
+                    return (
+                      <View key={cat} className="gap-1.5">
+                        <View className="flex-row justify-between items-center">
+                          <View className="flex-row items-center">
+                            <View
+                              className="h-2.5 w-2.5 rounded-full mr-2"
+                              style={{ backgroundColor: itemColor }}
+                            />
+                            <Text
+                              className="text-[12px] font-extrabold"
+                              style={{ color: colors.textPrimary }}
+                            >
+                              {cat}
+                            </Text>
+                          </View>
+                          <View className="flex-row items-center gap-1.5">
+                            <Text
+                              className="text-[11px] font-bold"
+                              style={{ color: colors.textSecondary }}
+                            >
+                              {count} item{count !== 1 ? "s" : ""}
+                            </Text>
+                            <View
+                              className="px-1.5 py-0.5 rounded-md"
+                              style={{ backgroundColor: colors.bgInput }}
+                            >
+                              <Text className="text-[10px] font-black" style={{ color: itemColor }}>
+                                {percentage}%
+                              </Text>
+                            </View>
+                          </View>
+                        </View>
+                        <ProgressBar progress={percentage} color={itemColor} height={6} />
+                      </View>
+                    );
+                  })}
                 </View>
               </Animated.View>
             </>
           ) : (
             <View className="py-12 items-center">
-              <View className="h-14 w-14 rounded-2xl bg-emerald-50 items-center justify-center mb-3">
-                <UsersRound size={28} stroke="#059669" strokeWidth={1.5} />
+              <View
+                className="h-14 w-14 rounded-2xl items-center justify-center mb-3"
+                style={{ backgroundColor: colors.accentLightSubtle }}
+              >
+                <UsersRound size={28} stroke={colors.accent} strokeWidth={1.5} />
               </View>
-              <Text className="text-lg font-extrabold text-slate-900 text-center px-4 tracking-tight">
+              <Text
+                className="text-lg font-extrabold text-center px-4 tracking-tight"
+                style={{ color: colors.textPrimary }}
+              >
                 Set Up Your Family Group
               </Text>
-              <Text className="text-slate-500 text-center mt-1.5 mb-5 px-6 text-[12px] leading-5">
+              <Text
+                className="text-center mt-1.5 mb-5 px-6 text-[12px] leading-5"
+                style={{ color: colors.textSecondary }}
+              >
                 Create or join a family group to unlock shared grocery list, members & meal packs.
               </Text>
 
               <TouchableOpacity
                 onPress={() => navigation.navigate(ROUTES.FAMILY_SETUP)}
                 activeOpacity={0.85}
-                className="w-[80%] rounded-xl bg-emerald-600 py-3 items-center"
+                className="w-[80%] rounded-xl py-3 items-center"
+                style={{ backgroundColor: colors.accent }}
               >
                 <Text className="text-white font-bold text-[13px]">Continue Setup</Text>
               </TouchableOpacity>

@@ -10,14 +10,29 @@ import AnalyticsScreen from "../screens/AnalyticsScreen";
 import FamilyScreen from "../screens/FamilyScreen";
 import ProfileScreen from "../screens/ProfileScreen";
 import { useAuthStore } from "../store/useAuthStore";
+import { useAppTheme } from "../hooks/useAppTheme";
 import { syncFamilyInviteForOwner } from "../services/family";
 import { ROUTES } from "../types";
 
 const Tab = createBottomTabNavigator();
 
-const TabIcon = ({ focused, Icon }: { focused: boolean; Icon: any }) => (
+const TabIcon = ({
+  focused,
+  Icon,
+  activeColor,
+  inactiveColor,
+}: {
+  focused: boolean;
+  Icon: any;
+  activeColor: string;
+  inactiveColor: string;
+}) => (
   <View style={styles.iconContainer}>
-    <Icon stroke={focused ? "#10B981" : "#94A3B8"} size={22} strokeWidth={focused ? 2.5 : 2} />
+    <Icon
+      stroke={focused ? activeColor : inactiveColor}
+      size={22}
+      strokeWidth={focused ? 2.5 : 2}
+    />
   </View>
 );
 
@@ -27,6 +42,7 @@ const TabIcon = ({ focused, Icon }: { focused: boolean; Icon: any }) => (
  */
 const TabNavigator: React.FC = () => {
   const insets = useSafeAreaInsets();
+  const { isDark, colors } = useAppTheme();
   const { user, profileSynced, loading, hasHydrated } = useAuthStore();
   const familyId = user?.familyId || "";
 
@@ -48,24 +64,30 @@ const TabNavigator: React.FC = () => {
     });
   }, [hasHydrated, loading, familyId, profileSynced, user?.role, user?.uid]);
 
+  const backgroundColor = colors.bgCanvas;
+  const surfaceColor = colors.tabBarBg;
+  const borderColor = colors.tabBarBorder;
+  const inactiveTextColor = colors.icon;
+  const activeTextColor = colors.accent;
+
   return (
     <Tab.Navigator
       screenOptions={{
         headerShown: false,
-        sceneStyle: { backgroundColor: "#FFFFFF" },
-        tabBarActiveTintColor: "#10B981",
-        tabBarInactiveTintColor: "#94A3B8",
+        sceneStyle: { backgroundColor },
+        tabBarActiveTintColor: activeTextColor,
+        tabBarInactiveTintColor: inactiveTextColor,
         tabBarStyle: {
           height: (Platform.OS === "ios" ? 60 : 56) + (insets.bottom > 0 ? insets.bottom : 8),
           paddingBottom: insets.bottom > 0 ? insets.bottom : 6,
           paddingTop: 6,
-          backgroundColor: "#FFFFFF",
+          backgroundColor: surfaceColor,
           borderTopWidth: 1,
-          borderTopColor: "#F1F5F9",
-          elevation: 4,
-          shadowColor: "#0F172A",
+          borderTopColor: borderColor,
+          elevation: 8,
+          shadowColor: colors.black,
           shadowOffset: { width: 0, height: -2 },
-          shadowOpacity: 0.02,
+          shadowOpacity: isDark ? 0.3 : 0.02,
           shadowRadius: 8,
         },
         tabBarLabelStyle: {
@@ -80,7 +102,14 @@ const TabNavigator: React.FC = () => {
         component={DashboardScreen as any}
         options={{
           tabBarLabel: "Dashboard",
-          tabBarIcon: ({ focused }) => <TabIcon focused={focused} Icon={Home} />,
+          tabBarIcon: ({ focused }) => (
+            <TabIcon
+              focused={focused}
+              Icon={Home}
+              activeColor={activeTextColor}
+              inactiveColor={inactiveTextColor}
+            />
+          ),
         }}
       />
       <Tab.Screen
@@ -88,7 +117,14 @@ const TabNavigator: React.FC = () => {
         component={GroceryListScreen as any}
         options={{
           tabBarLabel: "Groceries",
-          tabBarIcon: ({ focused }) => <TabIcon focused={focused} Icon={ShoppingBasket} />,
+          tabBarIcon: ({ focused }) => (
+            <TabIcon
+              focused={focused}
+              Icon={ShoppingBasket}
+              activeColor={activeTextColor}
+              inactiveColor={inactiveTextColor}
+            />
+          ),
         }}
       />
       <Tab.Screen
@@ -96,7 +132,14 @@ const TabNavigator: React.FC = () => {
         component={AnalyticsScreen as any}
         options={{
           tabBarLabel: "Analytics",
-          tabBarIcon: ({ focused }) => <TabIcon focused={focused} Icon={BarChart3} />,
+          tabBarIcon: ({ focused }) => (
+            <TabIcon
+              focused={focused}
+              Icon={BarChart3}
+              activeColor={activeTextColor}
+              inactiveColor={inactiveTextColor}
+            />
+          ),
         }}
       />
       <Tab.Screen
@@ -104,7 +147,14 @@ const TabNavigator: React.FC = () => {
         component={FamilyScreen as any}
         options={{
           tabBarLabel: "Family",
-          tabBarIcon: ({ focused }) => <TabIcon focused={focused} Icon={Users} />,
+          tabBarIcon: ({ focused }) => (
+            <TabIcon
+              focused={focused}
+              Icon={Users}
+              activeColor={activeTextColor}
+              inactiveColor={inactiveTextColor}
+            />
+          ),
         }}
       />
       <Tab.Screen
@@ -112,7 +162,14 @@ const TabNavigator: React.FC = () => {
         component={ProfileScreen as any}
         options={{
           tabBarLabel: "Profile",
-          tabBarIcon: ({ focused }) => <TabIcon focused={focused} Icon={UserIcon} />,
+          tabBarIcon: ({ focused }) => (
+            <TabIcon
+              focused={focused}
+              Icon={UserIcon}
+              activeColor={activeTextColor}
+              inactiveColor={inactiveTextColor}
+            />
+          ),
         }}
       />
     </Tab.Navigator>

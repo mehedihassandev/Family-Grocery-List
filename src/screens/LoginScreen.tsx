@@ -11,6 +11,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import Animated, { FadeInDown } from "react-native-reanimated";
 import { RhfTextfield } from "../components/ui";
+import { useAppTheme } from "../hooks";
 import {
   ArrowRight,
   Eye,
@@ -40,8 +41,6 @@ import { EFormModelKey, getFormDefaultValues } from "../utils";
 
 type AuthMode = "signIn" | "signUp";
 
-const fieldIconColor = "#94A3B8";
-
 /**
  * Modern Login Screen
  * Why: Pure white aesthetic, sleek form inputs, and smooth entrance animation.
@@ -53,6 +52,8 @@ const LoginScreen = () => {
   const [emailBusy, setEmailBusy] = useState(false);
   const [googleBusy, setGoogleBusy] = useState(false);
   const googleConfigured = hasGoogleSignInConfiguration();
+  const { colors } = useAppTheme();
+  const fieldIconColor = colors.textMuted;
 
   const isBusy = emailBusy || googleBusy;
 
@@ -125,9 +126,10 @@ const LoginScreen = () => {
       : signUpForm.handleSubmit(handleSignUp);
 
   return (
-    <SafeAreaView className="flex-1 bg-white">
+    <SafeAreaView className="flex-1" style={{ backgroundColor: colors.bgCanvas }}>
       <KeyboardAvoidingView
-        className="flex-1 bg-white"
+        className="flex-1"
+        style={{ backgroundColor: colors.bgCanvas }}
         behavior={Platform.OS === "ios" ? "padding" : undefined}
       >
         <Animated.View
@@ -140,13 +142,22 @@ const LoginScreen = () => {
               <ShoppingBasket size={24} color="white" strokeWidth={2.2} />
             </View>
 
-            <Text className="text-[10px] font-bold uppercase tracking-[2.4px] text-slate-400">
+            <Text
+              className="text-[10px] font-bold uppercase tracking-[2.4px]"
+              style={{ color: colors.textMuted }}
+            >
               Family Grocery
             </Text>
-            <Text className="mt-1.5 text-center text-[28px] font-extrabold tracking-tight text-slate-900">
+            <Text
+              className="mt-1.5 text-center text-[28px] font-extrabold tracking-tight"
+              style={{ color: colors.textPrimary }}
+            >
               {authMode === "signIn" ? "Welcome Back" : "Create Account"}
             </Text>
-            <Text className="mt-1.5 px-4 text-center text-[13px] leading-5 text-slate-500">
+            <Text
+              className="mt-1.5 px-4 text-center text-[13px] leading-5"
+              style={{ color: colors.textSecondary }}
+            >
               {authMode === "signIn"
                 ? "Sign in to manage groceries with your family in real time."
                 : "Create your account to start your shared family grocery list."}
@@ -154,7 +165,10 @@ const LoginScreen = () => {
           </View>
 
           {/* Mode toggle */}
-          <View className="mt-8 flex-row rounded-2xl border border-slate-100 bg-slate-50 p-1">
+          <View
+            className="mt-8 flex-row rounded-2xl border p-1"
+            style={{ backgroundColor: colors.bgInput, borderColor: colors.border }}
+          >
             <TouchableOpacity
               activeOpacity={0.9}
               onPress={() => switchMode("signIn")}
@@ -162,7 +176,8 @@ const LoginScreen = () => {
               className={`flex-1 rounded-xl py-2.5 ${authMode === "signIn" ? "bg-emerald-600 shadow-2xs" : ""}`}
             >
               <Text
-                className={`text-center text-[13px] font-bold ${authMode === "signIn" ? "text-white" : "text-slate-500"}`}
+                className="text-center text-[13px] font-bold"
+                style={{ color: authMode === "signIn" ? colors.white : colors.textMuted }}
               >
                 Sign In
               </Text>
@@ -175,7 +190,8 @@ const LoginScreen = () => {
               className={`flex-1 rounded-xl py-2.5 ${authMode === "signUp" ? "bg-emerald-600 shadow-2xs" : ""}`}
             >
               <Text
-                className={`text-center text-[13px] font-bold ${authMode === "signUp" ? "text-white" : "text-slate-500"}`}
+                className="text-center text-[13px] font-bold"
+                style={{ color: authMode === "signUp" ? colors.white : colors.textMuted }}
               >
                 Create
               </Text>
@@ -309,16 +325,19 @@ const LoginScreen = () => {
                   ? "Sign In"
                   : "Create Account"}
             </Text>
-            <ArrowRight size={16} color="#FFFFFF" strokeWidth={2.3} className="ml-2" />
+            <ArrowRight size={16} color={colors.white} strokeWidth={2.3} className="ml-2" />
           </TouchableOpacity>
 
           {/* Divider */}
           <View className="my-6 flex-row items-center">
-            <View className="h-px flex-1 bg-slate-100" />
-            <Text className="mx-3 text-[10px] font-bold uppercase tracking-[2px] text-slate-400">
+            <View className="h-px flex-1" style={{ backgroundColor: colors.border }} />
+            <Text
+              className="mx-3 text-[10px] font-bold uppercase tracking-[2px]"
+              style={{ color: colors.textMuted }}
+            >
               or
             </Text>
-            <View className="h-px flex-1 bg-slate-100" />
+            <View className="h-px flex-1" style={{ backgroundColor: colors.border }} />
           </View>
 
           {/* Google Sign-In */}
@@ -326,7 +345,8 @@ const LoginScreen = () => {
             onPress={handleGoogleSignIn}
             activeOpacity={0.88}
             disabled={isBusy || !googleConfigured}
-            className="flex-row items-center justify-center rounded-xl border border-slate-200 bg-white h-[48px] disabled:opacity-60"
+            className="flex-row items-center justify-center rounded-2xl border h-[50px] disabled:opacity-60"
+            style={{ backgroundColor: colors.bgCard, borderColor: colors.border }}
           >
             <Image
               source={{
@@ -334,18 +354,21 @@ const LoginScreen = () => {
               }}
               className="mr-2.5 h-5 w-5"
             />
-            <Text className="text-[13px] font-bold text-slate-700">
+            <Text className="text-[14px] font-bold" style={{ color: colors.textPrimary }}>
               {googleBusy ? "Opening Google..." : "Continue with Google"}
             </Text>
           </TouchableOpacity>
 
           {!googleConfigured && (
-            <Text className="mt-2 text-center text-[10px] text-slate-400">
+            <Text className="mt-2 text-center text-[10px]" style={{ color: colors.textMuted }}>
               Google Sign-In needs setup for this build.
             </Text>
           )}
 
-          <Text className="mt-6 text-center text-[10px] uppercase tracking-[2px] text-slate-300">
+          <Text
+            className="mt-6 text-center text-[10px] uppercase tracking-[2px]"
+            style={{ color: colors.textMuted }}
+          >
             Family Grocery • v2.1.0
           </Text>
         </Animated.View>

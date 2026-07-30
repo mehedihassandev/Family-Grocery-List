@@ -1,5 +1,6 @@
 import React, { useEffect, useRef } from "react";
 import { Animated, Easing, Image, View } from "react-native";
+import { useAppTheme } from "../hooks";
 
 const SPLASH_ICON = require("../../assets/adaptive-icon.png");
 
@@ -8,6 +9,7 @@ const SPLASH_ICON = require("../../assets/adaptive-icon.png");
  * Why: Preserve branded launch feel while auth/session state initializes.
  */
 const LoadingScreen = () => {
+  const { colors } = useAppTheme();
   const fadeIn = useRef(new Animated.Value(0)).current;
   const breathe = useRef(new Animated.Value(0.9)).current;
   const spin = useRef(new Animated.Value(0)).current;
@@ -72,14 +74,17 @@ const LoadingScreen = () => {
         className="items-center justify-center"
       >
         <Animated.View
-          style={{ transform: [{ rotate: spinInterpolation }] }}
-          className="absolute h-[132px] w-[132px] rounded-full border border-[#10B981]/35"
+          style={{
+            transform: [{ rotate: spinInterpolation }],
+            borderColor: `${colors.accentLight}59`,
+          }}
+          className="absolute h-[132px] w-[132px] rounded-full border"
         />
         <Image
           source={SPLASH_ICON}
           className="h-[96px] w-[96px]"
           resizeMode="contain"
-          style={{ tintColor: "#10B981" }}
+          style={{ tintColor: colors.accentLight }}
         />
       </Animated.View>
     </View>

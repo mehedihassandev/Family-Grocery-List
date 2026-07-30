@@ -3,9 +3,9 @@ import { View, Text, TouchableOpacity, Image } from "react-native";
 import Animated, { FadeInDown } from "react-native-reanimated";
 import Swipeable from "react-native-gesture-handler/Swipeable";
 import * as Haptics from "expo-haptics";
-import { Check, Calendar, Tag, User, FileText, ShoppingCart } from "lucide-react-native";
+import { Check, Calendar, Tag, User, ShoppingCart } from "lucide-react-native";
 import { IGroceryItem } from "../types";
-import { useDateFormatter, useTextFormatter } from "../hooks";
+import { useDateFormatter, useTextFormatter, useAppTheme } from "../hooks";
 import { PriorityBadge } from "./ui";
 
 interface IItemCardProps {
@@ -16,14 +16,16 @@ interface IItemCardProps {
 }
 
 /**
- * Cardless Grocery Item Row with Cross-Platform Swipe-Right-to-Cart Action
+ * Modern Sleek Grocery Item Card with Swipe Actions & Theme Support
  */
 const ItemCard = ({ item, onToggle, onPress }: IItemCardProps) => {
   const swipeableRef = useRef<Swipeable>(null);
   const { toRelativeTime } = useDateFormatter();
   const { toInitial } = useTextFormatter();
+  const { colors } = useAppTheme();
   const isCompleted = item.status === "completed";
   const isInCart = item.status === "in_cart";
+
   const timeAgo = toRelativeTime(
     isCompleted
       ? item.completedAt || item.updatedAt || item.createdAt
@@ -39,140 +41,189 @@ const ItemCard = ({ item, onToggle, onPress }: IItemCardProps) => {
 
   const renderLeftActions = () => {
     return (
-      <View className="bg-amber-500 justify-center items-start px-6 my-0.5 rounded-xl flex-row items-center">
-        <ShoppingCart stroke="#FFF" size={20} strokeWidth={2.5} />
-        <Text className="text-white font-extrabold text-[13px] ml-2">
-          {isInCart ? "Mark Bought" : "Put in Cart"}
+      <View
+        className="justify-center items-start px-5 mb-2.5 rounded-xl flex-row items-center"
+        style={{ backgroundColor: colors.warning }}
+      >
+        <ShoppingCart stroke={colors.white} size={18} strokeWidth={2.5} />
+        <Text className="text-white font-extrabold text-xs ml-2">
+          {isInCart ? "Move to List" : "Add to Cart"}
         </Text>
       </View>
     );
   };
 
   return (
-    <Animated.View entering={FadeInDown.duration(250).springify()}>
+    <Animated.View entering={FadeInDown.duration(200).springify()} className="mb-2.5">
       <Swipeable
         ref={swipeableRef}
         renderLeftActions={renderLeftActions}
-        friction={2}
-        leftThreshold={40}
-        onSwipeableWillOpen={() => {
-          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
-          onToggle(item);
-          swipeableRef.current?.close();
+        onSwipeableOpen={(direction) => {
+          if (direction === "left") {
+            handleTogglePress();
+            swipeableRef.current?.close();
+          }
         }}
       >
-        <View
-          className={`flex-row items-center py-4 border-b border-slate-100 bg-white ${
-            isCompleted ? "opacity-60" : isInCart ? "bg-amber-50/40 rounded-xl px-2 my-0.5" : ""
-          }`}
+        <TouchableOpacity
+          activeOpacity={0.8}
+          onPress={() => onPress && onPress(item)}
+          style={{ opacity: isCompleted ? 0.55 : 1 }}
         >
-          {/* Checkbox / Status Button */}
-          <TouchableOpacity
-            onPress={handleTogglePress}
-            activeOpacity={0.7}
-            className="pr-3 py-1.5 items-center justify-center"
+          <View
+            className="flex-row items-center p-3.5 rounded-xl border"
+            style={{
+              backgroundColor: isInCart ? colors.bgCartActive : colors.bgCard,
+              borderColor: isInCart ? colors.warning : colors.border,
+            }}
           >
-            {isCompleted ? (
-              <View className="h-6 w-6 items-center justify-center rounded-full bg-emerald-600">
-                <Check stroke="#FFF" size={13} strokeWidth={3} />
+            {/* Circular Checkbox */}
+            <TouchableOpacity
+              onPress={handleTogglePress}
+              activeOpacity={0.8}
+              className="mr-3.5 h-6 w-6 items-center justify-center rounded-full"
+              hitSlop={{ top: 12, right: 12, bottom: 12, left: 12 }}
+            >
+              <View
+                className="h-5 w-5 rounded-full items-center justify-center border"
+                style={{
+                  backgroundColor: isCompleted
+                    ? colors.accent
+                    : isInCart
+                      ? colors.warning
+                      : "transparent",
+                  borderColor: isCompleted
+                    ? colors.accent
+                    : isInCart
+                      ? colors.warning
+                      : colors.iconMuted,
+                }}
+              >
+                {isCompleted ? (
+                  <Check stroke={colors.white} size={12} strokeWidth={3} />
+                ) : isInCart ? (
+                  <ShoppingCart stroke={colors.white} size={11} strokeWidth={2.5} />
+                ) : null}
               </View>
-            ) : isInCart ? (
-              <View className="h-6 w-6 items-center justify-center rounded-full bg-amber-500 shadow-sm">
-                <ShoppingCart stroke="#FFF" size={12} strokeWidth={2.5} />
-              </View>
-            ) : (
-              <View className="h-6 w-6 items-center justify-center rounded-full border-2 border-slate-300 bg-white" />
-            )}
-          </TouchableOpacity>
+            </TouchableOpacity>
 
-          {/* Item Details */}
-          <TouchableOpacity
-            onPress={() => onPress(item)}
-            activeOpacity={0.8}
-            className="flex-1 py-1"
-          >
-            <View className="flex-row items-center justify-between mb-1.5">
-              <View className="flex-1 pr-2">
+            {/* Item Details */}
+            <View className="flex-1">
+              <View className="flex-row items-center justify-between">
                 <Text
-                  className={`text-[16px] font-extrabold ${
-                    isCompleted
-                      ? "text-slate-400 line-through"
-                      : isInCart
-                        ? "text-amber-900"
-                        : "text-slate-900"
+                  className={`text-[15px] font-bold tracking-tight ${
+                    isCompleted ? "line-through" : ""
                   }`}
+                  style={{ color: isCompleted ? colors.textMuted : colors.textPrimary }}
                   numberOfLines={1}
                 >
                   {item.name}
                 </Text>
-                {item.notes ? (
-                  <View className="flex-row items-center mt-0.5">
-                    <FileText stroke="#94A3B8" size={12} className="mr-1" />
+
+                {isInCart ? (
+                  <View
+                    className="px-2 py-0.5 rounded-full border"
+                    style={{ backgroundColor: colors.warningLight, borderColor: colors.warning }}
+                  >
                     <Text
-                      className="text-[12px] font-medium text-slate-400 flex-1"
-                      numberOfLines={1}
+                      className="text-[9px] font-black uppercase tracking-wider"
+                      style={{ color: colors.warning }}
                     >
-                      {item.notes}
+                      {item.claimedBy?.name ? `In ${item.claimedBy.name}'s Cart` : "In Cart"}
                     </Text>
                   </View>
+                ) : !isCompleted && item.priority ? (
+                  <PriorityBadge priority={item.priority} />
                 ) : null}
               </View>
 
-              {isInCart ? (
-                <View className="bg-amber-100 border border-amber-200 px-2 py-0.5 rounded-full flex-row items-center">
-                  <ShoppingCart stroke="#D97706" size={11} className="mr-1" />
-                  <Text className="text-[11px] font-extrabold text-amber-800">
-                    {item.claimedBy?.name ? `In ${item.claimedBy.name}'s Cart` : "In Cart"}
+              {/* Sub-row Details */}
+              <View className="flex-row items-center justify-between mt-1.5">
+                <View className="flex-row items-center flex-wrap flex-1 gap-2">
+                  <View className="flex-row items-center">
+                    <Tag stroke={colors.accent} size={11} className="mr-1" />
+                    <Text className="text-[11px] font-bold" style={{ color: colors.accent }}>
+                      {item.category}
+                    </Text>
+                  </View>
+
+                  {item.storeName ? (
+                    <View
+                      className="flex-row items-center px-1.5 py-0.5 rounded-md border"
+                      style={{ backgroundColor: colors.bgInput, borderColor: colors.border }}
+                    >
+                      <Text
+                        className="text-[10px] font-bold"
+                        style={{ color: colors.textSecondary }}
+                      >
+                        🏬 {item.storeName}
+                      </Text>
+                    </View>
+                  ) : null}
+
+                  {item.actualPrice || item.estimatedTotal || item.unitPrice ? (
+                    <View
+                      className="border px-1.5 py-0.5 rounded-md"
+                      style={{
+                        backgroundColor: colors.accentLightSubtle,
+                        borderColor: colors.border,
+                      }}
+                    >
+                      <Text className="text-[10px] font-extrabold" style={{ color: colors.accent }}>
+                        ৳
+                        {(item.actualPrice || item.estimatedTotal || item.unitPrice || 0).toFixed(
+                          0,
+                        )}
+                      </Text>
+                    </View>
+                  ) : null}
+
+                  {item.quantity ? (
+                    <Text className="text-[11px] font-bold" style={{ color: colors.textSecondary }}>
+                      • {item.quantity}
+                    </Text>
+                  ) : null}
+
+                  {item.dueDate ? (
+                    <View className="flex-row items-center ml-1">
+                      <Calendar stroke={colors.warning} size={11} className="mr-1" />
+                      <Text className="text-[11px] font-bold" style={{ color: colors.warning }}>
+                        Due
+                      </Text>
+                    </View>
+                  ) : null}
+
+                  {item.assignee?.name ? (
+                    <View className="flex-row items-center ml-1">
+                      <User stroke={colors.info} size={11} className="mr-1" />
+                      <Text className="text-[11px] font-bold" style={{ color: colors.info }}>
+                        {item.assignee.name}
+                      </Text>
+                    </View>
+                  ) : null}
+                </View>
+
+                <View className="flex-row items-center ml-2">
+                  <Text
+                    className="text-[10px] font-medium mr-1.5"
+                    style={{ color: colors.textMuted }}
+                  >
+                    {timeAgo}
                   </Text>
-                </View>
-              ) : !isCompleted ? (
-                <PriorityBadge priority={item.priority} />
-              ) : null}
-            </View>
-
-            <View className="flex-row items-center justify-between mt-1.5">
-              <View className="flex-row items-center flex-wrap flex-1 gap-2">
-                <View className="flex-row items-center">
-                  <Tag stroke="#059669" size={11} className="mr-1" />
-                  <Text className="text-[12px] font-bold text-emerald-800">{item.category}</Text>
-                </View>
-
-                {item.quantity ? (
-                  <Text className="text-[12px] font-bold text-slate-600">• {item.quantity}</Text>
-                ) : null}
-
-                {item.dueDate ? (
-                  <View className="flex-row items-center ml-1">
-                    <Calendar stroke="#D97706" size={11} className="mr-1" />
-                    <Text className="text-[12px] font-bold text-amber-800">Due</Text>
+                  <View className="h-5 w-5 rounded-full bg-emerald-600 items-center justify-center overflow-hidden">
+                    {item.addedBy?.photoURL ? (
+                      <Image source={{ uri: item.addedBy.photoURL }} className="h-full w-full" />
+                    ) : (
+                      <Text className="text-white text-[8px] font-bold">
+                        {toInitial(item.addedBy?.name || "U")}
+                      </Text>
+                    )}
                   </View>
-                ) : null}
-
-                {item.assignee?.name ? (
-                  <View className="flex-row items-center ml-1">
-                    <User stroke="#0284C7" size={11} className="mr-1" />
-                    <Text className="text-[12px] font-bold text-blue-800">
-                      {item.assignee.name}
-                    </Text>
-                  </View>
-                ) : null}
-              </View>
-
-              <View className="flex-row items-center ml-2">
-                <Text className="text-[11px] font-medium text-slate-400 mr-2">{timeAgo}</Text>
-                <View className="h-6 w-6 rounded-full bg-emerald-600 items-center justify-center overflow-hidden">
-                  {item.addedBy?.photoURL ? (
-                    <Image source={{ uri: item.addedBy.photoURL }} className="h-full w-full" />
-                  ) : (
-                    <Text className="text-white text-[9px] font-bold">
-                      {toInitial(item.addedBy?.name || "U")}
-                    </Text>
-                  )}
                 </View>
               </View>
             </View>
-          </TouchableOpacity>
-        </View>
+          </View>
+        </TouchableOpacity>
       </Swipeable>
     </Animated.View>
   );

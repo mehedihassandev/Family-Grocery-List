@@ -78,25 +78,15 @@ export default function App() {
     return null;
   }
 
-  if (!isAppReady) {
-    return (
-      <GestureHandlerRootView style={{ flex: 1, backgroundColor: "#59AC77" }}>
-        <SafeAreaProvider>
-          <LoadingScreen />
-        </SafeAreaProvider>
-      </GestureHandlerRootView>
-    );
-  }
-
   return (
-    <NavigationContainer>
-      <GestureHandlerRootView style={{ flex: 1, backgroundColor: "#59AC77" }}>
-        <QueryClientProvider client={queryClient}>
-          <SafeAreaProvider>
-            <Navigator />
-          </SafeAreaProvider>
-        </QueryClientProvider>
-      </GestureHandlerRootView>
-    </NavigationContainer>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <QueryClientProvider client={queryClient}>
+        <SafeAreaProvider>
+          <NavigationContainer>
+            {!isAppReady ? <LoadingScreen /> : <Navigator />}
+          </NavigationContainer>
+        </SafeAreaProvider>
+      </QueryClientProvider>
+    </GestureHandlerRootView>
   );
 }

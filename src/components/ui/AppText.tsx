@@ -1,14 +1,7 @@
 import React from "react";
 import { Text, TextProps } from "react-native";
 
-export type TAppTextVariant =
-  | "display"
-  | "h1"
-  | "h2"
-  | "h3"
-  | "body"
-  | "bodySmall"
-  | "caption";
+export type TAppTextVariant = "display" | "h1" | "h2" | "h3" | "body" | "bodySmall" | "caption";
 
 export interface IAppTextProps extends TextProps {
   variant?: TAppTextVariant;

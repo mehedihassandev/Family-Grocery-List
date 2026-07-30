@@ -12,7 +12,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import Animated, { FadeInDown } from "react-native-reanimated";
 import { Check, ShoppingBasket, Wand2 } from "lucide-react-native";
 
-import { useAddGroceryItemBackend, useRecipeToGrocery } from "../hooks";
+import { useAddGroceryItemBackend, useRecipeToGrocery, useAppTheme } from "../hooks";
 import { useAuthStore } from "../store/useAuthStore";
 import { Category, Priority } from "../types";
 import { AppHeader } from "../components/ui";
@@ -166,10 +166,11 @@ const RECIPE_PACKS: IRecipePack[] = [
 
 /**
  * Cardless Recipe Packs Screen
- * Why: Pure white canvas, zero boxed cards, hairline item rows.
+ * Why: Seamless canvas, dark mode theme support, hairline item rows.
  */
 const RecipePacksScreen = ({ navigation }: any) => {
   const { user } = useAuthStore();
+  const { isDark, colors } = useAppTheme();
   const familyId = user?.familyId || "";
   const addMutation = useAddGroceryItemBackend(familyId);
   const parseRecipeMutation = useRecipeToGrocery();
@@ -254,8 +255,12 @@ const RecipePacksScreen = ({ navigation }: any) => {
   };
 
   return (
-    <SafeAreaView edges={["top", "left", "right"]} className="flex-1 bg-white">
-      <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
+    <SafeAreaView
+      edges={["top", "left", "right"]}
+      className="flex-1"
+      style={{ backgroundColor: colors.bgCanvas }}
+    >
+      <StatusBar barStyle={isDark ? "light-content" : "dark-content"} />
 
       {/* Header */}
       <AppHeader
@@ -268,37 +273,51 @@ const RecipePacksScreen = ({ navigation }: any) => {
 
       <ScrollView
         showsVerticalScrollIndicator={false}
-        className="flex-1 px-6 pt-3 bg-white"
+        className="flex-1 px-6 pt-3"
+        style={{ backgroundColor: colors.bgCanvas }}
         contentContainerStyle={{ paddingBottom: 140 }}
       >
         <Animated.View entering={FadeInDown.duration(350).springify()}>
-          <Text className="text-[13px] text-slate-500 mb-5 font-medium leading-5">
+          <Text
+            className="text-[13px] mb-5 font-medium leading-5"
+            style={{ color: colors.textSecondary }}
+          >
             Quickly add curated meal bundles to your family grocery list, or use our smart AI to
             translate any custom recipe into items instantly.
           </Text>
 
           {/* AI Recipe Converter (Cardless & Non-Clipped) */}
-          <View className="mb-6 py-4 border-b border-slate-100">
+          <View className="mb-6 py-4">
             <View className="flex-row items-center mb-3">
-              <Wand2 size={16} color="#7C3AED" style={{ marginRight: 6 }} />
-              <Text className="text-[14px] font-extrabold text-purple-900">
+              <Wand2 size={16} color={colors.accent} style={{ marginRight: 6 }} />
+              <Text className="text-[14px] font-extrabold" style={{ color: colors.accent }}>
                 AI Recipe Converter
               </Text>
             </View>
-            <View className="flex-row items-center bg-slate-50 rounded-xl border border-slate-100 px-4 py-2">
+            <View
+              className="flex-row items-center rounded-xl border px-4 py-1.5"
+              style={{ backgroundColor: colors.bgInput, borderColor: colors.border }}
+            >
               <TextInput
                 value={aiPrompt}
                 onChangeText={setAiPrompt}
                 placeholder="e.g. Beef Tehari for 6 people..."
-                placeholderTextColor="#94A3B8"
-                className="flex-1 text-[14px] font-medium text-slate-800 py-2"
+                placeholderTextColor={colors.iconMuted}
+                className="flex-1 text-[14px] font-medium"
+                style={{
+                  color: colors.textPrimary,
+                  paddingVertical: 0,
+                  height: "100%",
+                  textAlignVertical: "center",
+                }}
               />
               <TouchableOpacity
                 onPress={handleAiRecipeConvert}
                 disabled={!aiPrompt.trim() || parseRecipeMutation.isPending}
-                className={`px-4 py-2.5 rounded-lg ${
-                  aiPrompt.trim() ? "bg-purple-600" : "bg-slate-200"
-                }`}
+                className="px-4 py-2 rounded-xl"
+                style={{
+                  backgroundColor: aiPrompt.trim() ? colors.accent : colors.bgSurfaceMuted,
+                }}
               >
                 {parseRecipeMutation.isPending ? (
                   <ActivityIndicator color="white" size="small" />
@@ -311,7 +330,10 @@ const RecipePacksScreen = ({ navigation }: any) => {
 
           {/* Horizontal Pack Selector */}
           <View className="mb-6">
-            <Text className="text-slate-900 text-[16px] font-extrabold tracking-tight mb-3">
+            <Text
+              className="text-[16px] font-extrabold tracking-tight mb-3"
+              style={{ color: colors.textPrimary }}
+            >
               Select a Meal Pack
             </Text>
             <ScrollView
@@ -326,15 +348,16 @@ const RecipePacksScreen = ({ navigation }: any) => {
                     key={pack.id}
                     onPress={() => handleSelectPack(pack)}
                     activeOpacity={0.8}
-                    className={`mr-2.5 px-4 py-2.5 rounded-full flex-row items-center ${
-                      isSelected ? "bg-emerald-600" : "bg-slate-50"
-                    }`}
+                    className="mr-2.5 px-4 py-2.5 rounded-full flex-row items-center border"
+                    style={{
+                      backgroundColor: isSelected ? colors.accent : colors.bgCard,
+                      borderColor: colors.border,
+                    }}
                   >
                     <Text className="text-lg mr-2">{pack.icon}</Text>
                     <Text
-                      className={`text-[13px] font-extrabold ${
-                        isSelected ? "text-white" : "text-slate-700"
-                      }`}
+                      className="text-[13px] font-extrabold"
+                      style={{ color: isSelected ? colors.white : colors.textPrimary }}
                     >
                       {pack.title}
                     </Text>
@@ -349,17 +372,25 @@ const RecipePacksScreen = ({ navigation }: any) => {
             <View className="flex-row items-center justify-between mb-1.5">
               <View className="flex-row items-center">
                 <Text className="text-2xl mr-2">{selectedPack.icon}</Text>
-                <Text className="text-[18px] font-black text-slate-900">{selectedPack.title}</Text>
+                <Text className="text-[18px] font-black" style={{ color: colors.textPrimary }}>
+                  {selectedPack.title}
+                </Text>
               </View>
-              <Text className="text-[11px] font-bold text-emerald-700 uppercase tracking-wider">
+              <Text
+                className="text-[11px] font-bold uppercase tracking-wider"
+                style={{ color: colors.accent }}
+              >
                 {selectedPack.tag}
               </Text>
             </View>
-            <Text className="text-[13px] text-slate-500 mb-5 leading-5 font-medium">
+            <Text
+              className="text-[13px] mb-5 leading-5 font-medium"
+              style={{ color: colors.textSecondary }}
+            >
               {selectedPack.description}
             </Text>
 
-            <View className="border-t border-slate-100 pt-1">
+            <View className="border-t pt-1" style={{ borderColor: colors.border }}>
               {selectedPack.items.map((item: IRecipeItem) => {
                 const checked = selectedItemNames.includes(item.name);
                 return (
@@ -367,29 +398,31 @@ const RecipePacksScreen = ({ navigation }: any) => {
                     key={item.name}
                     onPress={() => toggleItemSelection(item.name)}
                     activeOpacity={0.8}
-                    className="py-4 flex-row items-center justify-between border-b border-slate-100"
+                    className="py-4 flex-row items-center justify-between border-b"
+                    style={{ borderColor: colors.borderSubtle }}
                   >
                     <View className="flex-row items-center flex-1 mr-3">
                       <View
-                        className={`h-6 w-6 items-center justify-center rounded-full border mr-3 ${
-                          checked
-                            ? "bg-emerald-600 border-emerald-600"
-                            : "bg-white border-slate-300"
-                        }`}
+                        className="h-6 w-6 items-center justify-center rounded-full border mr-3"
+                        style={{
+                          backgroundColor: checked ? colors.accent : colors.bgCard,
+                          borderColor: checked ? colors.accent : colors.border,
+                        }}
                       >
                         {checked && <Check size={13} stroke="white" strokeWidth={3} />}
                       </View>
                       <Text
-                        className={`text-[15px] font-extrabold flex-1 ${
-                          checked ? "text-slate-900" : "text-slate-400 line-through"
-                        }`}
+                        className={`text-[14px] font-extrabold ${checked ? "" : "line-through"}`}
+                        style={{ color: checked ? colors.textPrimary : colors.textMuted }}
                         numberOfLines={1}
                       >
                         {item.name}
                       </Text>
                     </View>
 
-                    <Text className="text-[13px] font-bold text-slate-600">{item.quantity}</Text>
+                    <Text className="text-[13px] font-bold" style={{ color: colors.textSecondary }}>
+                      {item.quantity}
+                    </Text>
                   </TouchableOpacity>
                 );
               })}
@@ -399,7 +432,10 @@ const RecipePacksScreen = ({ navigation }: any) => {
       </ScrollView>
 
       {/* Floating Sticky Action Button */}
-      <View className="absolute bottom-0 left-0 right-0 bg-white border-t border-slate-100 px-6 py-3">
+      <View
+        className="absolute bottom-0 left-0 right-0 border-t px-6 py-3"
+        style={{ backgroundColor: colors.bgCanvas, borderColor: colors.border }}
+      >
         {successCount !== null ? (
           <View className="h-[48px] rounded-xl bg-emerald-600 items-center justify-center flex-row">
             <Check size={18} stroke="white" strokeWidth={3} className="mr-2" />

@@ -4,6 +4,7 @@ import { Bell, ArrowLeft } from "lucide-react-native";
 import { useAuthStore } from "../../store/useAuthStore";
 import { useNotificationStore } from "../../store/useNotificationStore";
 import { useUnreadNotificationCountQuery } from "../../hooks/queries/useNotificationQueries";
+import { useAppTheme } from "../../hooks";
 
 interface IAppHeaderProps {
   eyebrow?: string;
@@ -32,6 +33,7 @@ const AppHeader = ({
   showBackButton = false,
   onBackPress,
 }: IAppHeaderProps) => {
+  const { colors } = useAppTheme();
   const { user } = useAuthStore();
   const notifications = useNotificationStore((state) => state.notifications);
   const { data: unreadData } = useUnreadNotificationCountQuery(user?.familyId);
@@ -45,33 +47,44 @@ const AppHeader = ({
   const unreadCount = typeof apiUnreadCount === "number" ? apiUnreadCount : fallbackUnreadCount;
 
   return (
-    <View className="flex-row items-center justify-between border-b border-border/80 bg-background px-6 pb-4 pt-2">
+    <View
+      className="flex-row items-center justify-between px-6 pb-4 pt-2 border-b"
+      style={{ backgroundColor: colors.bgCanvas, borderBottomColor: colors.borderSubtle }}
+    >
       <View className="flex-row items-center flex-1">
         {showBackButton && (
           <TouchableOpacity
             onPress={onBackPress}
             activeOpacity={0.7}
-            className="mr-3 h-9 w-9 items-center justify-center rounded-full bg-slate-50 border border-slate-100"
+            className="mr-3 h-9 w-9 items-center justify-center rounded-full border"
+            style={{ backgroundColor: colors.bgSurface, borderColor: colors.border }}
             hitSlop={{ top: 10, right: 10, bottom: 10, left: 10 }}
           >
-            <ArrowLeft stroke="#475569" size={18} strokeWidth={2.2} />
+            <ArrowLeft stroke={colors.icon} size={18} strokeWidth={2.2} />
           </TouchableOpacity>
         )}
         <View className="flex-1">
           {eyebrow ? (
-            <Text className="mb-0.5 text-[10px] font-bold uppercase tracking-[0.08em] text-emerald-600">
+            <Text
+              className="mb-0.5 text-[10px] font-bold uppercase tracking-[0.08em]"
+              style={{ color: colors.accent }}
+            >
               {eyebrow}
             </Text>
           ) : null}
           <Text
-            className="text-[26px] font-extrabold tracking-tight text-slate-900 leading-tight"
+            className="text-[26px] font-extrabold tracking-tight leading-tight"
+            style={{ color: colors.textPrimary }}
             numberOfLines={1}
             adjustsFontSizeToFit
           >
             {title}
           </Text>
           {subtitle ? (
-            <Text className="mt-1 text-[13px] font-medium text-slate-500 leading-5">
+            <Text
+              className="mt-1 text-[13px] font-medium leading-5"
+              style={{ color: colors.textSecondary }}
+            >
               {subtitle}
             </Text>
           ) : null}
@@ -83,11 +96,15 @@ const AppHeader = ({
           <TouchableOpacity
             onPress={onNotificationPress}
             activeOpacity={0.7}
-            className="h-9 w-9 items-center justify-center rounded-full border border-slate-100 bg-slate-50 relative"
+            className="h-9 w-9 items-center justify-center rounded-full border relative"
+            style={{ backgroundColor: colors.bgSurface, borderColor: colors.border }}
           >
-            <Bell stroke="#059669" size={18} strokeWidth={2} />
+            <Bell stroke={colors.accent} size={18} strokeWidth={2} />
             {unreadCount > 0 && (
-              <View className="absolute -right-1 -top-1 h-3.5 min-w-[14px] items-center justify-center rounded-full bg-rose-500 px-1 border border-white">
+              <View
+                className="absolute -right-1 -top-1 h-3.5 min-w-[14px] items-center justify-center rounded-full bg-rose-500 px-1 border"
+                style={{ borderColor: colors.bgCanvas }}
+              >
                 <Text className="text-[8px] font-bold text-white">
                   {unreadCount > 99 ? "99+" : unreadCount}
                 </Text>

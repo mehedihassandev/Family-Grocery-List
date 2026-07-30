@@ -13,7 +13,7 @@ import { Users, Plus, ArrowLeft, LogOut } from "lucide-react-native";
 import { FirebaseError } from "firebase/app";
 import { signOut } from "../services/auth";
 import { useAuthStore } from "../store/useAuthStore";
-import { useCreateFamily, useJoinFamily, useTextFormatter } from "../hooks";
+import { useCreateFamily, useJoinFamily, useTextFormatter, useAppTheme } from "../hooks";
 import { LoadingOverlay, RhfTextfield, StatusModal } from "../components/ui";
 
 const FAMILY_ACTION_TIMEOUT_MS = 15000;
@@ -168,6 +168,8 @@ const FamilySetupScreen = ({ navigation }: any) => {
     }
   };
 
+  const { colors } = useAppTheme();
+
   const SetupCard = ({
     title,
     description,
@@ -179,15 +181,23 @@ const FamilySetupScreen = ({ navigation }: any) => {
     <TouchableOpacity
       activeOpacity={0.8}
       onPress={onPress}
-      className={"w-full rounded-[28px] bg-white border p-5 mb-4 " + borderClass}
+      className={"w-full rounded-[28px] border p-5 mb-4 " + borderClass}
+      style={{ backgroundColor: colors.bgCard }}
     >
       <View className="flex-row items-center">
         <View className={"h-12 w-12 rounded-xl items-center justify-center " + colorClass}>
           <Icon stroke="white" size={22} strokeWidth={2.5} />
         </View>
         <View className="ml-4 flex-1">
-          <Text className="text-[18px] font-bold text-text-primary tracking-tight">{title}</Text>
-          <Text className="text-[13px] text-text-secondary mt-1 leading-5">{description}</Text>
+          <Text
+            className="text-[18px] font-bold tracking-tight"
+            style={{ color: colors.textPrimary }}
+          >
+            {title}
+          </Text>
+          <Text className="text-[13px] mt-1 leading-5" style={{ color: colors.textSecondary }}>
+            {description}
+          </Text>
         </View>
       </View>
     </TouchableOpacity>
@@ -196,35 +206,50 @@ const FamilySetupScreen = ({ navigation }: any) => {
   if (mode === "selection") {
     const firstName = user?.displayName ? user.displayName.split(" ")[0] : "Friend";
     return (
-      <SafeAreaView className="flex-1 bg-white">
+      <SafeAreaView className="flex-1" style={{ backgroundColor: colors.bgCanvas }}>
         <ScrollView
           contentContainerStyle={{ paddingBottom: 40 }}
           showsVerticalScrollIndicator={false}
           className="flex-1"
         >
           <View className="px-6 py-4 flex-row justify-between items-center">
-            <View className="rounded-full bg-primary-50 border border-primary-100 px-3 py-1.5">
-              <Text className="text-[10px] font-bold uppercase tracking-[2px] text-primary-700">
+            <View
+              className="rounded-full border px-3 py-1.5"
+              style={{ backgroundColor: colors.accentLightSubtle, borderColor: colors.border }}
+            >
+              <Text
+                className="text-[10px] font-bold uppercase tracking-[2px]"
+                style={{ color: colors.accent }}
+              >
                 Family Grocery
               </Text>
             </View>
             <TouchableOpacity
               onPress={() => signOut()}
-              className="flex-row items-center bg-danger-light px-4 py-2 rounded-full border border-danger/20"
+              className="flex-row items-center px-4 py-2 rounded-full border"
+              style={{ backgroundColor: colors.badgeRoseBg, borderColor: colors.badgeRoseBorder }}
             >
-              <LogOut stroke="#E55C5C" size={14} strokeWidth={3} />
-              <Text className="ml-2 text-danger-dark font-bold text-[12px]">Logout</Text>
+              <LogOut stroke={colors.danger} size={14} strokeWidth={3} />
+              <Text className="ml-2 font-bold text-[12px]" style={{ color: colors.badgeRoseText }}>
+                Logout
+              </Text>
             </TouchableOpacity>
           </View>
 
           <View className="px-6 mt-2">
-            <View className="rounded-[28px] border border-primary-100 bg-primary-50/40 p-6">
-              <Text className="text-[34px] font-black text-text-primary tracking-tight leading-tight">
+            <View
+              className="rounded-[28px] border p-6"
+              style={{ backgroundColor: colors.bgCard, borderColor: colors.border }}
+            >
+              <Text
+                className="text-[34px] font-black tracking-tight leading-tight"
+                style={{ color: colors.textPrimary }}
+              >
                 One more step,
                 {"\n"}
                 {firstName}
               </Text>
-              <Text className="text-[15px] text-text-secondary mt-3 leading-6">
+              <Text className="text-[15px] mt-3 leading-6" style={{ color: colors.textSecondary }}>
                 Create family group or join using invite code. After setup, list and members unlock.
               </Text>
             </View>
@@ -235,8 +260,8 @@ const FamilySetupScreen = ({ navigation }: any) => {
                 description="Start group and share invite code with members."
                 icon={Plus}
                 onPress={() => setMode("create")}
-                colorClass="bg-primary-600"
-                borderClass="border-primary-100"
+                colorClass="bg-emerald-600"
+                borderClass="border-emerald-100"
               />
 
               <SetupCard
@@ -244,23 +269,29 @@ const FamilySetupScreen = ({ navigation }: any) => {
                 description="Use 6-character invite code from family owner."
                 icon={Users}
                 onPress={() => setMode("join")}
-                colorClass="bg-info-DEFAULT"
-                borderClass="border-info-light"
+                colorClass="bg-blue-600"
+                borderClass="border-blue-100"
               />
             </View>
 
-            <View className="mt-3 rounded-[24px] border border-border bg-white p-5">
-              <Text className="text-[11px] font-bold uppercase tracking-[1.5px] text-primary-600">
+            <View
+              className="mt-3 rounded-[24px] border p-5"
+              style={{ backgroundColor: colors.bgCard, borderColor: colors.border }}
+            >
+              <Text
+                className="text-[11px] font-bold uppercase tracking-[1.5px]"
+                style={{ color: colors.accent }}
+              >
                 What You Get
               </Text>
               <View className="mt-4">
-                <Text className="text-[14px] text-text-secondary">
+                <Text className="text-[14px]" style={{ color: colors.textSecondary }}>
                   • Shared grocery list in real time
                 </Text>
-                <Text className="mt-3 text-[14px] text-text-secondary">
+                <Text className="mt-3 text-[14px]" style={{ color: colors.textSecondary }}>
                   • Track completion across members
                 </Text>
-                <Text className="mt-3 text-[14px] text-text-secondary">
+                <Text className="mt-3 text-[14px]" style={{ color: colors.textSecondary }}>
                   • Family invite code with owner control
                 </Text>
               </View>
@@ -272,7 +303,7 @@ const FamilySetupScreen = ({ navigation }: any) => {
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-white">
+    <SafeAreaView className="flex-1" style={{ backgroundColor: colors.bgCanvas }}>
       <LoadingOverlay visible={loading} />
       <StatusModal
         visible={statusModal.visible}
@@ -297,36 +328,36 @@ const FamilySetupScreen = ({ navigation }: any) => {
                   setActionError(null);
                   setMode("selection");
                 }}
-                className="h-11 w-11 items-center justify-center rounded-xl bg-white border border-border"
+                className="h-11 w-11 items-center justify-center rounded-xl border"
+                style={{ backgroundColor: colors.bgCard, borderColor: colors.border }}
               >
-                <ArrowLeft stroke="#4A5568" size={20} strokeWidth={2.5} />
+                <ArrowLeft stroke={colors.icon} size={20} strokeWidth={2.5} />
               </TouchableOpacity>
 
-              <View className="flex-row rounded-full bg-surface-muted border border-border p-1">
+              <View
+                className="flex-row rounded-full border p-1"
+                style={{ backgroundColor: colors.bgInput, borderColor: colors.border }}
+              >
                 <TouchableOpacity
                   onPress={() => setMode("create")}
                   className={
-                    "px-4 py-2 rounded-full " + (mode === "create" ? "bg-primary-600" : "")
+                    "px-4 py-2 rounded-full " + (mode === "create" ? "bg-emerald-600" : "")
                   }
                 >
                   <Text
-                    className={
-                      "text-[12px] font-bold " +
-                      (mode === "create" ? "text-white" : "text-text-muted")
-                    }
+                    className="text-[12px] font-bold"
+                    style={{ color: mode === "create" ? colors.white : colors.textMuted }}
                   >
                     Create
                   </Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                   onPress={() => setMode("join")}
-                  className={"px-4 py-2 rounded-full " + (mode === "join" ? "bg-primary-600" : "")}
+                  className={"px-4 py-2 rounded-full " + (mode === "join" ? "bg-emerald-600" : "")}
                 >
                   <Text
-                    className={
-                      "text-[12px] font-bold " +
-                      (mode === "join" ? "text-white" : "text-text-muted")
-                    }
+                    className="text-[12px] font-bold"
+                    style={{ color: mode === "join" ? colors.white : colors.textMuted }}
                   >
                     Join
                   </Text>
@@ -334,11 +365,17 @@ const FamilySetupScreen = ({ navigation }: any) => {
               </View>
             </View>
 
-            <View className="rounded-[28px] border border-border bg-white p-6">
-              <Text className="text-[28px] font-bold text-text-primary tracking-tight">
+            <View
+              className="rounded-[28px] border p-6"
+              style={{ backgroundColor: colors.bgCard, borderColor: colors.border }}
+            >
+              <Text
+                className="text-[28px] font-bold tracking-tight"
+                style={{ color: colors.textPrimary }}
+              >
                 {mode === "create" ? "Create Family Group" : "Join Family Group"}
               </Text>
-              <Text className="text-[15px] text-text-secondary mt-2 leading-6">
+              <Text className="text-[15px] mt-2 leading-6" style={{ color: colors.textSecondary }}>
                 {mode === "create"
                   ? "Create shared space for groceries, members, and live updates."
                   : "Enter invite code exactly as shared by family owner."}
@@ -346,7 +383,12 @@ const FamilySetupScreen = ({ navigation }: any) => {
 
               {mode === "create" ? (
                 <View className="mt-6">
-                  <Text className="text-[13px] font-bold text-text-primary mb-2">Family Name</Text>
+                  <Text
+                    className="text-[13px] font-bold mb-2"
+                    style={{ color: colors.textPrimary }}
+                  >
+                    Family Name
+                  </Text>
                   <RhfTextfield
                     control={createForm.control}
                     name="familyName"
@@ -357,19 +399,29 @@ const FamilySetupScreen = ({ navigation }: any) => {
                       setActionError(null);
                     }}
                     containerClassName="rounded-2xl"
-                    inputClassName="text-[17px] font-bold text-text-primary"
+                    inputClassName="text-[17px] font-bold"
+                    style={{ color: colors.textPrimary }}
                     autoFocus
-                    placeholderTextColor="#9AA3AF"
+                    placeholderTextColor={colors.iconMuted}
                   />
                   {familyNameError && (
-                    <Text className="mt-2 ml-1 text-sm font-bold text-danger-dark">
+                    <Text className="mt-2 ml-1 text-sm font-bold" style={{ color: colors.danger }}>
                       {familyNameError}
                     </Text>
                   )}
 
                   {actionError && (
-                    <View className="mt-3 rounded-xl border border-danger/25 bg-danger-light px-3 py-2">
-                      <Text className="text-[12px] font-semibold text-danger-dark">
+                    <View
+                      className="mt-3 rounded-xl border px-3 py-2"
+                      style={{
+                        backgroundColor: colors.badgeRoseBg,
+                        borderColor: colors.badgeRoseBorder,
+                      }}
+                    >
+                      <Text
+                        className="text-[12px] font-semibold"
+                        style={{ color: colors.badgeRoseText }}
+                      >
                         {actionError}
                       </Text>
                     </View>
@@ -378,17 +430,23 @@ const FamilySetupScreen = ({ navigation }: any) => {
                   <TouchableOpacity
                     onPress={handleCreateFamily}
                     disabled={loading || !toTrimmed(familyNameValue)}
-                    className={
-                      "mt-8 w-full py-4 rounded-2xl flex-row items-center justify-center " +
-                      (!toTrimmed(familyNameValue) ? "bg-primary-200" : "bg-primary-600")
-                    }
+                    className="mt-8 w-full py-4 rounded-2xl flex-row items-center justify-center"
+                    style={{
+                      backgroundColor: colors.accent,
+                      opacity: !toTrimmed(familyNameValue) ? 0.4 : 1,
+                    }}
                   >
                     <Text className="text-white font-bold text-lg">Create Family</Text>
                   </TouchableOpacity>
                 </View>
               ) : (
                 <View className="mt-6">
-                  <Text className="text-[13px] font-bold text-text-primary mb-2">Invite Code</Text>
+                  <Text
+                    className="text-[13px] font-bold mb-2"
+                    style={{ color: colors.textPrimary }}
+                  >
+                    Invite Code
+                  </Text>
                   <RhfTextfield
                     control={joinForm.control}
                     name="inviteCode"
@@ -399,25 +457,35 @@ const FamilySetupScreen = ({ navigation }: any) => {
                       setActionError(null);
                     }}
                     containerClassName="rounded-2xl"
-                    inputClassName="text-[28px] font-black text-center tracking-[5px] text-primary-700"
+                    inputClassName="text-[28px] font-black text-center tracking-[5px]"
+                    style={{ color: colors.accent }}
                     autoCapitalize="characters"
                     maxLength={6}
                     autoFocus
-                    placeholderTextColor="#C0C8D2"
+                    placeholderTextColor={colors.iconMuted}
                   />
-                  <Text className="mt-2 text-[12px] text-text-muted">
+                  <Text className="mt-2 text-[12px]" style={{ color: colors.textMuted }}>
                     6 characters. Letters and numbers.
                   </Text>
 
                   {inviteCodeError && (
-                    <Text className="mt-2 text-sm font-bold text-danger-dark">
+                    <Text className="mt-2 text-sm font-bold" style={{ color: colors.danger }}>
                       {inviteCodeError}
                     </Text>
                   )}
 
                   {actionError && (
-                    <View className="mt-3 rounded-xl border border-danger/25 bg-danger-light px-3 py-2">
-                      <Text className="text-[12px] font-semibold text-danger-dark">
+                    <View
+                      className="mt-3 rounded-xl border px-3 py-2"
+                      style={{
+                        backgroundColor: colors.badgeRoseBg,
+                        borderColor: colors.badgeRoseBorder,
+                      }}
+                    >
+                      <Text
+                        className="text-[12px] font-semibold"
+                        style={{ color: colors.badgeRoseText }}
+                      >
                         {actionError}
                       </Text>
                     </View>
@@ -426,10 +494,11 @@ const FamilySetupScreen = ({ navigation }: any) => {
                   <TouchableOpacity
                     onPress={handleJoinFamily}
                     disabled={loading || normalizedInviteCodeValue.length < 6}
-                    className={
-                      "mt-8 w-full py-4 rounded-2xl flex-row items-center justify-center " +
-                      (normalizedInviteCodeValue.length < 6 ? "bg-primary-200" : "bg-primary-600")
-                    }
+                    className="mt-8 w-full py-4 rounded-2xl flex-row items-center justify-center"
+                    style={{
+                      backgroundColor: colors.accent,
+                      opacity: normalizedInviteCodeValue.length < 6 ? 0.4 : 1,
+                    }}
                   >
                     <Text className="text-white font-bold text-lg">Join Family</Text>
                   </TouchableOpacity>

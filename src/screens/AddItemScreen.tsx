@@ -15,7 +15,7 @@ import {
   ROUTES,
   TItemUnit,
 } from "../types";
-import { useAddGroceryItemBackend, useFamilyGroceryItemsBackend } from "../hooks";
+import { useAddGroceryItemBackend, useFamilyGroceryItemsBackend, useAppTheme } from "../hooks";
 import { addCustomCategory, subscribeToCategories, ICustomCategory } from "../services/categories";
 import { GROCERY_CATEGORIES } from "../features/grocery";
 import { InputField, PrimaryButton, Chip, StatusModal, LoadingOverlay } from "../components/ui";
@@ -55,6 +55,7 @@ const AddItemScreen = ({
   navigation,
 }: AuthenticatedStackNavigatorScreenProps<typeof ROUTES.ADD_ITEM>) => {
   const { user } = useAuthStore();
+  const { colors } = useAppTheme();
   const familyId = user?.familyId || "";
 
   const [name, setName] = useState("");
@@ -273,7 +274,7 @@ const AddItemScreen = ({
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-white">
+    <SafeAreaView className="flex-1" style={{ backgroundColor: colors.bgCanvas }}>
       <LoadingOverlay visible={addMutation.isPending} />
       <StatusModal
         visible={showSuccess}
@@ -295,17 +296,26 @@ const AddItemScreen = ({
       >
         <View className="mb-8 mt-4 flex-row items-center justify-between">
           <View>
-            <Text className="mb-1 text-[11px] font-black uppercase tracking-[2px] text-primary-500">
+            <Text
+              className="mb-1 text-[11px] font-black uppercase tracking-[2px]"
+              style={{ color: colors.accent }}
+            >
               New Grocery
             </Text>
-            <Text className="text-[28px] font-bold tracking-tight text-text-primary">Add Item</Text>
+            <Text
+              className="text-[28px] font-bold tracking-tight"
+              style={{ color: colors.textPrimary }}
+            >
+              Add Item
+            </Text>
           </View>
           <TouchableOpacity
             onPress={() => navigation.goBack()}
             activeOpacity={0.7}
-            className="h-11 w-11 items-center justify-center rounded-2xl bg-white border border-border shadow-xs"
+            className="h-11 w-11 items-center justify-center rounded-2xl border shadow-xs"
+            style={{ backgroundColor: colors.bgCard, borderColor: colors.border }}
           >
-            <X stroke="#475569" size={20} strokeWidth={2.5} />
+            <X stroke={colors.icon} size={20} strokeWidth={2.5} />
           </TouchableOpacity>
         </View>
 
@@ -334,32 +344,40 @@ const AddItemScreen = ({
               inputClassName="h-14 font-bold"
             />
             <View className="flex-1">
-              <Text className="mb-2 ml-1 text-[11px] font-black uppercase tracking-[1.5px] text-text-muted">
+              <Text
+                className="mb-2 ml-1 text-[11px] font-extrabold uppercase tracking-wider"
+                style={{ color: colors.textMuted }}
+              >
                 PRIORITY
               </Text>
-              <View className="h-14 flex-row rounded-2xl bg-surface-alt p-1.5 items-center border border-border">
+              <View
+                className="h-14 flex-row rounded-xl p-1.5 items-center border"
+                style={{ backgroundColor: colors.bgInput, borderColor: colors.border }}
+              >
                 {PRIORITIES.map((p) => {
                   const isActive = priority === p;
-                  const activeStyle =
+                  const activeBg =
                     p === "Low"
-                      ? "bg-primary-500"
+                      ? colors.accentLightSubtle
                       : p === "Medium"
-                        ? "bg-warning-DEFAULT"
-                        : "bg-danger-DEFAULT";
+                        ? colors.warningLight
+                        : colors.dangerLight;
+                  const activeText =
+                    p === "Low" ? colors.accent : p === "Medium" ? colors.warning : colors.danger;
 
                   return (
                     <TouchableOpacity
                       key={p}
                       onPress={() => setPriority(p)}
                       activeOpacity={0.7}
-                      className={`flex-1 h-full items-center justify-center rounded-xl ${
-                        isActive ? activeStyle : ""
-                      }`}
+                      className="flex-1 h-full items-center justify-center rounded-lg"
+                      style={{
+                        backgroundColor: isActive ? activeBg : "transparent",
+                      }}
                     >
                       <Text
-                        className={`text-[12px] font-extrabold ${
-                          isActive ? "text-white" : "text-text-muted"
-                        }`}
+                        className="text-[12px] font-extrabold"
+                        style={{ color: isActive ? activeText : colors.textSecondary }}
                       >
                         {p}
                       </Text>
@@ -372,7 +390,10 @@ const AddItemScreen = ({
 
           {/* Unit Chips */}
           <View className="mb-6">
-            <Text className="mb-2 ml-1 text-[11px] font-black uppercase tracking-[1.5px] text-text-muted">
+            <Text
+              className="mb-2 ml-1 text-[11px] font-extrabold uppercase tracking-wider"
+              style={{ color: colors.textMuted }}
+            >
               UNIT OF MEASURE
             </Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} className="flex-row py-1">
@@ -393,7 +414,10 @@ const AddItemScreen = ({
 
           {/* MEAL TYPE SELECTOR */}
           <View className="mb-6">
-            <Text className="mb-2 ml-1 text-[11px] font-black uppercase tracking-[1.5px] text-text-muted">
+            <Text
+              className="mb-2 ml-1 text-[11px] font-extrabold uppercase tracking-wider"
+              style={{ color: colors.textMuted }}
+            >
               MEAL TYPE
             </Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} className="flex-row">
@@ -404,16 +428,15 @@ const AddItemScreen = ({
                     key={m}
                     onPress={() => setMealType(m)}
                     activeOpacity={0.75}
-                    className={`mr-2 px-4 py-2.5 rounded-xl border ${
-                      isActive
-                        ? "bg-emerald-600 border-emerald-600"
-                        : "bg-surface-alt border-border"
-                    }`}
+                    className="mr-2 px-4 py-2.5 rounded-xl border"
+                    style={{
+                      backgroundColor: isActive ? colors.accent : colors.bgInput,
+                      borderColor: isActive ? colors.accent : colors.border,
+                    }}
                   >
                     <Text
-                      className={`text-xs font-bold ${
-                        isActive ? "text-white" : "text-text-primary"
-                      }`}
+                      className="text-xs font-bold"
+                      style={{ color: isActive ? colors.white : colors.textSecondary }}
                     >
                       {m}
                     </Text>
@@ -553,7 +576,13 @@ const AddItemScreen = ({
             title="Add to List"
             onPress={handleSave}
             disabled={!name.trim() || addMutation.isPending}
-            icon={<Check size={20} stroke="#FFF" strokeWidth={2.5} />}
+            icon={
+              <Check
+                size={20}
+                stroke={!name.trim() || addMutation.isPending ? colors.textMuted : colors.white}
+                strokeWidth={2.5}
+              />
+            }
           />
         </ScrollView>
       </KeyboardAvoidingView>

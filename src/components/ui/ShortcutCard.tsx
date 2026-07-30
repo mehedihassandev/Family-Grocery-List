@@ -1,12 +1,14 @@
 import React from "react";
 import { Text, TouchableOpacity, View } from "react-native";
 import { LucideIcon } from "lucide-react-native";
+import { useAppTheme } from "../../hooks";
 
 interface IShortcutCardProps {
   icon: LucideIcon;
   label: string;
   onPress: () => void;
   iconBgColor?: string;
+  bgColor?: string;
   iconColor?: string;
 }
 
@@ -19,23 +21,32 @@ const ShortcutCard = ({
   icon: Icon,
   label,
   onPress,
-  iconBgColor = "bg-slate-50",
-  iconColor = "#10B981",
+  iconBgColor,
+  bgColor,
+  iconColor,
 }: IShortcutCardProps) => {
+  const { colors } = useAppTheme();
+  const resolvedIconColor = iconColor || colors.accent;
+
   return (
     <TouchableOpacity
       activeOpacity={0.7}
       onPress={onPress}
-      className="flex-1 items-center justify-center py-1"
+      className="flex-1 items-center justify-center py-1.5"
     >
       <View
-        className={`mb-1.5 h-11 w-11 items-center justify-center rounded-full ${iconBgColor}`}
+        className={`mb-2 h-14 w-14 items-center justify-center rounded-xl border ${iconBgColor ?? ""}`}
+        style={{
+          backgroundColor: bgColor ?? (!iconBgColor ? colors.bgInput : undefined),
+          borderColor: colors.borderSubtle,
+        }}
       >
-        <Icon stroke={iconColor} size={20} strokeWidth={2} />
+        <Icon stroke={resolvedIconColor} size={22} strokeWidth={2.2} />
       </View>
       <Text
-        className="text-[11px] font-semibold text-slate-600 text-center tracking-tight"
+        className="text-[12px] font-bold text-center tracking-tight"
         numberOfLines={1}
+        style={{ color: colors.textPrimary }}
       >
         {label}
       </Text>

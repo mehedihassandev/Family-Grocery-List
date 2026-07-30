@@ -41,6 +41,8 @@ export interface IGroceryItem {
   servingsCount?: number | null;
   monthlyUsageFrequency?: number | null;
   selectedSuperstore?: "Shwapno" | "Meena Bazar" | "Agora" | "Best Price" | null;
+  storeName?: string | null;
+  unitPriceNormalized?: number | null;
 }
 
 export interface IGrocerySummary {

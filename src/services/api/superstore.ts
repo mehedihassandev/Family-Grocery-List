@@ -17,7 +17,8 @@ const normalizePriceAlert = (data: any): IPriceAlert => {
     query: String(data.query || ""),
     targetPriceBDT: Number(data.targetPriceBDT || 0),
     unit: data.unit ? String(data.unit) : undefined,
-    currentBestPriceBDT: data.currentBestPriceBDT != null ? Number(data.currentBestPriceBDT) : undefined,
+    currentBestPriceBDT:
+      data.currentBestPriceBDT != null ? Number(data.currentBestPriceBDT) : undefined,
     currentBestStore: data.currentBestStore || undefined,
     isTriggered: Boolean(data.isTriggered),
     createdAt: String(data.createdAt || new Date().toISOString()),
@@ -109,10 +110,7 @@ export const createPriceAlertApi = async (
   if (!payload.familyId || !payload.query || payload.targetPriceBDT <= 0) {
     throw new Error("Family ID, query, and valid target price are required.");
   }
-  const response = await apiClient.post<unknown>(
-    API_ENDPOINTS.superstores.priceAlerts,
-    payload,
-  );
+  const response = await apiClient.post<unknown>(API_ENDPOINTS.superstores.priceAlerts, payload);
   return normalizePriceAlert(response.data);
 };
 

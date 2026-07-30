@@ -1,5 +1,6 @@
 import React, { ReactNode } from "react";
 import { Text, TextInput, TextInputProps, View, StyleSheet } from "react-native";
+import { useAppTheme } from "../../hooks";
 
 export interface IInputFieldProps extends TextInputProps {
   label?: string;
@@ -12,8 +13,7 @@ export interface IInputFieldProps extends TextInputProps {
 
 /**
  * Standard text input field with label and error support
- * Why: To provide a consistent, theme-aware input experience across all forms.
- * @param props - Component props including label, icon, and text input attributes
+ * Features dynamic theme colors for border, background, label, and input text.
  */
 const InputField = ({
   label,
@@ -25,31 +25,46 @@ const InputField = ({
   style,
   ...props
 }: IInputFieldProps) => {
+  const { colors } = useAppTheme();
+
   return (
     <View className={`w-full ${containerClassName ?? ""}`}>
       {label ? (
-        <Text className="mb-2 ml-1 text-[12px] font-bold uppercase tracking-[0.08em] text-text-muted">
+        <Text
+          className="mb-2 ml-1 text-[11px] font-bold uppercase tracking-[0.08em]"
+          style={{ color: colors.textMuted }}
+        >
           {label}
         </Text>
       ) : null}
 
       <View
-        className={`flex-row items-center rounded-2xl border bg-surface-alt px-4 ${
-          error ? "border-danger bg-danger-light/30" : "border-border"
-        }`}
+        className="flex-row items-center rounded-xl border px-4"
+        style={{
+          backgroundColor: error ? colors.dangerLight : colors.bgInput,
+          borderColor: error ? colors.danger : colors.border,
+          borderRadius: 16,
+        }}
       >
         {icon ? icon : null}
         <TextInput
           {...props}
-          className={inputClassName}
-          placeholderTextColor={props.placeholderTextColor ?? "#94A3B8"}
-          style={[styles.input, icon ? { marginLeft: 10 } : null, style]}
+          className={`flex-1 text-[15px] font-medium ${inputClassName ?? ""}`}
+          placeholderTextColor={props.placeholderTextColor ?? colors.iconMuted}
+          style={[
+            styles.input,
+            icon ? { marginLeft: 10 } : null,
+            { color: colors.textPrimary },
+            style,
+          ]}
         />
         {rightIcon ? rightIcon : null}
       </View>
 
       {error ? (
-        <Text className="mt-1.5 ml-1 text-[12px] font-bold text-danger-dark">{error}</Text>
+        <Text className="mt-1.5 ml-1 text-[12px] font-bold" style={{ color: colors.danger }}>
+          {error}
+        </Text>
       ) : null}
     </View>
   );
@@ -61,7 +76,8 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 15,
     fontWeight: "500",
-    color: "#0F172A",
+    paddingVertical: 0,
+    textAlignVertical: "center",
   },
 });
 

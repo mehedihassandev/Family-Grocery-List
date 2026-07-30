@@ -20,6 +20,7 @@ import {
   useGroceryItemBackend,
   useUpdateGroceryItemBackend,
   useDeleteGroceryItemBackend,
+  useAppTheme,
 } from "../hooks";
 import { addCustomCategory, ICustomCategory, subscribeToCategories } from "../services/categories";
 import { GROCERY_CATEGORIES } from "../features/grocery";
@@ -43,6 +44,7 @@ const EditItemScreen = ({
   const insets = useSafeAreaInsets();
   const { itemId } = route.params;
   const { user } = useAuthStore();
+  const { colors } = useAppTheme();
   const familyId = user?.familyId || "";
 
   const [name, setName] = useState("");
@@ -296,10 +298,15 @@ const EditItemScreen = ({
 
   if (!itemId) {
     return (
-      <View className="flex-1 items-center justify-center bg-white">
-        <Text className="text-text-muted">No item ID provided</Text>
+      <View
+        className="flex-1 items-center justify-center"
+        style={{ backgroundColor: colors.bgCanvas }}
+      >
+        <Text style={{ color: colors.textMuted }}>No item ID provided</Text>
         <TouchableOpacity onPress={() => navigation.goBack()} className="mt-4">
-          <Text className="text-primary-600 font-bold">Go Back</Text>
+          <Text className="font-bold" style={{ color: colors.accent }}>
+            Go Back
+          </Text>
         </TouchableOpacity>
       </View>
     );
@@ -307,25 +314,36 @@ const EditItemScreen = ({
 
   if (initialLoading) {
     return (
-      <View className="flex-1 items-center justify-center bg-white">
-        <ActivityIndicator color="#10B981" size="large" />
+      <View
+        className="flex-1 items-center justify-center"
+        style={{ backgroundColor: colors.bgCanvas }}
+      >
+        <ActivityIndicator color={colors.accent} size="large" />
       </View>
     );
   }
 
   if (!item) {
     return (
-      <View className="flex-1 items-center justify-center bg-white">
-        <Text className="text-text-muted">Item not found</Text>
+      <View
+        className="flex-1 items-center justify-center"
+        style={{ backgroundColor: colors.bgCanvas }}
+      >
+        <Text style={{ color: colors.textMuted }}>Item not found</Text>
         <TouchableOpacity onPress={() => navigation.goBack()} className="mt-4">
-          <Text className="text-primary-600 font-bold">Go Back</Text>
+          <Text className="font-bold" style={{ color: colors.accent }}>
+            Go Back
+          </Text>
         </TouchableOpacity>
       </View>
     );
   }
 
   return (
-    <View className="flex-1 bg-white" style={{ paddingTop: Math.max(insets.top, 20) }}>
+    <View
+      className="flex-1"
+      style={{ backgroundColor: colors.bgCanvas, paddingTop: Math.max(insets.top, 20) }}
+    >
       <LoadingOverlay visible={updateMutation.isPending || deleteMutation.isPending} />
       <StatusModal
         visible={statusModal.visible}
@@ -346,19 +364,26 @@ const EditItemScreen = ({
       >
         <View className="mb-8 flex-row items-center justify-between">
           <View>
-            <Text className="mb-1 text-[11px] font-black uppercase tracking-[2px] text-primary-500">
+            <Text
+              className="mb-1 text-[11px] font-black uppercase tracking-[2px]"
+              style={{ color: colors.accent }}
+            >
               Update Entry
             </Text>
-            <Text className="text-[28px] font-bold tracking-tight text-text-primary">
+            <Text
+              className="text-[28px] font-bold tracking-tight"
+              style={{ color: colors.textPrimary }}
+            >
               Edit Item
             </Text>
           </View>
           <TouchableOpacity
             onPress={() => navigation.goBack()}
             activeOpacity={0.7}
-            className="h-11 w-11 items-center justify-center rounded-2xl bg-white border border-border shadow-xs"
+            className="h-11 w-11 items-center justify-center rounded-2xl border shadow-xs"
+            style={{ backgroundColor: colors.bgCard, borderColor: colors.border }}
           >
-            <X stroke="#475569" size={20} strokeWidth={2.5} />
+            <X stroke={colors.icon} size={20} strokeWidth={2.5} />
           </TouchableOpacity>
         </View>
 
@@ -406,34 +431,42 @@ const EditItemScreen = ({
               inputClassName="h-14 font-bold"
             />
             <View className="flex-1">
-              <Text className="mb-2 ml-1 text-[11px] font-black uppercase tracking-[1.5px] text-text-muted">
+              <Text
+                className="mb-2 ml-1 text-[11px] font-extrabold uppercase tracking-wider"
+                style={{ color: colors.textMuted }}
+              >
                 PRIORITY
               </Text>
-              <View className="h-14 flex-row rounded-2xl bg-surface-alt p-1.5 items-center border border-border">
+              <View
+                className="h-14 flex-row rounded-xl p-1.5 items-center border"
+                style={{ backgroundColor: colors.bgInput, borderColor: colors.border }}
+              >
                 {PRIORITIES.map((p) => {
                   const isActive = priority === p;
-                  const activeStyle =
+                  const activeBg =
                     p === "Low"
-                      ? "bg-primary-500"
+                      ? colors.accentLightSubtle
                       : p === "Medium"
-                        ? "bg-warning-DEFAULT"
-                        : "bg-danger-DEFAULT";
+                        ? colors.warningLight
+                        : colors.dangerLight;
+                  const activeText =
+                    p === "Low" ? colors.accent : p === "Medium" ? colors.warning : colors.danger;
 
                   return (
                     <TouchableOpacity
                       key={p}
                       onPress={() => setPriority(p)}
                       activeOpacity={0.75}
-                      className={`flex-1 items-center justify-center rounded-xl h-full ${
-                        isActive ? activeStyle : ""
-                      }`}
+                      className="flex-1 items-center justify-center rounded-lg h-full"
+                      style={{
+                        backgroundColor: isActive ? activeBg : "transparent",
+                      }}
                     >
                       <Text
-                        className={`text-[10px] font-black uppercase tracking-wider ${
-                          isActive ? "text-white" : "text-text-muted"
-                        }`}
+                        className="text-[12px] font-extrabold"
+                        style={{ color: isActive ? activeText : colors.textSecondary }}
                       >
-                        {p.charAt(0)}
+                        {p}
                       </Text>
                     </TouchableOpacity>
                   );
@@ -580,7 +613,15 @@ const EditItemScreen = ({
                 title="Save Changes"
                 onPress={handleSave}
                 disabled={!name.trim() || updateMutation.isPending}
-                icon={<Check size={20} stroke="#FFF" strokeWidth={2.5} />}
+                icon={
+                  <Check
+                    size={20}
+                    stroke={
+                      !name.trim() || updateMutation.isPending ? colors.textMuted : colors.white
+                    }
+                    strokeWidth={2.5}
+                  />
+                }
               />
             </View>
           </View>

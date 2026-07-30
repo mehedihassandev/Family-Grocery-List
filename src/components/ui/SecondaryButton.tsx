@@ -15,7 +15,7 @@ const SecondaryButton = ({ title, className, ...props }: ISecondaryButtonProps) 
     <TouchableOpacity
       {...props}
       activeOpacity={0.8}
-      className={`w-full flex-row items-center justify-center rounded-2xl h-[52px] border border-border bg-surface px-6 ${className ?? ""}`}
+      className={`w-full flex-row items-center justify-center rounded-xl h-[52px] border border-border bg-surface px-6 ${className ?? ""}`}
     >
       <Text className="text-[15px] font-bold text-text-secondary">{title}</Text>
     </TouchableOpacity>

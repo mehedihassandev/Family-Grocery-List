@@ -1,70 +1,86 @@
 import React from "react";
 import { View, Text } from "react-native";
+import { useAppTheme } from "../hooks";
+import { appThemeColors } from "../theme";
 
-const categoryColors: Record<string, { badge: string; text: string; border: string }> = {
+type ColorKey = keyof typeof appThemeColors.light;
+
+const categoryColors: Record<string, { badge: ColorKey; text: ColorKey; border: ColorKey }> = {
   Beauty: {
-    badge: "bg-secondary-50",
-    text: "text-secondary-700",
-    border: "border-secondary-200",
+    badge: "infoLight",
+    text: "info",
+    border: "infoLight",
   },
   Meat: {
-    badge: "bg-danger-light",
-    text: "text-danger-dark",
-    border: "border-danger-light",
+    badge: "dangerLight",
+    text: "danger",
+    border: "dangerLight",
   },
   Fish: {
-    badge: "bg-secondary-50",
-    text: "text-secondary-700",
-    border: "border-secondary-200",
+    badge: "infoLight",
+    text: "info",
+    border: "infoLight",
   },
   Vegetables: {
-    badge: "bg-primary-50",
-    text: "text-primary-700",
-    border: "border-primary-100",
+    badge: "accentLightSubtle",
+    text: "accentDark",
+    border: "accentLight",
   },
   Fruits: {
-    badge: "bg-primary-50",
-    text: "text-primary-600",
-    border: "border-primary-100",
+    badge: "accentLightSubtle",
+    text: "accent",
+    border: "accentLight",
   },
   Dairy: {
-    badge: "bg-warning-light",
-    text: "text-warning-dark",
-    border: "border-warning-light",
+    badge: "warningLight",
+    text: "warning",
+    border: "warningLight",
   },
   Snacks: {
-    badge: "bg-warning-light",
-    text: "text-warning-dark",
-    border: "border-warning-light",
+    badge: "warningLight",
+    text: "warning",
+    border: "warningLight",
   },
   Drinks: {
-    badge: "bg-secondary-50",
-    text: "text-secondary-700",
-    border: "border-secondary-200",
+    badge: "infoLight",
+    text: "info",
+    border: "infoLight",
   },
   Household: {
-    badge: "bg-surface-alt",
-    text: "text-text-secondary",
-    border: "border-border",
+    badge: "bgSurfaceMuted",
+    text: "textSecondary",
+    border: "border",
   },
   Medicine: {
-    badge: "bg-secondary-50",
-    text: "text-secondary-700",
-    border: "border-secondary-200",
+    badge: "infoLight",
+    text: "info",
+    border: "infoLight",
   },
   Other: {
-    badge: "bg-surface-alt",
-    text: "text-text-muted",
-    border: "border-border",
+    badge: "bgSurfaceMuted",
+    text: "textMuted",
+    border: "border",
   },
 };
 
 const CategoryBadge = ({ category }: { category: string }) => {
-  const colorClass = categoryColors[category] || categoryColors["Other"];
+  const { colors } = useAppTheme();
+  const colorMapping = categoryColors[category] || categoryColors["Other"];
 
   return (
-    <View className={`px-2.5 py-1 rounded-xl border ${colorClass.badge} ${colorClass.border}`}>
-      <Text className={`text-[10px] font-bold uppercase tracking-wider ${colorClass.text}`}>
+    <View
+      className="px-2.5 py-1 rounded-xl border"
+      style={{
+        backgroundColor: colors[colorMapping.badge] as string,
+        borderColor: colors[colorMapping.border] as string,
+      }}
+    >
+      <Text
+        className="text-[10px] font-bold uppercase tracking-wider"
+        style={{
+          color: colors[colorMapping.text] as string,
+        }}
+      >
         {category}
       </Text>
     </View>

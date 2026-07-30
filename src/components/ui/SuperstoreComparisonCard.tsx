@@ -1,7 +1,7 @@
 import React from "react";
 import { View, Text, TouchableOpacity, Linking, ActivityIndicator } from "react-native";
 import { Store, ExternalLink, CheckCircle2, AlertCircle, ShoppingBag } from "lucide-react-native";
-import { useSuperstoreComparison } from "../../hooks";
+import { useSuperstoreComparison, useAppTheme } from "../../hooks";
 
 interface SuperstoreComparisonCardProps {
   itemName: string;
@@ -9,15 +9,17 @@ interface SuperstoreComparisonCardProps {
 
 export const SuperstoreComparisonCard: React.FC<SuperstoreComparisonCardProps> = ({ itemName }) => {
   const { data: comparison, isLoading, error } = useSuperstoreComparison(itemName);
+  const { colors } = useAppTheme();
 
   if (isLoading) {
     return (
       <View
         key="superstore-loading"
-        className="bg-white rounded-2xl p-4 border border-slate-100 items-center justify-center my-2"
+        className="rounded-xl p-4 border items-center justify-center my-2"
+        style={{ backgroundColor: colors.bgCard, borderColor: colors.border }}
       >
-        <ActivityIndicator size="small" color="#10B981" />
-        <Text className="text-slate-400 text-xs mt-2 font-medium">
+        <ActivityIndicator size="small" color={colors.accent} />
+        <Text className="text-xs mt-2 font-medium" style={{ color: colors.textMuted }}>
           Comparing prices across Shwapno, Meena Bazar & Agora...
         </Text>
       </View>
@@ -29,16 +31,18 @@ export const SuperstoreComparisonCard: React.FC<SuperstoreComparisonCardProps> =
   }
 
   return (
-    <View key="superstore-loaded" className="my-3 py-3 border-b border-slate-100">
+    <View key="superstore-loaded" className="my-3 py-3">
       {/* Header */}
       <View className="flex-row items-center justify-between mb-2">
         <View className="flex-row items-center">
-          <Store size={16} color="#059669" className="mr-2" />
-          <Text className="text-slate-900 font-extrabold text-sm">Superstore Price Compare</Text>
+          <Store size={16} color={colors.accent} className="mr-2" />
+          <Text className="font-extrabold text-sm" style={{ color: colors.textPrimary }}>
+            Superstore Price Compare
+          </Text>
         </View>
 
         {comparison.savingsAmountBDT > 0 && (
-          <Text className="text-emerald-700 font-bold text-xs">
+          <Text className="font-bold text-xs" style={{ color: colors.accent }}>
             Save up to ৳{comparison.savingsAmountBDT}
           </Text>
         )}
@@ -51,25 +55,29 @@ export const SuperstoreComparisonCard: React.FC<SuperstoreComparisonCardProps> =
             key={index}
             activeOpacity={0.7}
             onPress={() => store.itemUrl && Linking.openURL(store.itemUrl)}
-            className="flex-row items-center justify-between py-2 border-b border-slate-100 last:border-b-0"
+            className="flex-row items-center justify-between py-2"
           >
             <View className="flex-row items-center flex-1 pr-2">
-              <ShoppingBag size={14} color="#475569" style={{ marginRight: 8 }} />
+              <ShoppingBag size={14} color={colors.icon} style={{ marginRight: 8 }} />
               <View>
                 <View className="flex-row items-center">
-                  <Text className="font-bold text-slate-800 text-xs mr-1.5">{store.storeName}</Text>
+                  <Text className="font-bold text-xs mr-1.5" style={{ color: colors.textPrimary }}>
+                    {store.storeName}
+                  </Text>
                   {store.isBestPrice && (
-                    <Text className="text-emerald-600 font-black text-[9px]">● BEST PRICE</Text>
+                    <Text className="font-black text-[9px]" style={{ color: colors.accent }}>
+                      ● BEST PRICE
+                    </Text>
                   )}
                 </View>
 
                 <View className="flex-row items-center mt-0.5">
                   {store.isAvailable ? (
-                    <CheckCircle2 size={10} color="#10B981" style={{ marginRight: 4 }} />
+                    <CheckCircle2 size={10} color={colors.accent} style={{ marginRight: 4 }} />
                   ) : (
-                    <AlertCircle size={10} color="#EF4444" style={{ marginRight: 4 }} />
+                    <AlertCircle size={10} color={colors.danger} style={{ marginRight: 4 }} />
                   )}
-                  <Text className="text-slate-400 text-[11px]">
+                  <Text className="text-[11px]" style={{ color: colors.textMuted }}>
                     {store.isAvailable ? "In Stock" : "Out of Stock"}
                   </Text>
                 </View>
@@ -78,14 +86,16 @@ export const SuperstoreComparisonCard: React.FC<SuperstoreComparisonCardProps> =
 
             <View className="items-end flex-row">
               <View className="items-end mr-2">
-                <Text className="font-extrabold text-slate-900 text-sm">৳{store.priceBDT}</Text>
+                <Text className="font-extrabold text-sm" style={{ color: colors.textPrimary }}>
+                  ৳{store.priceBDT}
+                </Text>
                 {store.originalPriceBDT && (
-                  <Text className="text-slate-400 text-[10px] line-through">
+                  <Text className="text-[10px] line-through" style={{ color: colors.textMuted }}>
                     ৳{store.originalPriceBDT}
                   </Text>
                 )}
               </View>
-              <ExternalLink size={13} color="#94A3B8" />
+              <ExternalLink size={13} color={colors.icon} />
             </View>
           </TouchableOpacity>
         );

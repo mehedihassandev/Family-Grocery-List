@@ -93,13 +93,7 @@ export const useToggleItemCompletionBackend = (familyId?: string | null) => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({
-      itemId,
-      currentStatus,
-    }: {
-      itemId: string;
-      currentStatus: TItemStatus;
-    }) => {
+    mutationFn: ({ itemId, currentStatus }: { itemId: string; currentStatus: TItemStatus }) => {
       const nextStatus = getNextStatus(currentStatus);
       return modifyGroceryItemApi(familyId ?? "", itemId, {
         status: nextStatus,

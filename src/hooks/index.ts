@@ -1,5 +1,6 @@
 export * from "./useDateFormatter";
 export * from "./useTextFormatter";
+export * from "./useAppTheme";
 export * from "./queries/useGroceryQueries";
 export * from "./queries/useFamilyQueries";
 export * from "./queries/useUserQueries";
