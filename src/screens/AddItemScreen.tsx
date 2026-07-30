@@ -18,7 +18,14 @@ import {
 import { useAddGroceryItemBackend, useFamilyGroceryItemsBackend, useAppTheme } from "../hooks";
 import { addCustomCategory, subscribeToCategories, ICustomCategory } from "../services/categories";
 import { GROCERY_CATEGORIES } from "../features/grocery";
-import { InputField, PrimaryButton, Chip, StatusModal, LoadingOverlay } from "../components/ui";
+import {
+  InputField,
+  DatePicker,
+  PrimaryButton,
+  Chip,
+  StatusModal,
+  LoadingOverlay,
+} from "../components/ui";
 import { useAuthStore } from "../store/useAuthStore";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { getSuggestedPriceForItem } from "../services/analytics";
@@ -536,21 +543,21 @@ const AddItemScreen = ({
               onChangeText={setAssigneeName}
               containerClassName="flex-1"
             />
-            <InputField
+            <DatePicker
               label="DUE DATE"
               placeholder="YYYY-MM-DD"
               value={dueDateInput}
-              onChangeText={setDueDateInput}
+              onChange={setDueDateInput}
               containerClassName="flex-1"
             />
           </View>
 
           <View className="mb-10 flex-row gap-3">
-            <InputField
+            <DatePicker
               label="REMINDER"
               placeholder="YYYY-MM-DD"
               value={reminderAtInput}
-              onChangeText={setReminderAtInput}
+              onChange={setReminderAtInput}
               containerClassName="flex-1"
             />
             <InputField

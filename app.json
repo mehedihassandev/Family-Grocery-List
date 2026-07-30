@@ -7,10 +7,7 @@
       "com.googleusercontent.apps.1062088306859-g25274d26kfdh2joau9vnk0eharr8l9e"
     ],
     "version": "1.0.0",
-    "platforms": [
-      "android",
-      "ios"
-    ],
+    "platforms": ["android", "ios"],
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "splash": {
@@ -19,10 +16,7 @@
       "backgroundColor": "#59AC77"
     },
     "userInterfaceStyle": "light",
-    "plugins": [
-      "expo-font",
-      "expo-web-browser"
-    ],
+    "plugins": ["expo-font", "expo-web-browser"],
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.mehedi.FamilyGroceryList"

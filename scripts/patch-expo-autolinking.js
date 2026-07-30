@@ -9,10 +9,10 @@
  * settings.gradle auto-detects and writes). This allows Android Studio GUI Gradle sync to succeed.
  */
 
-const fs = require('fs');
-const path = require('path');
+const fs = require("fs");
+const path = require("path");
 
-const rootDir = path.resolve(__dirname, '..');
+const rootDir = path.resolve(__dirname, "..");
 
 /**
  * Patches a single file by searching for a target string and replacing it.
@@ -27,27 +27,35 @@ function patchFile(filePath, target, replacement) {
     return;
   }
 
-  const content = fs.readFileSync(filePath, 'utf8');
+  const content = fs.readFileSync(filePath, "utf8");
   if (content.includes(replacement)) {
     console.log(`[patch-expo-autolinking] Already patched: ${path.basename(filePath)}`);
     return;
   }
 
   if (!content.includes(target)) {
-    console.warn(`[patch-expo-autolinking] Target not found in ${path.basename(filePath)}. Skipped.`);
+    console.warn(
+      `[patch-expo-autolinking] Target not found in ${path.basename(filePath)}. Skipped.`,
+    );
     return;
   }
 
   const updatedContent = content.replace(target, replacement);
-  fs.writeFileSync(filePath, updatedContent, 'utf8');
+  fs.writeFileSync(filePath, updatedContent, "utf8");
   console.log(`[patch-expo-autolinking] Successfully patched: ${path.basename(filePath)}`);
 }
 
 function run() {
-  const pluginDir = path.join(rootDir, 'node_modules/expo-modules-autolinking/android/expo-gradle-plugin');
+  const pluginDir = path.join(
+    rootDir,
+    "node_modules/expo-modules-autolinking/android/expo-gradle-plugin",
+  );
 
   // File 1: ExpoAutolinkingSettingsPlugin.kt
-  const file1 = path.join(pluginDir, 'expo-autolinking-settings-plugin/src/main/kotlin/expo/modules/plugin/ExpoAutolinkingSettingsPlugin.kt');
+  const file1 = path.join(
+    pluginDir,
+    "expo-autolinking-settings-plugin/src/main/kotlin/expo/modules/plugin/ExpoAutolinkingSettingsPlugin.kt",
+  );
   const target1 = `  private fun getExpoGradlePluginsFile(settings: Settings): File {
     val expoModulesAutolinkingPath =
       settings.providers.exec { env ->
@@ -87,7 +95,10 @@ function run() {
   patchFile(file1, target1, replacement1);
 
   // File 2: ExpoAutolinkingSettingsExtension.kt
-  const file2 = path.join(pluginDir, 'expo-autolinking-settings-plugin/src/main/kotlin/expo/modules/plugin/ExpoAutolinkingSettingsExtension.kt');
+  const file2 = path.join(
+    pluginDir,
+    "expo-autolinking-settings-plugin/src/main/kotlin/expo/modules/plugin/ExpoAutolinkingSettingsExtension.kt",
+  );
   const target2 = `package expo.modules.plugin
 
 import org.gradle.api.Action
@@ -244,7 +255,10 @@ open class ExpoAutolinkingSettingsExtension(
   patchFile(file2, target2, replacement2);
 
   // File 3: SettingsManager.kt
-  const file3 = path.join(pluginDir, 'expo-autolinking-settings-plugin/src/main/kotlin/expo/modules/plugin/SettingsManager.kt');
+  const file3 = path.join(
+    pluginDir,
+    "expo-autolinking-settings-plugin/src/main/kotlin/expo/modules/plugin/SettingsManager.kt",
+  );
   const target3 = `package expo.modules.plugin
 
 import expo.modules.plugin.configuration.ExpoAutolinkingConfig
@@ -373,7 +387,10 @@ class SettingsManager(
   patchFile(file3, target3, replacement3);
 
   // File 4: AutolinkingCommandBuilder.kt
-  const file4 = path.join(pluginDir, 'expo-autolinking-plugin-shared/src/main/kotlin/expo/modules/plugin/AutolinkingCommandBuilder.kt');
+  const file4 = path.join(
+    pluginDir,
+    "expo-autolinking-plugin-shared/src/main/kotlin/expo/modules/plugin/AutolinkingCommandBuilder.kt",
+  );
   const target4 = `class AutolinkingCommandBuilder {
   /**
    * Command for finding and running \`expo-modules-autolinking\`.
@@ -532,7 +549,10 @@ class SettingsManager(
   patchFile(file4, target4, replacement4);
 
   // File 5: ExpoGradleHelperExtension.kt (in expo-modules-core gradle plugin)
-  const file5 = path.join(rootDir, 'node_modules/expo-modules-core/expo-module-gradle-plugin/src/main/kotlin/expo/modules/plugin/gradle/ExpoGradleHelperExtension.kt');
+  const file5 = path.join(
+    rootDir,
+    "node_modules/expo-modules-core/expo-module-gradle-plugin/src/main/kotlin/expo/modules/plugin/gradle/ExpoGradleHelperExtension.kt",
+  );
   const target5 = `  fun getReactNativeDir(project: Project): File = synchronized(this) {
     if (::reactNativeDir.isInitialized) {
       return reactNativeDir
@@ -605,7 +625,10 @@ class SettingsManager(
  */
 function patchKotlinMetadataVersionChecks() {
   // Patch File 1: node_modules/expo-modules-autolinking/android/expo-gradle-plugin/build.gradle.kts
-  const file1 = path.join(rootDir, 'node_modules/expo-modules-autolinking/android/expo-gradle-plugin/build.gradle.kts');
+  const file1 = path.join(
+    rootDir,
+    "node_modules/expo-modules-autolinking/android/expo-gradle-plugin/build.gradle.kts",
+  );
   const target1 = `plugins {
   kotlin("jvm") version "2.1.20" apply false
   id("java-gradle-plugin")
@@ -625,7 +648,7 @@ allprojects {
   patchFile(file1, target1, replacement1);
 
   // Patch File 2: node_modules/@react-native/gradle-plugin/build.gradle.kts
-  const file2 = path.join(rootDir, 'node_modules/@react-native/gradle-plugin/build.gradle.kts');
+  const file2 = path.join(rootDir, "node_modules/@react-native/gradle-plugin/build.gradle.kts");
   const target2 = `allprojects { tasks.withType<com.ncorti.ktfmt.gradle.tasks.KtfmtCheckTask>() { enabled = false } }`;
   const replacement2 = `allprojects { tasks.withType<com.ncorti.ktfmt.gradle.tasks.KtfmtCheckTask>() { enabled = false } }
 
@@ -639,7 +662,10 @@ allprojects {
   patchFile(file2, target2, replacement2);
 
   // Patch File 3: node_modules/expo-modules-core/expo-module-gradle-plugin/build.gradle.kts
-  const file3 = path.join(rootDir, 'node_modules/expo-modules-core/expo-module-gradle-plugin/build.gradle.kts');
+  const file3 = path.join(
+    rootDir,
+    "node_modules/expo-modules-core/expo-module-gradle-plugin/build.gradle.kts",
+  );
   const target3 = `tasks.withType<KotlinCompile> {
   compilerOptions {
     jvmTarget.set(JvmTarget.JVM_11)
@@ -654,7 +680,10 @@ allprojects {
   patchFile(file3, target3, replacement3);
 
   // Patch File 4: node_modules/expo-dev-launcher/expo-dev-launcher-gradle-plugin/build.gradle.kts
-  const file4 = path.join(rootDir, 'node_modules/expo-dev-launcher/expo-dev-launcher-gradle-plugin/build.gradle.kts');
+  const file4 = path.join(
+    rootDir,
+    "node_modules/expo-dev-launcher/expo-dev-launcher-gradle-plugin/build.gradle.kts",
+  );
   const target4 = `tasks.withType<KotlinCompile> {
   compilerOptions {
     jvmTarget.set(JvmTarget.JVM_11)
@@ -675,15 +704,15 @@ allprojects {
  * Reanimated has multiple hardcoded "node" executions that fail under restricted macOS GUI environments.
  */
 function patchReanimated() {
-  const filePath = path.join(rootDir, 'node_modules/react-native-reanimated/android/build.gradle');
+  const filePath = path.join(rootDir, "node_modules/react-native-reanimated/android/build.gradle");
   if (!fs.existsSync(filePath)) {
     console.warn(`[patch-expo-autolinking] File does not exist: ${filePath}`);
     return;
   }
 
-  let content = fs.readFileSync(filePath, 'utf8');
+  let content = fs.readFileSync(filePath, "utf8");
 
-  if (content.includes('def resolveNodeExecutable()')) {
+  if (content.includes("def resolveNodeExecutable()")) {
     console.log(`[patch-expo-autolinking] Already patched: react-native-reanimated build.gradle`);
     return;
   }
@@ -711,7 +740,7 @@ def resolveNodeExecutable() {
         nodeExecutable = localProperties.getProperty("expo.nodeExecutable") ?: localProperties.getProperty("node") ?: "node"
     }
     return nodeExecutable
-}`
+}`,
     },
     {
       target: `    // Fallback to node resolver for custom directory structures like monorepos.
@@ -727,7 +756,7 @@ def resolveNodeExecutable() {
             workingDir(rootDir)
             commandLine(resolveNodeExecutable(), "--print", "require.resolve('react-native/package.json')")
         }.standardOutput.asText.get().trim()
-    )`
+    )`,
     },
     {
       target: `    // Fallback to node resolver for custom directory structures like monorepos.
@@ -743,7 +772,7 @@ def resolveNodeExecutable() {
             workingDir(rootDir)
             commandLine(resolveNodeExecutable(), "--print", "require.resolve('react-native-worklets/package.json')")
         }.standardOutput.asText.get().trim()
-    )`
+    )`,
     },
     {
       target: `def validateReactNativeVersionResult = providers.exec {
@@ -755,7 +784,7 @@ def resolveNodeExecutable() {
     workingDir(projectDir.path)
     commandLine(resolveNodeExecutable(), "./../scripts/validate-react-native-version.js", REACT_NATIVE_VERSION.toString())
     ignoreExitValue = true
-}`
+}`,
     },
     {
       target: `def validateWorkletsBuildResult = providers.exec {
@@ -767,8 +796,8 @@ def resolveNodeExecutable() {
     workingDir(projectDir.path)
     commandLine(resolveNodeExecutable(), "./../scripts/validate-worklets-build.js")
     ignoreExitValue = true
-}`
-    }
+}`,
+    },
   ];
 
   let modified = false;
@@ -777,13 +806,17 @@ def resolveNodeExecutable() {
       content = content.replace(t.target, t.replacement);
       modified = true;
     } else {
-      console.warn(`[patch-expo-autolinking] Target not found in react-native-reanimated build.gradle: ${t.target.slice(0, 50)}...`);
+      console.warn(
+        `[patch-expo-autolinking] Target not found in react-native-reanimated build.gradle: ${t.target.slice(0, 50)}...`,
+      );
     }
   }
 
   if (modified) {
-    fs.writeFileSync(filePath, content, 'utf8');
-    console.log(`[patch-expo-autolinking] Successfully patched: react-native-reanimated build.gradle`);
+    fs.writeFileSync(filePath, content, "utf8");
+    console.log(
+      `[patch-expo-autolinking] Successfully patched: react-native-reanimated build.gradle`,
+    );
   }
 }
 
@@ -799,7 +832,7 @@ def resolveNodeExecutable() {
 function patchExpoLibraryTargetSdk() {
   const filePath = path.join(
     rootDir,
-    'node_modules/expo-modules-core/expo-module-gradle-plugin/src/main/kotlin/expo/modules/plugin/android/AndroidLibraryExtension.kt'
+    "node_modules/expo-modules-core/expo-module-gradle-plugin/src/main/kotlin/expo/modules/plugin/android/AndroidLibraryExtension.kt",
   );
   const target = `internal fun LibraryExtension.applySDKVersions(compileSdk: Int, minSdk: Int, targetSdk: Int) {
   this.compileSdk = compileSdk
@@ -827,13 +860,13 @@ function patchExpoLibraryTargetSdk() {
  * buffer.data() with &buffer[0] in toString().
  */
 function patchJsiHeader() {
-  const filePath = path.join(rootDir, 'node_modules/react-native/ReactCommon/jsi/jsi/jsi.h');
+  const filePath = path.join(rootDir, "node_modules/react-native/ReactCommon/jsi/jsi/jsi.h");
   if (!fs.existsSync(filePath)) {
     console.warn(`[patch-expo-autolinking] File does not exist: ${filePath}`);
     return;
   }
 
-  let content = fs.readFileSync(filePath, 'utf8');
+  let content = fs.readFileSync(filePath, "utf8");
   const target = `  std::string toString() const {
     std::string buffer(36, ' ');
     std::snprintf(
@@ -856,12 +889,8 @@ function patchJsiHeader() {
   }
 
   content = content.replace(target, replacement);
-  fs.writeFileSync(filePath, content, 'utf8');
+  fs.writeFileSync(filePath, content, "utf8");
   console.log(`[patch-expo-autolinking] Successfully patched: react-native jsi.h`);
 }
 
 run();
-
-
-
-
