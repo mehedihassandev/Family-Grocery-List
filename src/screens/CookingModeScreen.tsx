@@ -34,29 +34,17 @@ const CookingModeScreen = ({ navigation, route }: any) => {
   const initialStepNumber = route?.params?.stepNumber || 1;
 
   const { data: recipesList } = useRecipesListQuery();
-  const { data: recipe } = useRecipeDetailQuery(activeRecipeId || "creamy-garlic-pasta");
+  const { data: recipe } = useRecipeDetailQuery(activeRecipeId || "");
 
   const [currentStepIdx, setCurrentStepIdx] = useState(initialStepNumber - 1);
   const [timerSeconds, setTimerSeconds] = useState(600); // 10:00 default
   const [isTimerRunning, setIsTimerRunning] = useState(false);
 
   const steps = recipe?.steps || [];
-  const currentStep = steps[currentStepIdx] || {
-    stepNumber: 1,
-    totalSteps: 4,
-    phase: "Prep",
-    title: "Boil salted water and cook linguine until al dente.",
-    instruction:
-      "Ensure the water is at a rolling boil before adding the pasta. Stir occasionally during the first few minutes to prevent sticking.",
-    timerMins: 10,
-    heatLevel: "High Heat",
-    imageUrl:
-      "https://images.unsplash.com/photo-1551183053-bf91a1d81141?w=800&auto=format&fit=crop&q=80",
-    voicePrompt: 'SAY "NEXT" TO CONTINUE',
-  };
+  const currentStep = steps[currentStepIdx] || null;
 
-  const totalSteps = steps.length || 4;
-  const progressPct = Math.round(((currentStepIdx + 1) / totalSteps) * 100);
+  const totalSteps = steps.length;
+  const progressPct = totalSteps > 0 ? Math.round(((currentStepIdx + 1) / totalSteps) * 100) : 0;
 
   useEffect(() => {
     let interval: ReturnType<typeof setInterval> | undefined;
@@ -106,7 +94,7 @@ const CookingModeScreen = ({ navigation, route }: any) => {
 
         <AppHeader
           eyebrow="AI COOKING ASSISTANT"
-          title="Grocery List"
+          title="Recipe List"
           showBackButton
           onBackPress={() => navigation.goBack()}
           onNotificationPress={() => navigation.navigate(ROUTES.NOTIFICATIONS)}
@@ -231,7 +219,7 @@ const CookingModeScreen = ({ navigation, route }: any) => {
 
       <AppHeader
         eyebrow="AI COOKING MODE"
-        title="Grocery List"
+        title="Cooking Mode"
         showBackButton
         onBackPress={() => setActiveRecipeId(null)}
         onNotificationPress={() => navigation.navigate(ROUTES.NOTIFICATIONS)}

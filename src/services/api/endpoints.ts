@@ -39,6 +39,18 @@ export const API_ENDPOINTS = {
     recipeToGrocery: "/v1/ai/recipe-to-grocery",
     monthlyInsights: "/v1/ai/monthly-insights",
   },
+  recipes: {
+    list: "/v1/recipes",
+    packs: "/v1/recipes/packs",
+    detail: (id: string) => `/v1/recipes/${encodeURIComponent(id)}`,
+    create: "/v1/recipes",
+    addMissing: (familyId: string, recipeId: string) =>
+      `/v1/families/${encodeURIComponent(familyId)}/recipes/${encodeURIComponent(recipeId)}/add-missing`,
+  },
+  mealPlans: {
+    get: (familyId: string) => `/v1/families/${encodeURIComponent(familyId)}/meal-plans`,
+    addItem: (familyId: string) => `/v1/families/${encodeURIComponent(familyId)}/meal-plans/item`,
+  },
   deviceTokens: {
     register: "/v1/users/me/device-tokens",
     remove: (token: string) => `/v1/users/me/device-tokens/${encodeURIComponent(token)}`,

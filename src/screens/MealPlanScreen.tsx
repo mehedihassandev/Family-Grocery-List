@@ -15,7 +15,10 @@ import { Plus, Flame, Check, RefreshCw, Sun, Sunrise, Moon, Cookie, X } from "lu
 
 import { ROUTES } from "../types";
 import { useAuthStore } from "../store/useAuthStore";
-import { useDailyMealPlanQuery } from "../hooks/queries/useMealPlanQueries";
+import {
+  useDailyMealPlanQuery,
+  useAddMealPlanItemMutation,
+} from "../hooks/queries/useMealPlanQueries";
 import { useAppTheme } from "../hooks";
 import { AppHeader } from "../components/ui";
 
@@ -38,41 +41,39 @@ const MealPlanScreen = ({ navigation }: any) => {
   const { isDark, colors } = useAppTheme();
   const [selectedDate, setSelectedDate] = useState(14);
 
-  const { data: mealPlan } = useDailyMealPlanQuery(user?.familyId || "demo", "2026-10-14");
+  const { data: mealPlan } = useDailyMealPlanQuery(user?.familyId || undefined, "2026-10-14");
+  const addMealMutation = useAddMealPlanItemMutation();
 
-  // Local state for adding meals
+  // Local state for meal creation modal input
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [newMealName, setNewMealName] = useState("");
   const [newMealCategory, setNewMealCategory] = useState<
     "breakfast" | "lunch" | "dinner" | "snacks"
   >("dinner");
-  const [extraMeals, setExtraMeals] = useState<any[]>([]);
 
-  const handleCreateMeal = () => {
-    if (!newMealName.trim()) return;
+  const handleCreateMeal = async () => {
+    if (!newMealName.trim() || !user?.familyId) return;
 
-    const item = {
-      id: Date.now().toString(),
-      name: newMealName.trim(),
-      category: newMealCategory,
-      prepTimeMins: 15,
-      tags: "Custom Plan",
-      status: "planned",
-      thumbnailUrl:
-        newMealCategory === "dinner"
-          ? "https://images.unsplash.com/photo-1621996346565-e3d5d6288590?w=300&auto=format&fit=crop&q=80"
-          : "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=300&auto=format&fit=crop&q=80",
-    };
-
-    setExtraMeals((prev) => [...prev, item]);
-    setNewMealName("");
-    setIsAddModalOpen(false);
+    try {
+      await addMealMutation.mutateAsync({
+        familyId: user.familyId,
+        mealItem: {
+          date: "2026-10-14",
+          mealCategory: newMealCategory,
+          name: newMealName.trim(),
+          prepTimeMins: 15,
+          tags: "Custom Plan",
+        },
+      });
+      setNewMealName("");
+      setIsAddModalOpen(false);
+    } catch (err) {
+      console.warn("Failed to create meal item:", err);
+    }
   };
 
   const getCategoryMeals = (category: "breakfast" | "lunch" | "dinner" | "snacks") => {
-    const base = (mealPlan as any)?.[category] || [];
-    const added = extraMeals.filter((m) => m.category === category);
-    return [...base, ...added];
+    return (mealPlan as any)?.[category] || [];
   };
 
   return (
@@ -85,7 +86,7 @@ const MealPlanScreen = ({ navigation }: any) => {
 
       <AppHeader
         eyebrow="MEAL PLANNER"
-        title="Grocery List"
+        title="Meal Planner"
         showBackButton
         onBackPress={() => navigation.goBack()}
         onNotificationPress={() => navigation.navigate(ROUTES.NOTIFICATIONS)}
@@ -232,6 +233,24 @@ const MealPlanScreen = ({ navigation }: any) => {
               <Text className="text-slate-300 font-bold text-lg px-2">::</Text>
             </TouchableOpacity>
           ))}
+
+          <TouchableOpacity
+            activeOpacity={0.8}
+            onPress={() => {
+              setNewMealCategory("breakfast");
+              setIsAddModalOpen(true);
+            }}
+            className="rounded-3xl p-5 border-2 border-dashed flex-row items-center justify-center mt-1"
+            style={{
+              backgroundColor: isDark ? colors.bgSurface : "#F1F4FD",
+              borderColor: isDark ? colors.border : "#CBD5E1",
+            }}
+          >
+            <View className="h-9 w-9 items-center justify-center rounded-full bg-sky-100 mr-2.5">
+              <Plus stroke="#0284C7" size={18} strokeWidth={2.5} />
+            </View>
+            <Text className="text-[14px] font-black text-slate-700">Plan Breakfast</Text>
+          </TouchableOpacity>
         </View>
 
         {/* LUNCH Section */}
@@ -298,6 +317,24 @@ const MealPlanScreen = ({ navigation }: any) => {
               <Text className="text-slate-300 font-bold text-lg px-2">::</Text>
             </TouchableOpacity>
           ))}
+
+          <TouchableOpacity
+            activeOpacity={0.8}
+            onPress={() => {
+              setNewMealCategory("lunch");
+              setIsAddModalOpen(true);
+            }}
+            className="rounded-3xl p-5 border-2 border-dashed flex-row items-center justify-center mt-1"
+            style={{
+              backgroundColor: isDark ? colors.bgSurface : "#F1F4FD",
+              borderColor: isDark ? colors.border : "#CBD5E1",
+            }}
+          >
+            <View className="h-9 w-9 items-center justify-center rounded-full bg-amber-100 mr-2.5">
+              <Plus stroke="#F59E0B" size={18} strokeWidth={2.5} />
+            </View>
+            <Text className="text-[14px] font-black text-slate-700">Plan Lunch</Text>
+          </TouchableOpacity>
         </View>
 
         {/* DINNER Section */}

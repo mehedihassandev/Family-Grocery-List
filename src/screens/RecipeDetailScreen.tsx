@@ -31,7 +31,7 @@ import { AppHeader, StatusModal, LoadingOverlay } from "../components/ui";
 const RecipeDetailScreen = ({ navigation, route }: any) => {
   const { user } = useAuthStore();
   const { isDark, colors } = useAppTheme();
-  const recipeId = route?.params?.recipeId || "creamy-garlic-pasta";
+  const recipeId = route?.params?.recipeId || "";
 
   const { data: recipe, isLoading } = useRecipeDetailQuery(recipeId);
   const addMissingMutation = useAddMissingIngredientsMutation();
@@ -85,7 +85,7 @@ const RecipeDetailScreen = ({ navigation, route }: any) => {
 
       <AppHeader
         eyebrow="RECIPE DETAILS"
-        title="Grocery List"
+        title="Recipe Details"
         showBackButton
         onBackPress={() => navigation.goBack()}
         onNotificationPress={() => navigation.navigate(ROUTES.NOTIFICATIONS)}

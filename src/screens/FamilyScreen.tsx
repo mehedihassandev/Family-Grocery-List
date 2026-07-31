@@ -9,6 +9,8 @@ import {
   Share,
   StatusBar,
   TextInput,
+  Modal,
+  Pressable,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import Animated, { FadeInDown } from "react-native-reanimated";
@@ -21,6 +23,9 @@ import {
   MoreVertical,
   UserMinus,
   Star,
+  ShieldCheck,
+  ShieldOff,
+  X,
 } from "lucide-react-native";
 import { useAuthStore } from "../store/useAuthStore";
 import {
@@ -63,6 +68,9 @@ const FamilyScreen = ({ navigation }: FamilyStackScreenProps) => {
   const updateRoleMutation = useUpdateMemberRole();
 
   const [inviteEmail, setInviteEmail] = useState("");
+
+  // Member action menu state
+  const [menuMember, setMenuMember] = useState<IUser | null>(null);
 
   const [statusModal, setStatusModal] = useState<{
     visible: boolean;
@@ -132,6 +140,7 @@ const FamilyScreen = ({ navigation }: FamilyStackScreenProps) => {
     if (!user?.familyId || !isOwner || member.uid === user.uid) return;
     const newRole = member.role === "owner" ? "member" : "owner";
 
+    setMenuMember(null);
     updateRoleMutation.mutate(
       { familyId: user.familyId, targetUserId: member.uid, role: newRole },
       {
@@ -158,6 +167,7 @@ const FamilyScreen = ({ navigation }: FamilyStackScreenProps) => {
   const handleRemoveMember = (member: IUser) => {
     if (!user?.uid || !user.familyId || !isOwner) return;
 
+    setMenuMember(null);
     setStatusModal({
       visible: true,
       title: "Remove Member",
@@ -204,6 +214,140 @@ const FamilyScreen = ({ navigation }: FamilyStackScreenProps) => {
         onConfirm={statusModal.onConfirm}
         onClose={() => setStatusModal((prev) => ({ ...prev, visible: false }))}
       />
+
+      {/* ── Member action menu ── */}
+      <Modal
+        visible={!!menuMember}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setMenuMember(null)}
+      >
+        <Pressable
+          className="flex-1 justify-end"
+          style={{ backgroundColor: "rgba(0,0,0,0.45)" }}
+          onPress={() => setMenuMember(null)}
+        >
+          <Pressable
+            onPress={(e) => e.stopPropagation()}
+            className="rounded-t-3xl px-5 pt-5 pb-8"
+            style={{ backgroundColor: isDark ? colors.bgSurface : "#FFFFFF" }}
+          >
+            {/* Handle bar */}
+            <View className="items-center mb-4">
+              <View
+                className="h-1 w-10 rounded-full"
+                style={{ backgroundColor: isDark ? colors.border : "#CBD5E1" }}
+              />
+            </View>
+
+            {/* Member info header */}
+            {menuMember && (
+              <View className="flex-row items-center mb-5">
+                <View
+                  className="h-11 w-11 items-center justify-center overflow-hidden rounded-full mr-3"
+                  style={{
+                    backgroundColor: menuMember.photoURL
+                      ? colors.bgInput
+                      : avatarColors[
+                          members.findIndex((m) => m.uid === menuMember.uid) % avatarColors.length
+                        ],
+                  }}
+                >
+                  {menuMember.photoURL ? (
+                    <Image source={{ uri: menuMember.photoURL }} className="h-full w-full" />
+                  ) : (
+                    <Text className="text-base font-black text-white">
+                      {toInitial(menuMember.displayName)}
+                    </Text>
+                  )}
+                </View>
+                <View className="flex-1">
+                  <Text className="text-[15px] font-black" style={{ color: colors.textPrimary }}>
+                    {menuMember.displayName || "Family Member"}
+                  </Text>
+                  <Text className="text-[12px] font-medium" style={{ color: colors.textSecondary }}>
+                    {menuMember.email}
+                  </Text>
+                </View>
+                <TouchableOpacity
+                  onPress={() => setMenuMember(null)}
+                  className="p-2 rounded-full"
+                  style={{ backgroundColor: isDark ? colors.bgInput : "#F1F5F9" }}
+                >
+                  <X stroke={colors.iconMuted} size={18} strokeWidth={2.2} />
+                </TouchableOpacity>
+              </View>
+            )}
+
+            {/* Action buttons */}
+            {menuMember && isOwner && menuMember.uid !== user?.uid && (
+              <View className="gap-2">
+                {/* Promote / Demote */}
+                <TouchableOpacity
+                  onPress={() => handleToggleRole(menuMember)}
+                  activeOpacity={0.7}
+                  className="flex-row items-center p-4 rounded-2xl"
+                  style={{ backgroundColor: isDark ? colors.bgInput : "#EEF2FF" }}
+                >
+                  {menuMember.role === "owner" ? (
+                    <ShieldOff stroke="#7C3AED" size={20} strokeWidth={2} />
+                  ) : (
+                    <ShieldCheck stroke="#059669" size={20} strokeWidth={2} />
+                  )}
+                  <View className="ml-3 flex-1">
+                    <Text className="text-[14px] font-bold" style={{ color: colors.textPrimary }}>
+                      {menuMember.role === "owner" ? "Demote to Member" : "Promote to Owner"}
+                    </Text>
+                    <Text
+                      className="text-[11px] font-medium mt-0.5"
+                      style={{ color: colors.textSecondary }}
+                    >
+                      {menuMember.role === "owner"
+                        ? "Remove admin privileges from this member"
+                        : "Grant full admin access to this member"}
+                    </Text>
+                  </View>
+                </TouchableOpacity>
+
+                {/* Remove */}
+                <TouchableOpacity
+                  onPress={() => handleRemoveMember(menuMember)}
+                  activeOpacity={0.7}
+                  className="flex-row items-center p-4 rounded-2xl"
+                  style={{ backgroundColor: isDark ? "#2D1515" : "#FEF2F2" }}
+                >
+                  <UserMinus stroke="#DC2626" size={20} strokeWidth={2} />
+                  <View className="ml-3 flex-1">
+                    <Text className="text-[14px] font-bold" style={{ color: "#DC2626" }}>
+                      Remove from Family
+                    </Text>
+                    <Text
+                      className="text-[11px] font-medium mt-0.5"
+                      style={{ color: isDark ? "#FCA5A5" : "#B91C1C" }}
+                    >
+                      This member will lose access to the family list
+                    </Text>
+                  </View>
+                </TouchableOpacity>
+              </View>
+            )}
+
+            {/* Non-owner or self — no actions available */}
+            {menuMember && (!isOwner || menuMember.uid === user?.uid) && (
+              <View
+                className="p-4 rounded-2xl items-center"
+                style={{ backgroundColor: isDark ? colors.bgInput : "#F8FAFC" }}
+              >
+                <Text className="text-[13px] font-semibold" style={{ color: colors.textMuted }}>
+                  {menuMember.uid === user?.uid
+                    ? "You can't modify your own role"
+                    : "Only the owner can manage members"}
+                </Text>
+              </View>
+            )}
+          </Pressable>
+        </Pressable>
+      </Modal>
 
       <AppHeader
         eyebrow="GOOD MORNING"
@@ -429,24 +573,14 @@ const FamilyScreen = ({ navigation }: FamilyStackScreenProps) => {
                     </Text>
                   </View>
 
-                  {/* Actions */}
-                  {isOwner && item.uid !== user?.uid ? (
-                    <TouchableOpacity
-                      onPress={() => handleRemoveMember(item)}
-                      activeOpacity={0.7}
-                      className="p-2 rounded-full"
-                    >
-                      <UserMinus stroke={colors.iconMuted} size={18} strokeWidth={2} />
-                    </TouchableOpacity>
-                  ) : (
-                    <TouchableOpacity
-                      onPress={() => isOwner && handleToggleRole(item)}
-                      activeOpacity={0.7}
-                      className="p-2 rounded-full"
-                    >
-                      <MoreVertical stroke={colors.iconMuted} size={18} strokeWidth={2} />
-                    </TouchableOpacity>
-                  )}
+                  {/* 3-dots action button — opens bottom sheet */}
+                  <TouchableOpacity
+                    onPress={() => setMenuMember(item)}
+                    activeOpacity={0.7}
+                    className="p-2 rounded-full"
+                  >
+                    <MoreVertical stroke={colors.iconMuted} size={18} strokeWidth={2} />
+                  </TouchableOpacity>
                 </View>
               </Animated.View>
             );

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import {
   ScrollView,
   StatusBar,
@@ -20,6 +20,7 @@ import {
 } from "lucide-react-native";
 
 import { useAddGroceryItemBackend, useRecipeToGrocery, useAppTheme } from "../hooks";
+import { useRecipePacksQuery } from "../hooks/queries/useMealPlanQueries";
 import { useAuthStore } from "../store/useAuthStore";
 import { Category, Priority, ROUTES } from "../types";
 import { AppHeader } from "../components/ui";
@@ -41,108 +42,6 @@ interface IRecipePack {
   items: IRecipeItem[];
 }
 
-const RECIPE_PACKS: IRecipePack[] = [
-  {
-    id: "pasta-night",
-    title: "Italian Pasta Feast",
-    description: "Classic Italian dinner with pasta, garlic cream sauce, and fresh basil.",
-    icon: "🍝",
-    tag: "Quick Dinner",
-    color: "#047857",
-    items: [
-      {
-        name: "Penne or Spaghetti Pasta",
-        category: "Household",
-        quantity: "2 Boxes",
-        priority: "Medium",
-      },
-      {
-        name: "Marinara Pasta Sauce",
-        category: "Household",
-        quantity: "2 Jars",
-        priority: "Urgent",
-      },
-      { name: "Grated Parmesan Cheese", category: "Dairy", quantity: "1 Tub", priority: "Medium" },
-      {
-        name: "Fresh Garlic & Olive Oil",
-        category: "Vegetables",
-        quantity: "1 Head",
-        priority: "Low",
-      },
-      {
-        name: "Fresh Basil & Oregano",
-        category: "Vegetables",
-        quantity: "1 Bunch",
-        priority: "Low",
-      },
-    ],
-  },
-  {
-    id: "taco-night",
-    title: "Taco Tuesday",
-    description: "Everything you need for a delicious Mexican taco feast with avocados.",
-    icon: "🌮",
-    tag: "Family Favorite",
-    color: "#F59E0B",
-    items: [
-      { name: "Ground Beef / Turkey", category: "Meat", quantity: "1 lb", priority: "Urgent" },
-      {
-        name: "Soft Tortillas & Shells",
-        category: "Household",
-        quantity: "1 Pack",
-        priority: "Medium",
-      },
-      { name: "Salsa & Pico de Gallo", category: "Snacks", quantity: "1 Jar", priority: "Medium" },
-      { name: "Shredded Mexican Cheese", category: "Dairy", quantity: "8 oz", priority: "Medium" },
-      { name: "Avocados & Lime", category: "Fruits", quantity: "3 pcs", priority: "Low" },
-    ],
-  },
-  {
-    id: "pancake-breakfast",
-    title: "Sunday Pancake Breakfast",
-    description: "Fluffy pancakes, maple syrup, eggs, bacon, and orange juice.",
-    icon: "🥞",
-    tag: "Weekend Brunch",
-    color: "#4F46E5",
-    items: [
-      {
-        name: "Pancake & Waffle Mix",
-        category: "Household",
-        quantity: "1 Box",
-        priority: "Medium",
-      },
-      { name: "Pure Maple Syrup", category: "Household", quantity: "1 Bottle", priority: "Medium" },
-      { name: "Grade A Large Eggs", category: "Dairy", quantity: "1 Dozen", priority: "Urgent" },
-      { name: "Smoked Bacon or Sausage", category: "Meat", quantity: "1 Pack", priority: "Medium" },
-      { name: "100% Orange Juice", category: "Drinks", quantity: "1 Carton", priority: "Medium" },
-    ],
-  },
-  {
-    id: "fitness-prep",
-    title: "Healthy Meal Prep",
-    description: "Lean proteins, quinoa, sweet potatoes, and fresh broccoli.",
-    icon: "🥗",
-    tag: "High Protein",
-    color: "#0EA5E9",
-    items: [
-      { name: "Organic Chicken Breast", category: "Meat", quantity: "3 lbs", priority: "Urgent" },
-      {
-        name: "Quinoa or Brown Rice",
-        category: "Household",
-        quantity: "1 Bag",
-        priority: "Medium",
-      },
-      {
-        name: "Fresh Broccoli & Asparagus",
-        category: "Vegetables",
-        quantity: "2 Bunches",
-        priority: "Medium",
-      },
-      { name: "Sweet Potatoes", category: "Vegetables", quantity: "4 pcs", priority: "Low" },
-    ],
-  },
-];
-
 /**
  * AI Recipe Generator & Meal Packs Screen
  * Redesigned to match Meal Planner & Cooking AI visual aesthetics
@@ -152,11 +51,36 @@ const RecipePacksScreen = ({ navigation }: any) => {
   const { user } = useAuthStore();
   const { isDark, colors } = useAppTheme();
 
-  const [aiPrompt, setAiPrompt] = useState("");
-  const [selectedPack, setSelectedPack] = useState<IRecipePack>(RECIPE_PACKS[0]);
-  const [selectedItemNames, setSelectedItemNames] = useState<string[]>(
-    RECIPE_PACKS[0].items.map((i) => i.name),
+  const { data: recipePacksFromApi = [] } = useRecipePacksQuery();
+  const packs = useMemo(
+    () => (recipePacksFromApi.length > 0 ? recipePacksFromApi : []),
+    [recipePacksFromApi],
   );
+
+  const [aiPrompt, setAiPrompt] = useState("");
+  const [selectedPack, setSelectedPack] = useState<IRecipePack>(
+    () =>
+      packs[0] || {
+        id: "pasta-night",
+        title: "Italian Pasta Feast",
+        description: "Classic Italian dinner with pasta, garlic cream sauce, and fresh basil.",
+        icon: "🍝",
+        tag: "Quick Dinner",
+        color: "#047857",
+        items: [],
+      },
+  );
+
+  const [selectedItemNames, setSelectedItemNames] = useState<string[]>(
+    () => selectedPack.items?.map((i) => i.name) || [],
+  );
+
+  useEffect(() => {
+    if (packs.length > 0 && selectedPack.items.length === 0) {
+      setSelectedPack(packs[0]);
+      setSelectedItemNames(packs[0].items.map((i) => i.name));
+    }
+  }, [packs, selectedPack.items.length]);
   const [adding, setAdding] = useState(false);
   const [successCount, setSuccessCount] = useState<number | null>(null);
 
@@ -180,11 +104,13 @@ const RecipePacksScreen = ({ navigation }: any) => {
 
     try {
       const result = await parseRecipeMutation.mutateAsync(aiPrompt);
-      const rawList = Array.isArray(result) ? result : (result as any)?.items || [];
+      const rawList = Array.isArray(result)
+        ? result
+        : (result as any)?.ingredients || (result as any)?.items || [];
       const convertedItems: IRecipeItem[] = rawList.map((item: any) => ({
         name: item.name,
         category: (item.category as Category) || "Household",
-        quantity: item.quantity || "1",
+        quantity: item.quantity || item.amount || "1",
         priority: (item.priority as Priority) || "Medium",
       }));
 
@@ -243,7 +169,7 @@ const RecipePacksScreen = ({ navigation }: any) => {
 
       <AppHeader
         eyebrow="AI RECIPE GENERATOR"
-        title="Grocery List"
+        title="AI Recipe Packs"
         showBackButton
         onBackPress={() => navigation.goBack()}
         onNotificationPress={() => navigation.navigate(ROUTES.NOTIFICATIONS)}
@@ -341,7 +267,7 @@ const RecipePacksScreen = ({ navigation }: any) => {
             showsHorizontalScrollIndicator={false}
             contentContainerStyle={{ paddingRight: 10 }}
           >
-            {RECIPE_PACKS.map((pack) => {
+            {packs.map((pack) => {
               const isSelected = selectedPack.id === pack.id;
 
               return (

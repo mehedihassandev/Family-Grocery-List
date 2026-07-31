@@ -39,7 +39,7 @@ const StoreComparisonScreen = ({
   const { data: basketSplitOpt } = useBasketSplitOptimization(user?.familyId || undefined, items);
 
   const bestStoreName = useMemo(() => {
-    return basketOpt?.cheapestStoreName || "Meena Bazar";
+    return basketOpt?.cheapestStoreName || "";
   }, [basketOpt]);
 
   const [selectedStore, setSelectedStore] = useState<string>(bestStoreName);
@@ -49,7 +49,7 @@ const StoreComparisonScreen = ({
     if (typeof basketOpt?.potentialSavingsBDT === "number" && basketOpt.potentialSavingsBDT > 0) {
       return basketOpt.potentialSavingsBDT;
     }
-    return 84.5;
+    return 0;
   }, [basketOpt]);
 
   // Dynamic Store Totals & Comparisons from API
@@ -62,44 +62,15 @@ const StoreComparisonScreen = ({
         return {
           name: st.storeName,
           price: st.totalBDT,
-          diff: diff > 0 ? `+$${diff.toFixed(2)} diff` : "Cheapest",
+          diff: diff > 0 ? `+৳${diff.toFixed(2)} diff` : "Cheapest",
           isCheapest,
           stockStatus: diff > 4 ? "Limited Stock" : "In Stock",
         };
       });
     }
 
-    // Default dynamic fallbacks calculated from current list items
-    const baseTotal = items.reduce(
-      (sum, i) => sum + (i.actualPrice || i.estimatedTotal || i.unitPrice || 3.5),
-      0,
-    );
-    const meenaTotal = baseTotal > 0 ? baseTotal : 42.3;
-
-    return [
-      {
-        name: "Meena Bazar",
-        price: meenaTotal,
-        diff: "Cheapest",
-        isCheapest: true,
-        stockStatus: "In Stock",
-      },
-      {
-        name: "Shwapno",
-        price: meenaTotal + 4.2,
-        diff: "+$4.20 diff",
-        isCheapest: false,
-        stockStatus: "Limited Stock",
-      },
-      {
-        name: "Agora",
-        price: meenaTotal + 6.8,
-        diff: "+$6.80 diff",
-        isCheapest: false,
-        stockStatus: "In Stock",
-      },
-    ];
-  }, [basketOpt, items]);
+    return [];
+  }, [basketOpt]);
 
   // Dynamic Top Price Differences from API
   const topPriceDifferences = useMemo(() => {
@@ -112,21 +83,8 @@ const StoreComparisonScreen = ({
       }));
     }
 
-    return [
-      {
-        name: items[0]?.name || "Organic Linguine",
-        store: "Shwapno",
-        price: items[0]?.unitPrice || 2.49,
-        savingsText: "↘ Save $0.50 vs Shwapno",
-      },
-      {
-        name: items[1]?.name || "Free Range Eggs (12)",
-        store: "Agora",
-        price: items[1]?.unitPrice || 4.1,
-        savingsText: "↘ Save $0.80 vs Agora",
-      },
-    ];
-  }, [basketSplitOpt, items]);
+    return [];
+  }, [basketSplitOpt]);
 
   return (
     <SafeAreaView
