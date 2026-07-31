@@ -1,69 +1,126 @@
 import React, { useEffect, useMemo, useState } from "react";
 import {
-  KeyboardAvoidingView,
-  Platform,
-  ScrollView,
+  View,
   Text,
   TouchableOpacity,
-  View,
-  ActivityIndicator,
+  TextInput,
+  ScrollView,
+  KeyboardAvoidingView,
+  Platform,
+  Image,
 } from "react-native";
-import { X, Check, Trash2 } from "lucide-react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import {
+  ChevronLeft,
+  Search,
+  Mic,
+  ScanLine,
+  Plus,
+  Minus,
+  ChevronDown,
+  Sparkles,
+  Check,
+  Trash2,
+  Users,
+  Apple,
+  Fish,
+  Egg,
+  IceCream,
+  Snowflake,
+  CupSoda,
+  Home,
+  Leaf,
+  Tag,
+} from "lucide-react-native";
 import {
   AuthenticatedStackNavigatorScreenProps,
-  Category,
   Priority,
   ROUTES,
   TItemStatus,
+  TItemUnit,
 } from "../types";
 import {
   useGroceryItemBackend,
   useUpdateGroceryItemBackend,
   useDeleteGroceryItemBackend,
+  useFamilyMembers,
   useAppTheme,
+  useTextFormatter,
 } from "../hooks";
+import { useAuthStore } from "../store/useAuthStore";
+import { LoadingOverlay, StatusModal, ScannerModal, DatePicker } from "../components/ui";
 import { addCustomCategory, ICustomCategory, subscribeToCategories } from "../services/categories";
 import { GROCERY_CATEGORIES } from "../features/grocery";
-import {
-  InputField,
-  DatePicker,
-  PrimaryButton,
-  Chip,
-  LoadingOverlay,
-  StatusModal,
-} from "../components/ui";
-import { useAuthStore } from "../store/useAuthStore";
 
-import { useSafeAreaInsets } from "react-native-safe-area-context";
+const SUGGESTIONS = [
+  "Hass Avocados",
+  "Almond Milk",
+  "Free Range Eggs",
+  "Organic Bananas",
+  "Whole Wheat Bread",
+];
 
-const CATEGORIES: Category[] = [...GROCERY_CATEGORIES];
-const PRIORITIES: Priority[] = ["Low", "Medium", "Urgent"];
-const RECURRENCE_OPTIONS: ("none" | "weekly" | "monthly")[] = ["none", "weekly", "monthly"];
+const CATEGORY_ITEMS = [
+  { name: "Produce", icon: Apple, bgColor: "#D1FAE5", iconColor: "#006837" },
+  { name: "Meat/Seafood", icon: Fish, bgColor: "#E0F2FE", iconColor: "#0284C7" },
+  { name: "Dairy/Eggs", icon: Egg, bgColor: "#EBF2FF", iconColor: "#4F46E5" },
+  { name: "Snacks", icon: IceCream, bgColor: "#F3E8FF", iconColor: "#7E22CE" },
+  { name: "Frozen", icon: Snowflake, bgColor: "#E0F2FE", iconColor: "#0284C7" },
+  { name: "Beverages", icon: CupSoda, bgColor: "#EBF2FF", iconColor: "#4F46E5" },
+  { name: "Household", icon: Home, bgColor: "#E0F2FE", iconColor: "#0284C7" },
+  { name: "Personal", icon: Leaf, bgColor: "#EBF2FF", iconColor: "#4F46E5" },
+];
+
+const UNITS: { label: string; value: TItemUnit }[] = [
+  { label: "Pieces (pcs)", value: "pcs" },
+  { label: "Kilograms (kg)", value: "kg" },
+  { label: "Grams (g)", value: "g" },
+  { label: "Liters (L)", value: "L" },
+  { label: "Packs (pack)", value: "pack" },
+  { label: "Pounds (lb)", value: "lb" },
+  { label: "Boxes (box)", value: "box" },
+  { label: "Bottles (bottle)", value: "bottle" },
+];
+
+const PRIORITIES: Priority[] = ["Low", "Medium", "High"];
+
+const STATUS_OPTIONS: { label: string; value: TItemStatus }[] = [
+  { label: "Pending", value: "pending" },
+  { label: "In Cart", value: "in_cart" },
+  { label: "Completed", value: "completed" },
+];
+
+const RECURRENCE_OPTIONS: { label: string; value: "none" | "weekly" | "monthly" }[] = [
+  { label: "One-time", value: "none" },
+  { label: "Weekly", value: "weekly" },
+  { label: "Monthly", value: "monthly" },
+];
 
 /**
- * Edit Item Screen
- * Why: To provide a robust editing experience via Python backend API.
+ * Edit Item Screen redesigned to match exact modern UI layout of AddItemScreen
  */
 const EditItemScreen = ({
   route,
   navigation,
 }: AuthenticatedStackNavigatorScreenProps<typeof ROUTES.EDIT_ITEM>) => {
-  const insets = useSafeAreaInsets();
   const { itemId } = route.params;
   const { user } = useAuthStore();
-  const { colors } = useAppTheme();
+  const { isDark, colors } = useAppTheme();
+  const { toInitial } = useTextFormatter();
   const familyId = user?.familyId || "";
 
   const [name, setName] = useState("");
-  const [category, setCategory] = useState<string>("Other");
+  const [category, setCategory] = useState<string>("Produce");
   const [priority, setPriority] = useState<Priority>("Medium");
   const [itemStatus, setItemStatus] = useState<TItemStatus>("pending");
-  const [quantity, setQuantity] = useState("");
+  const [quantityCount, setQuantityCount] = useState(1);
+  const [selectedUnit, setSelectedUnit] = useState<TItemUnit>("pcs");
+  const [showUnitPicker, setShowUnitPicker] = useState(false);
   const [notes, setNotes] = useState("");
   const [recurrenceFrequency, setRecurrenceFrequency] = useState<"none" | "weekly" | "monthly">(
     "none",
   );
-  const [assigneeName, setAssigneeName] = useState("");
+  const [assigneeName, setAssigneeName] = useState("Sarah");
   const [dueDateInput, setDueDateInput] = useState("");
   const [reminderAtInput, setReminderAtInput] = useState("");
   const [unitPriceInput, setUnitPriceInput] = useState("");
@@ -71,11 +128,38 @@ const EditItemScreen = ({
   const [customCategories, setCustomCategories] = useState<ICustomCategory[]>([]);
   const [newCatInput, setNewCatInput] = useState("");
   const [showAddCat, setShowAddCat] = useState(false);
+  const [isScannerOpen, setIsScannerOpen] = useState(false);
 
-  // TanStack Query Hooks for Python Backend API
+  // TanStack Query Hooks for Backend API
   const { data: item, isLoading: initialLoading } = useGroceryItemBackend(familyId, itemId);
   const updateMutation = useUpdateGroceryItemBackend(familyId);
   const deleteMutation = useDeleteGroceryItemBackend(familyId);
+  const { data: members = [] } = useFamilyMembers(familyId);
+
+  const assignableMembers = useMemo(() => {
+    const filtered = (members || []).filter((m) => m.uid !== user?.uid);
+    if (filtered.length > 0) {
+      return filtered.map((m) => ({
+        id: m.uid,
+        name: m.displayName || m.email?.split("@")[0] || "Member",
+        photoURL: m.photoURL,
+      }));
+    }
+    return [
+      {
+        id: "sarah-demo",
+        name: "Sarah",
+        photoURL:
+          "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&auto=format&fit=crop",
+      },
+      {
+        id: "david-demo",
+        name: "David",
+        photoURL:
+          "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&auto=format&fit=crop",
+      },
+    ];
+  }, [members, user?.uid]);
 
   const [statusModal, setStatusModal] = useState<{
     visible: boolean;
@@ -92,17 +176,24 @@ const EditItemScreen = ({
 
   useEffect(() => {
     if (item) {
-      setName(item.name);
-      setCategory(item.category || "Other");
-      setPriority(item.priority || "Medium");
+      setName(item.name || "");
+      setCategory(item.category || "Produce");
+      setPriority((item.priority as Priority) || "Medium");
       setItemStatus(item.status || "pending");
-      setQuantity(item.quantity || "");
+
+      const parsedQty = parseInt(item.quantity || "1", 10);
+      setQuantityCount(Number.isNaN(parsedQty) || parsedQty <= 0 ? 1 : parsedQty);
+      if (item.unit) {
+        setSelectedUnit(item.unit as TItemUnit);
+      }
+
+      setNotes(item.notes || "");
       setRecurrenceFrequency(
         item.recurrenceFrequency === "weekly" || item.recurrenceFrequency === "monthly"
           ? item.recurrenceFrequency
           : "none",
       );
-      setAssigneeName(item.assignee?.name || "");
+      setAssigneeName(item.assignee?.name || "Sarah");
 
       const rawDueDate: unknown = item.dueDate;
       if (rawDueDate && typeof rawDueDate === "object" && "toDate" in rawDueDate) {
@@ -148,13 +239,12 @@ const EditItemScreen = ({
   }, [familyId]);
 
   const allCategories = useMemo(() => {
-    const normalizedCustomCategories = customCategories
-      .map((categoryItem) => categoryItem.name.trim())
-      .filter(Boolean);
+    const defaultCatNames = CATEGORY_ITEMS.map((c) => c.name);
+    const normalizedCustom = customCategories.map((c) => c.name.trim()).filter(Boolean);
 
-    return [...CATEGORIES, ...normalizedCustomCategories].filter(
-      (categoryName, index, source) =>
-        source.findIndex((value) => value.toLowerCase() === categoryName.toLowerCase()) === index,
+    return [...defaultCatNames, ...GROCERY_CATEGORIES, ...normalizedCustom].filter(
+      (catName, index, source) =>
+        source.findIndex((val) => val.toLowerCase() === catName.toLowerCase()) === index,
     );
   }, [customCategories]);
 
@@ -175,7 +265,18 @@ const EditItemScreen = ({
     }
   };
 
-  const handleSave = async () => {
+  const handleScannedItem = (scanned: {
+    name: string;
+    category: any;
+    quantity: string;
+    priority: any;
+  }) => {
+    if (scanned.name) setName(scanned.name);
+    if (scanned.category) setCategory(scanned.category);
+    if (scanned.priority) setPriority(scanned.priority);
+  };
+
+  const handleSave = () => {
     if (!item || !name.trim()) return;
 
     const parseDateInput = (value: string) => {
@@ -244,10 +345,12 @@ const EditItemScreen = ({
           category,
           priority,
           status: itemStatus,
-          quantity: quantity.trim(),
+          quantity: `${quantityCount}`,
+          unit: selectedUnit,
           notes: notes.trim(),
           recurrenceFrequency,
-          assignee: assigneeName.trim() ? { name: assigneeName.trim() } : null,
+          assignee:
+            assigneeName.trim() && assigneeName !== "Anyone" ? { name: assigneeName.trim() } : null,
           dueDate,
           reminderAt,
           unitPrice,
@@ -259,16 +362,16 @@ const EditItemScreen = ({
           setStatusModal({
             visible: true,
             title: "Item Updated",
-            message: "Your changes have been saved successfully.",
+            message: `"${name}" has been updated successfully.`,
             type: "success",
           });
         },
         onError: (error) => {
-          console.error("Update failed:", error);
           setStatusModal({
             visible: true,
             title: "Update Failed",
-            message: "Could not save changes. Please try again.",
+            message:
+              error instanceof Error ? error.message : "Could not save changes. Please try again.",
             type: "error",
           });
         },
@@ -281,20 +384,20 @@ const EditItemScreen = ({
     setStatusModal({
       visible: true,
       title: "Delete Item",
-      message: `Are you sure you want to delete "${item.name}"? This cannot be undone.`,
+      message: `Are you sure you want to delete "${item.name}"? This action cannot be undone.`,
       type: "confirm",
-      onConfirm: async () => {
+      onConfirm: () => {
         setStatusModal((prev) => ({ ...prev, visible: false }));
         deleteMutation.mutate(item.id, {
           onSuccess: () => {
             navigation.goBack();
           },
           onError: (error) => {
-            console.error("Delete failed:", error);
             setStatusModal({
               visible: true,
               title: "Delete Failed",
-              message: "Could not delete item. Please try again.",
+              message:
+                error instanceof Error ? error.message : "Could not delete item. Please try again.",
               type: "error",
             });
           },
@@ -303,53 +406,60 @@ const EditItemScreen = ({
     });
   };
 
+  const activeUnitObj = useMemo(
+    () => UNITS.find((u) => u.value === selectedUnit) || UNITS[0],
+    [selectedUnit],
+  );
+
   if (!itemId) {
     return (
-      <View
+      <SafeAreaView
+        edges={["top", "left", "right"]}
         className="flex-1 items-center justify-center"
-        style={{ backgroundColor: colors.bgCanvas }}
+        style={{ backgroundColor: isDark ? "#0B132B" : "#F8FAFC" }}
       >
-        <Text style={{ color: colors.textMuted }}>No item ID provided</Text>
+        <Text style={{ color: isDark ? "#94A3B8" : "#64748B" }}>No item ID provided</Text>
         <TouchableOpacity onPress={() => navigation.goBack()} className="mt-4">
-          <Text className="font-bold" style={{ color: colors.accent }}>
+          <Text className="font-bold" style={{ color: isDark ? "#34D399" : "#006837" }}>
             Go Back
           </Text>
         </TouchableOpacity>
-      </View>
+      </SafeAreaView>
     );
   }
 
   if (initialLoading) {
     return (
-      <View
+      <SafeAreaView
+        edges={["top", "left", "right"]}
         className="flex-1 items-center justify-center"
-        style={{ backgroundColor: colors.bgCanvas }}
-      >
-        <ActivityIndicator color={colors.accent} size="large" />
-      </View>
+        style={{ backgroundColor: isDark ? "#0B132B" : "#F8FAFC" }}
+      />
     );
   }
 
   if (!item) {
     return (
-      <View
+      <SafeAreaView
+        edges={["top", "left", "right"]}
         className="flex-1 items-center justify-center"
-        style={{ backgroundColor: colors.bgCanvas }}
+        style={{ backgroundColor: isDark ? "#0B132B" : "#F8FAFC" }}
       >
-        <Text style={{ color: colors.textMuted }}>Item not found</Text>
+        <Text style={{ color: isDark ? "#94A3B8" : "#64748B" }}>Item not found</Text>
         <TouchableOpacity onPress={() => navigation.goBack()} className="mt-4">
-          <Text className="font-bold" style={{ color: colors.accent }}>
+          <Text className="font-bold" style={{ color: isDark ? "#34D399" : "#006837" }}>
             Go Back
           </Text>
         </TouchableOpacity>
-      </View>
+      </SafeAreaView>
     );
   }
 
   return (
-    <View
+    <SafeAreaView
+      edges={["top", "left", "right"]}
       className="flex-1"
-      style={{ backgroundColor: colors.bgCanvas, paddingTop: Math.max(insets.top, 20) }}
+      style={{ backgroundColor: isDark ? "#0B132B" : "#F8FAFC" }}
     >
       <LoadingOverlay visible={updateMutation.isPending || deleteMutation.isPending} />
       <StatusModal
@@ -365,276 +475,818 @@ const EditItemScreen = ({
         }}
       />
 
-      <KeyboardAvoidingView
-        behavior={Platform.OS === "ios" ? "padding" : undefined}
-        className="flex-1 px-6"
-      >
-        <View className="mb-8 flex-row items-center justify-between">
-          <View>
-            <Text
-              className="mb-1 text-[11px] font-black uppercase tracking-[2px]"
-              style={{ color: colors.accent }}
-            >
-              Update Entry
-            </Text>
-            <Text
-              className="text-[28px] font-bold tracking-tight"
-              style={{ color: colors.textPrimary }}
-            >
-              Edit Item
-            </Text>
-          </View>
+      <ScannerModal
+        visible={isScannerOpen}
+        onClose={() => setIsScannerOpen(false)}
+        onScannedItem={handleScannedItem}
+      />
+
+      {/* Top Header Row */}
+      <View className="px-5 py-3 flex-row items-center justify-between">
+        <TouchableOpacity
+          onPress={() => navigation.goBack()}
+          activeOpacity={0.75}
+          className="h-10 w-10 rounded-full items-center justify-center border shadow-xs"
+          style={{
+            backgroundColor: isDark ? "#17233D" : "#EEF4FF",
+            borderColor: isDark ? "#253347" : "#E2E8F0",
+          }}
+        >
+          <ChevronLeft stroke={isDark ? "#FFFFFF" : "#0F172A"} size={20} strokeWidth={2.5} />
+        </TouchableOpacity>
+
+        <Text
+          className="text-xl font-black tracking-tight"
+          style={{ color: isDark ? "#FFFFFF" : "#0F172A" }}
+        >
+          Edit Item
+        </Text>
+
+        <View className="flex-row items-center gap-2">
           <TouchableOpacity
-            onPress={() => navigation.goBack()}
-            activeOpacity={0.7}
-            className="h-11 w-11 items-center justify-center rounded-2xl border shadow-xs"
-            style={{ backgroundColor: colors.bgCard, borderColor: colors.border }}
+            onPress={handleDelete}
+            activeOpacity={0.75}
+            className="h-10 w-10 rounded-full items-center justify-center border shadow-xs"
+            style={{
+              backgroundColor: isDark ? "#3B171A" : "#FEE2E2",
+              borderColor: isDark ? "#5C2023" : "#FCA5A5",
+            }}
           >
-            <X stroke={colors.icon} size={20} strokeWidth={2.5} />
+            <Trash2 stroke={isDark ? "#F87171" : "#EF4444"} size={18} strokeWidth={2.2} />
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            onPress={() => (navigation as any).navigate(ROUTES.PROFILE)}
+            activeOpacity={0.8}
+            className="h-10 w-10 rounded-full items-center justify-center overflow-hidden border shadow-xs"
+            style={{ backgroundColor: isDark ? "#10B981" : "#006837", borderColor: "transparent" }}
+          >
+            {user?.photoURL ? (
+              <Image source={{ uri: user.photoURL }} className="h-full w-full" />
+            ) : (
+              <Text className="text-white font-black text-sm">
+                {toInitial(user?.displayName || "M")}
+              </Text>
+            )}
           </TouchableOpacity>
         </View>
+      </View>
 
+      <KeyboardAvoidingView
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
+        className="flex-1 px-5"
+      >
         <ScrollView
           showsVerticalScrollIndicator={false}
-          contentContainerStyle={{ paddingBottom: 40 }}
+          contentContainerStyle={{ paddingBottom: 120 }}
           keyboardShouldPersistTaps="handled"
         >
-          <InputField
-            label="ITEM NAME"
-            placeholder="What needs to be bought?"
-            value={name}
-            onChangeText={setName}
-            containerClassName="mb-6"
-            inputClassName="h-16 text-lg font-bold"
-          />
-
-          <View className="mb-6">
-            <Text className="mb-2 ml-1 text-[11px] font-black uppercase tracking-[1.5px] text-text-muted">
-              STATUS
+          {/* SECTION 1: ITEM NAME */}
+          <View className="mt-4 mb-6">
+            <Text
+              className="text-[11px] font-extrabold uppercase tracking-wider mb-2"
+              style={{ color: isDark ? "#94A3B8" : "#475569" }}
+            >
+              ITEM NAME
             </Text>
-            <View className="flex-row gap-2">
-              <Chip
-                label="Pending"
-                selected={itemStatus === "pending"}
-                onPress={() => setItemStatus("pending")}
-                className="mr-2"
+
+            <View
+              className="flex-row items-center rounded-2xl px-4 h-14 border shadow-xs mb-3"
+              style={{
+                backgroundColor: isDark ? "#17233D" : "#EEF4FF",
+                borderColor: isDark ? "#253347" : "#D9E2FC",
+              }}
+            >
+              <Search stroke={isDark ? "#94A3B8" : "#64748B"} size={20} strokeWidth={2.2} />
+              <TextInput
+                value={name}
+                onChangeText={setName}
+                placeholder="e.g. Organic Honey..."
+                placeholderTextColor={isDark ? "#64748B" : "#94A3B8"}
+                className="ml-3 flex-1 text-[15px] font-bold"
+                style={{
+                  color: isDark ? "#FFFFFF" : "#0F172A",
+                  paddingVertical: 0,
+                  height: "100%",
+                }}
               />
-              <Chip
-                label="Completed"
-                selected={itemStatus === "completed"}
-                onPress={() => setItemStatus("completed")}
-                className="mr-2"
-              />
+
+              <TouchableOpacity
+                onPress={() => setIsScannerOpen(true)}
+                activeOpacity={0.7}
+                className="mr-3"
+              >
+                <ScanLine stroke={isDark ? "#34D399" : "#006837"} size={20} strokeWidth={2.2} />
+              </TouchableOpacity>
+
+              <TouchableOpacity activeOpacity={0.7}>
+                <Mic stroke={isDark ? "#34D399" : "#006837"} size={20} strokeWidth={2.2} />
+              </TouchableOpacity>
             </View>
+
+            {/* Quick Suggestions Chips */}
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} className="flex-row py-1">
+              {SUGGESTIONS.map((sug) => (
+                <TouchableOpacity
+                  key={sug}
+                  onPress={() => setName(sug)}
+                  activeOpacity={0.75}
+                  className="mr-2 px-3.5 py-2 rounded-full flex-row items-center border"
+                  style={{
+                    backgroundColor: isDark ? "#16233B" : "#E0E7FF",
+                    borderColor: isDark ? "#253347" : "#C7D2FE",
+                  }}
+                >
+                  <Sparkles size={13} stroke={isDark ? "#34D399" : "#4F46E5"} className="mr-1.5" />
+                  <Text
+                    className="text-[12px] font-bold"
+                    style={{ color: isDark ? "#F8FAFC" : "#312E81" }}
+                  >
+                    {sug}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
           </View>
 
-          <View className="flex-row gap-4 mb-6">
-            <InputField
-              label="QUANTITY"
-              placeholder="e.g. 2L, 5pcs"
-              value={quantity}
-              onChangeText={setQuantity}
-              containerClassName="flex-1"
-              inputClassName="h-14 font-bold"
-            />
-            <View className="flex-1">
-              <Text
-                className="mb-2 ml-1 text-[11px] font-extrabold uppercase tracking-wider"
-                style={{ color: colors.textMuted }}
-              >
-                PRIORITY
-              </Text>
-              <View
-                className="h-14 flex-row rounded-xl p-1.5 items-center border"
-                style={{ backgroundColor: colors.bgInput, borderColor: colors.border }}
-              >
-                {PRIORITIES.map((p) => {
-                  const isActive = priority === p;
-                  const activeBg =
-                    p === "Low"
-                      ? colors.accentLightSubtle
-                      : p === "Medium"
-                        ? colors.warningLight
-                        : colors.dangerLight;
-                  const activeText =
-                    p === "Low" ? colors.accent : p === "Medium" ? colors.warning : colors.danger;
+          {/* SECTION 2: QUANTITY & UNIT */}
+          <View className="mb-6">
+            <Text
+              className="text-[11px] font-extrabold uppercase tracking-wider mb-2"
+              style={{ color: isDark ? "#94A3B8" : "#475569" }}
+            >
+              QUANTITY & UNIT
+            </Text>
 
-                  return (
-                    <TouchableOpacity
-                      key={p}
-                      onPress={() => setPriority(p)}
-                      activeOpacity={0.75}
-                      className="flex-1 items-center justify-center rounded-lg h-full"
+            <View className="flex-row gap-3">
+              {/* Stepper Counter Pill */}
+              <View
+                className="flex-row items-center justify-between rounded-2xl px-3 h-14 border shadow-xs flex-1"
+                style={{
+                  backgroundColor: isDark ? "#17233D" : "#EEF4FF",
+                  borderColor: isDark ? "#253347" : "#D9E2FC",
+                }}
+              >
+                <TouchableOpacity
+                  onPress={() => setQuantityCount((prev) => Math.max(1, prev - 1))}
+                  activeOpacity={0.75}
+                  className="h-9 w-9 rounded-full items-center justify-center bg-white shadow-xs"
+                >
+                  <Minus stroke="#0F172A" size={16} strokeWidth={2.5} />
+                </TouchableOpacity>
+
+                <Text
+                  className="text-lg font-black"
+                  style={{ color: isDark ? "#FFFFFF" : "#0F172A" }}
+                >
+                  {quantityCount}
+                </Text>
+
+                <TouchableOpacity
+                  onPress={() => setQuantityCount((prev) => prev + 1)}
+                  activeOpacity={0.75}
+                  className="h-9 w-9 rounded-full items-center justify-center bg-white shadow-xs"
+                >
+                  <Plus stroke="#0F172A" size={16} strokeWidth={2.5} />
+                </TouchableOpacity>
+              </View>
+
+              {/* Unit Dropdown Selector Pill */}
+              <TouchableOpacity
+                onPress={() => setShowUnitPicker((prev) => !prev)}
+                activeOpacity={0.8}
+                className="flex-row items-center justify-between rounded-2xl px-4 h-14 border shadow-xs flex-[1.4]"
+                style={{
+                  backgroundColor: isDark ? "#17233D" : "#EEF4FF",
+                  borderColor: isDark ? "#253347" : "#D9E2FC",
+                }}
+              >
+                <Text
+                  className="text-[14px] font-bold"
+                  style={{ color: isDark ? "#FFFFFF" : "#0F172A" }}
+                >
+                  {activeUnitObj.label}
+                </Text>
+                <ChevronDown stroke={isDark ? "#94A3B8" : "#64748B"} size={18} strokeWidth={2.2} />
+              </TouchableOpacity>
+            </View>
+
+            {/* Inline Unit Picker Options */}
+            {showUnitPicker && (
+              <View
+                className="mt-2 p-2 rounded-2xl border shadow-md flex-row flex-wrap gap-1.5"
+                style={{
+                  backgroundColor: isDark ? "#16233B" : "#FFFFFF",
+                  borderColor: isDark ? "#253347" : "#E2E8F0",
+                }}
+              >
+                {UNITS.map((u) => (
+                  <TouchableOpacity
+                    key={u.value}
+                    onPress={() => {
+                      setSelectedUnit(u.value);
+                      setShowUnitPicker(false);
+                    }}
+                    activeOpacity={0.8}
+                    className="px-3 py-1.5 rounded-xl"
+                    style={{
+                      backgroundColor:
+                        selectedUnit === u.value ? (isDark ? "#064E3B" : "#E0F2FE") : "transparent",
+                    }}
+                  >
+                    <Text
+                      className="text-[12px] font-bold"
                       style={{
-                        backgroundColor: isActive ? activeBg : "transparent",
+                        color:
+                          selectedUnit === u.value
+                            ? isDark
+                              ? "#34D399"
+                              : "#0284C7"
+                            : isDark
+                              ? "#94A3B8"
+                              : "#475569",
                       }}
                     >
-                      <Text
-                        className="text-[12px] font-extrabold"
-                        style={{ color: isActive ? activeText : colors.textSecondary }}
-                      >
-                        {p}
-                      </Text>
-                    </TouchableOpacity>
-                  );
-                })}
+                      {u.label}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
               </View>
-            </View>
+            )}
           </View>
 
-          <View className="mb-8">
-            <View className="mb-4 flex-row items-center justify-between px-1">
-              <Text className="text-[11px] font-black uppercase tracking-[1.5px] text-text-muted">
+          {/* SECTION 3: CATEGORY (4x2 Grid & Custom Support) */}
+          <View className="mb-6">
+            <View className="flex-row items-center justify-between mb-3">
+              <Text
+                className="text-[11px] font-extrabold uppercase tracking-wider"
+                style={{ color: isDark ? "#94A3B8" : "#475569" }}
+              >
                 CATEGORY
               </Text>
               <TouchableOpacity
                 onPress={() => setShowAddCat(!showAddCat)}
                 activeOpacity={0.75}
-                className="rounded-full border border-primary-500 px-3 py-1"
+                className="px-2.5 py-1 rounded-full border"
+                style={{
+                  backgroundColor: isDark ? "#17233D" : "#EEF4FF",
+                  borderColor: isDark ? "#34D399" : "#006837",
+                }}
               >
-                <Text className="text-[10px] font-bold uppercase tracking-wider text-primary-500">
+                <Text
+                  className="text-[10px] font-extrabold uppercase tracking-wider"
+                  style={{ color: isDark ? "#34D399" : "#006837" }}
+                >
                   {showAddCat ? "Cancel" : "+ Custom"}
                 </Text>
               </TouchableOpacity>
             </View>
 
             {showAddCat && (
-              <View className="mb-6 flex-row gap-2">
-                <InputField
-                  placeholder="New Category"
-                  value={newCatInput}
-                  onChangeText={setNewCatInput}
-                  containerClassName="flex-1"
-                />
+              <View className="mb-4 flex-row gap-2">
+                <View
+                  className="flex-1 flex-row items-center rounded-2xl px-4 h-12 border shadow-xs"
+                  style={{
+                    backgroundColor: isDark ? "#17233D" : "#EEF4FF",
+                    borderColor: isDark ? "#253347" : "#D9E2FC",
+                  }}
+                >
+                  <TextInput
+                    value={newCatInput}
+                    onChangeText={setNewCatInput}
+                    placeholder="New category name..."
+                    placeholderTextColor={isDark ? "#64748B" : "#94A3B8"}
+                    className="flex-1 text-[14px] font-bold"
+                    style={{ color: isDark ? "#FFFFFF" : "#0F172A" }}
+                  />
+                </View>
                 <TouchableOpacity
                   onPress={handleAddCategory}
                   activeOpacity={0.8}
-                  className="h-12 items-center justify-center rounded-2xl bg-primary-600 px-6"
+                  className="h-12 px-5 rounded-2xl items-center justify-center shadow-xs"
+                  style={{ backgroundColor: isDark ? "#34D399" : "#006837" }}
                 >
-                  <Check stroke="white" size={18} strokeWidth={3} />
+                  <Check stroke={isDark ? "#0B132B" : "#FFFFFF"} size={18} strokeWidth={2.5} />
                 </TouchableOpacity>
               </View>
             )}
 
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              className="flex-row"
-              contentContainerStyle={{ paddingRight: 20 }}
-            >
-              {allCategories.map((cat) => (
-                <Chip
-                  key={cat}
-                  label={cat}
-                  selected={category === cat}
-                  onPress={() => setCategory(cat)}
-                  className="mr-3"
-                />
-              ))}
-            </ScrollView>
+            <View className="flex-row flex-wrap justify-between gap-y-3">
+              {CATEGORY_ITEMS.map((cat) => {
+                const isSelected = category === cat.name;
+                const IconComp = cat.icon;
+
+                return (
+                  <TouchableOpacity
+                    key={cat.name}
+                    onPress={() => setCategory(cat.name)}
+                    activeOpacity={0.8}
+                    className="w-[23%] items-center justify-center py-3 rounded-2xl border shadow-xs"
+                    style={{
+                      backgroundColor: isSelected
+                        ? isDark
+                          ? "#1E2A3A"
+                          : "#EEF4FF"
+                        : isDark
+                          ? "#16233B"
+                          : "#FFFFFF",
+                      borderColor: isSelected
+                        ? isDark
+                          ? "#34D399"
+                          : "#6366F1"
+                        : isDark
+                          ? "#253347"
+                          : "#F1F5F9",
+                    }}
+                  >
+                    <View
+                      className="h-11 w-11 rounded-full items-center justify-center mb-2"
+                      style={{ backgroundColor: cat.bgColor }}
+                    >
+                      <IconComp stroke={cat.iconColor} size={20} strokeWidth={2.2} />
+                    </View>
+
+                    <Text
+                      className="text-[11px] font-extrabold text-center"
+                      style={{
+                        color: isSelected
+                          ? isDark
+                            ? "#FFFFFF"
+                            : "#0F172A"
+                          : isDark
+                            ? "#94A3B8"
+                            : "#475569",
+                      }}
+                      numberOfLines={1}
+                    >
+                      {cat.name}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+
+            {/* Custom Categories list if any extra selected */}
+            {allCategories.filter((c) => !CATEGORY_ITEMS.some((ci) => ci.name === c)).length >
+              0 && (
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                className="flex-row mt-3"
+              >
+                {allCategories
+                  .filter((c) => !CATEGORY_ITEMS.some((ci) => ci.name === c))
+                  .map((catName) => {
+                    const isSelected = category === catName;
+                    return (
+                      <TouchableOpacity
+                        key={catName}
+                        onPress={() => setCategory(catName)}
+                        activeOpacity={0.8}
+                        className="mr-2 px-3.5 py-2 rounded-full flex-row items-center border"
+                        style={{
+                          backgroundColor: isSelected
+                            ? isDark
+                              ? "#1E2A3A"
+                              : "#EEF4FF"
+                            : isDark
+                              ? "#16233B"
+                              : "#FFFFFF",
+                          borderColor: isSelected
+                            ? isDark
+                              ? "#34D399"
+                              : "#6366F1"
+                            : isDark
+                              ? "#253347"
+                              : "#E2E8F0",
+                        }}
+                      >
+                        <Tag
+                          size={13}
+                          stroke={isSelected ? (isDark ? "#34D399" : "#6366F1") : "#94A3B8"}
+                          className="mr-1.5"
+                        />
+                        <Text
+                          className="text-[12px] font-bold"
+                          style={{
+                            color: isSelected
+                              ? isDark
+                                ? "#FFFFFF"
+                                : "#0F172A"
+                              : isDark
+                                ? "#94A3B8"
+                                : "#475569",
+                          }}
+                        >
+                          {catName}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+              </ScrollView>
+            )}
           </View>
 
-          <InputField
-            label="NOTES"
-            placeholder="Any specific brand or detail?"
-            value={notes}
-            onChangeText={setNotes}
-            multiline
-            numberOfLines={3}
-            containerClassName="mb-10"
-            inputClassName="h-32 pt-4 leading-6"
-            textAlignVertical="top"
-          />
-
+          {/* SECTION 4: ITEM STATUS */}
           <View className="mb-6">
-            <Text className="mb-2 ml-1 text-[11px] font-black uppercase tracking-[1.5px] text-text-muted">
-              RECURRING
+            <Text
+              className="text-[11px] font-extrabold uppercase tracking-wider mb-2"
+              style={{ color: isDark ? "#94A3B8" : "#475569" }}
+            >
+              ITEM STATUS
             </Text>
-            <View className="flex-row gap-2">
-              {RECURRENCE_OPTIONS.map((option) => (
-                <Chip
-                  key={option}
-                  label={option === "none" ? "One-time" : option}
-                  selected={recurrenceFrequency === option}
-                  onPress={() => setRecurrenceFrequency(option)}
-                  className="mr-2"
-                />
-              ))}
+
+            <View
+              className="h-14 flex-row rounded-2xl p-1.5 items-center border shadow-xs"
+              style={{
+                backgroundColor: isDark ? "#17233D" : "#EEF4FF",
+                borderColor: isDark ? "#253347" : "#D9E2FC",
+              }}
+            >
+              {STATUS_OPTIONS.map((st) => {
+                const isActive = itemStatus === st.value;
+
+                return (
+                  <TouchableOpacity
+                    key={st.value}
+                    onPress={() => setItemStatus(st.value)}
+                    activeOpacity={0.8}
+                    className="flex-1 h-full items-center justify-center rounded-xl shadow-xs"
+                    style={{
+                      backgroundColor: isActive ? (isDark ? "#16233B" : "#FFFFFF") : "transparent",
+                    }}
+                  >
+                    <Text
+                      className="text-[13px] font-bold"
+                      style={{
+                        color: isActive
+                          ? isDark
+                            ? "#FFFFFF"
+                            : "#0F172A"
+                          : isDark
+                            ? "#64748B"
+                            : "#64748B",
+                      }}
+                    >
+                      {st.label}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
             </View>
           </View>
 
-          <View className="mb-6 flex-row gap-3">
-            <InputField
-              label="ASSIGNEE"
-              placeholder="Name (optional)"
-              value={assigneeName}
-              onChangeText={setAssigneeName}
-              containerClassName="flex-1"
-            />
-            <DatePicker
-              label="DUE DATE"
-              placeholder="YYYY-MM-DD"
-              value={dueDateInput}
-              onChange={setDueDateInput}
-              containerClassName="flex-1"
-            />
-          </View>
-
-          <View className="mb-10 flex-row gap-3">
-            <DatePicker
-              label="REMINDER"
-              placeholder="YYYY-MM-DD"
-              value={reminderAtInput}
-              onChange={setReminderAtInput}
-              containerClassName="flex-1"
-            />
-            <InputField
-              label="UNIT PRICE"
-              placeholder="e.g. 5.99"
-              value={unitPriceInput}
-              onChangeText={setUnitPriceInput}
-              keyboardType="decimal-pad"
-              containerClassName="flex-1"
-            />
-          </View>
-
-          <InputField
-            label="ESTIMATED TOTAL"
-            placeholder="e.g. 24.50"
-            value={estimatedTotalInput}
-            onChangeText={setEstimatedTotalInput}
-            keyboardType="decimal-pad"
-            containerClassName="mb-10"
-          />
-
-          <View className="flex-row gap-4">
-            <TouchableOpacity
-              onPress={handleDelete}
-              activeOpacity={0.8}
-              className="h-16 w-16 items-center justify-center rounded-2xl bg-danger-light border border-danger/20"
+          {/* SECTION 5: PRIORITY LEVEL */}
+          <View className="mb-6">
+            <Text
+              className="text-[11px] font-extrabold uppercase tracking-wider mb-2"
+              style={{ color: isDark ? "#94A3B8" : "#475569" }}
             >
-              <Trash2 stroke="#E55C5C" size={24} strokeWidth={2.5} />
-            </TouchableOpacity>
-            <View className="flex-1">
-              <PrimaryButton
-                title="Save Changes"
-                onPress={handleSave}
-                disabled={!name.trim() || updateMutation.isPending}
-                icon={
-                  <Check
-                    size={20}
-                    stroke={
-                      !name.trim() || updateMutation.isPending ? colors.textMuted : colors.white
-                    }
-                    strokeWidth={2.5}
+              PRIORITY LEVEL
+            </Text>
+
+            <View
+              className="h-14 flex-row rounded-2xl p-1.5 items-center border shadow-xs"
+              style={{
+                backgroundColor: isDark ? "#17233D" : "#EEF4FF",
+                borderColor: isDark ? "#253347" : "#D9E2FC",
+              }}
+            >
+              {PRIORITIES.map((p) => {
+                const isActive = priority === p;
+
+                return (
+                  <TouchableOpacity
+                    key={p}
+                    onPress={() => setPriority(p)}
+                    activeOpacity={0.8}
+                    className="flex-1 h-full items-center justify-center rounded-xl shadow-xs"
+                    style={{
+                      backgroundColor: isActive ? (isDark ? "#16233B" : "#FFFFFF") : "transparent",
+                    }}
+                  >
+                    <Text
+                      className="text-[13px] font-bold"
+                      style={{
+                        color: isActive
+                          ? isDark
+                            ? "#FFFFFF"
+                            : "#0F172A"
+                          : isDark
+                            ? "#64748B"
+                            : "#64748B",
+                      }}
+                    >
+                      {p}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          </View>
+
+          {/* SECTION 6: ASSIGN TO */}
+          <View className="mb-6">
+            <Text
+              className="text-[11px] font-extrabold uppercase tracking-wider mb-3"
+              style={{ color: isDark ? "#94A3B8" : "#475569" }}
+            >
+              ASSIGN TO
+            </Text>
+
+            <View className="flex-row items-center gap-4">
+              {assignableMembers.map((m) => {
+                const isSelected = assigneeName === m.name;
+
+                return (
+                  <TouchableOpacity
+                    key={m.id || m.name}
+                    onPress={() => setAssigneeName(m.name)}
+                    activeOpacity={0.8}
+                    className="items-center"
+                  >
+                    <View className="relative mb-1.5">
+                      <View
+                        className="h-12 w-12 rounded-full items-center justify-center overflow-hidden border-2"
+                        style={{
+                          backgroundColor: isDark ? "#17233D" : "#006837",
+                          borderColor: isSelected
+                            ? isDark
+                              ? "#34D399"
+                              : "#006837"
+                            : "transparent",
+                        }}
+                      >
+                        {m.photoURL ? (
+                          <Image source={{ uri: m.photoURL }} className="h-full w-full" />
+                        ) : (
+                          <Text className="text-white text-sm font-black">{toInitial(m.name)}</Text>
+                        )}
+                      </View>
+
+                      {isSelected && (
+                        <View
+                          className="absolute -right-0.5 -bottom-0.5 h-4 w-4 rounded-full items-center justify-center border"
+                          style={{ backgroundColor: "#006837", borderColor: "#FFFFFF" }}
+                        >
+                          <Check stroke="#FFFFFF" size={10} strokeWidth={3} />
+                        </View>
+                      )}
+                    </View>
+
+                    <Text
+                      className="text-[12px] font-bold"
+                      style={{
+                        color: isSelected
+                          ? isDark
+                            ? "#FFFFFF"
+                            : "#0F172A"
+                          : isDark
+                            ? "#94A3B8"
+                            : "#64748B",
+                      }}
+                    >
+                      {m.name}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+
+              {/* Anyone Option */}
+              <TouchableOpacity
+                onPress={() => setAssigneeName("Anyone")}
+                activeOpacity={0.8}
+                className="items-center"
+              >
+                <View
+                  className="h-12 w-12 rounded-full items-center justify-center mb-1.5 border-2"
+                  style={{
+                    backgroundColor: isDark ? "#17233D" : "#EEF4FF",
+                    borderColor: assigneeName === "Anyone" ? colors.accent : "transparent",
+                  }}
+                >
+                  <Users stroke={isDark ? "#34D399" : "#4F46E5"} size={20} strokeWidth={2.2} />
+                </View>
+
+                <Text
+                  className="text-[12px] font-bold"
+                  style={{
+                    color: assigneeName === "Anyone" ? colors.textPrimary : colors.textMuted,
+                  }}
+                >
+                  Anyone
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+
+          {/* SECTION 7: RECURRENCE */}
+          <View className="mb-6">
+            <Text
+              className="text-[11px] font-extrabold uppercase tracking-wider mb-2"
+              style={{ color: isDark ? "#94A3B8" : "#475569" }}
+            >
+              RECURRENCE
+            </Text>
+
+            <View
+              className="h-14 flex-row rounded-2xl p-1.5 items-center border shadow-xs"
+              style={{
+                backgroundColor: isDark ? "#17233D" : "#EEF4FF",
+                borderColor: isDark ? "#253347" : "#D9E2FC",
+              }}
+            >
+              {RECURRENCE_OPTIONS.map((opt) => {
+                const isActive = recurrenceFrequency === opt.value;
+
+                return (
+                  <TouchableOpacity
+                    key={opt.value}
+                    onPress={() => setRecurrenceFrequency(opt.value)}
+                    activeOpacity={0.8}
+                    className="flex-1 h-full items-center justify-center rounded-xl shadow-xs"
+                    style={{
+                      backgroundColor: isActive ? (isDark ? "#16233B" : "#FFFFFF") : "transparent",
+                    }}
+                  >
+                    <Text
+                      className="text-[13px] font-bold"
+                      style={{
+                        color: isActive
+                          ? isDark
+                            ? "#FFFFFF"
+                            : "#0F172A"
+                          : isDark
+                            ? "#64748B"
+                            : "#64748B",
+                      }}
+                    >
+                      {opt.label}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          </View>
+
+          {/* SECTION 8: ADDITIONAL DETAILS */}
+          <View className="mb-6">
+            <Text
+              className="text-[11px] font-extrabold uppercase tracking-wider mb-3"
+              style={{ color: isDark ? "#94A3B8" : "#475569" }}
+            >
+              ADDITIONAL DETAILS
+            </Text>
+
+            {/* Notes */}
+            <View className="mb-4">
+              <Text
+                className="text-[11px] font-bold mb-1.5"
+                style={{ color: isDark ? "#94A3B8" : "#64748B" }}
+              >
+                NOTES
+              </Text>
+              <View
+                className="rounded-2xl px-4 py-3 border shadow-xs"
+                style={{
+                  backgroundColor: isDark ? "#17233D" : "#EEF4FF",
+                  borderColor: isDark ? "#253347" : "#D9E2FC",
+                }}
+              >
+                <TextInput
+                  value={notes}
+                  onChangeText={setNotes}
+                  placeholder="Brand details, preferences, store notes..."
+                  placeholderTextColor={isDark ? "#64748B" : "#94A3B8"}
+                  multiline
+                  numberOfLines={3}
+                  className="text-[14px] font-bold"
+                  style={{
+                    color: isDark ? "#FFFFFF" : "#0F172A",
+                    minHeight: 60,
+                    textAlignVertical: "top",
+                  }}
+                />
+              </View>
+            </View>
+
+            {/* Dates & Financials Grid */}
+            <View className="flex-row gap-3 mb-4">
+              <View className="flex-1">
+                <DatePicker
+                  label="DUE DATE"
+                  placeholder="YYYY-MM-DD"
+                  value={dueDateInput}
+                  onChange={setDueDateInput}
+                />
+              </View>
+              <View className="flex-1">
+                <DatePicker
+                  label="REMINDER"
+                  placeholder="YYYY-MM-DD"
+                  value={reminderAtInput}
+                  onChange={setReminderAtInput}
+                />
+              </View>
+            </View>
+
+            <View className="flex-row gap-3">
+              <View className="flex-1">
+                <Text
+                  className="text-[11px] font-bold mb-1.5"
+                  style={{ color: isDark ? "#94A3B8" : "#64748B" }}
+                >
+                  UNIT PRICE ($)
+                </Text>
+                <View
+                  className="flex-row items-center rounded-2xl px-4 h-14 border shadow-xs"
+                  style={{
+                    backgroundColor: isDark ? "#17233D" : "#EEF4FF",
+                    borderColor: isDark ? "#253347" : "#D9E2FC",
+                  }}
+                >
+                  <TextInput
+                    value={unitPriceInput}
+                    onChangeText={setUnitPriceInput}
+                    placeholder="0.00"
+                    placeholderTextColor={isDark ? "#64748B" : "#94A3B8"}
+                    keyboardType="decimal-pad"
+                    className="flex-1 text-[15px] font-bold"
+                    style={{ color: isDark ? "#FFFFFF" : "#0F172A" }}
                   />
-                }
-              />
+                </View>
+              </View>
+
+              <View className="flex-1">
+                <Text
+                  className="text-[11px] font-bold mb-1.5"
+                  style={{ color: isDark ? "#94A3B8" : "#64748B" }}
+                >
+                  ESTIMATED TOTAL ($)
+                </Text>
+                <View
+                  className="flex-row items-center rounded-2xl px-4 h-14 border shadow-xs"
+                  style={{
+                    backgroundColor: isDark ? "#17233D" : "#EEF4FF",
+                    borderColor: isDark ? "#253347" : "#D9E2FC",
+                  }}
+                >
+                  <TextInput
+                    value={estimatedTotalInput}
+                    onChangeText={setEstimatedTotalInput}
+                    placeholder="0.00"
+                    placeholderTextColor={isDark ? "#64748B" : "#94A3B8"}
+                    keyboardType="decimal-pad"
+                    className="flex-1 text-[15px] font-bold"
+                    style={{ color: isDark ? "#FFFFFF" : "#0F172A" }}
+                  />
+                </View>
+              </View>
             </View>
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
-    </View>
+
+      {/* Floating Bottom Action Buttons */}
+      <View
+        className="px-5 pb-6 pt-3 border-t flex-row gap-3 items-center"
+        style={{ borderTopColor: isDark ? "#253347" : "#F1F5F9" }}
+      >
+        <TouchableOpacity
+          onPress={handleDelete}
+          disabled={deleteMutation.isPending || updateMutation.isPending}
+          activeOpacity={0.8}
+          className="h-14 w-14 rounded-2xl items-center justify-center border shadow-xs"
+          style={{
+            backgroundColor: isDark ? "#3B171A" : "#FEE2E2",
+            borderColor: isDark ? "#5C2023" : "#FCA5A5",
+          }}
+        >
+          <Trash2 stroke={isDark ? "#F87171" : "#EF4444"} size={22} strokeWidth={2.2} />
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          onPress={handleSave}
+          disabled={!name.trim() || updateMutation.isPending}
+          activeOpacity={0.88}
+          className="h-14 flex-1 rounded-full flex-row items-center justify-center shadow-lg"
+          style={{
+            backgroundColor: isDark ? "#34D399" : "#006837",
+            opacity: !name.trim() || updateMutation.isPending ? 0.6 : 1,
+          }}
+        >
+          <View style={{ marginRight: 8 }}>
+            <Check stroke={isDark ? "#0B132B" : "#FFFFFF"} size={20} strokeWidth={2.5} />
+          </View>
+          <Text
+            className="text-base font-black tracking-tight"
+            style={{ color: isDark ? "#0B132B" : "#FFFFFF" }}
+          >
+            Save Changes
+          </Text>
+        </TouchableOpacity>
+      </View>
+    </SafeAreaView>
   );
 };
 

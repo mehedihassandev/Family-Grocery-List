@@ -2,7 +2,7 @@ import React, { useEffect } from "react";
 import { View, StyleSheet, Platform } from "react-native";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { Home, ShoppingBasket, BarChart3, Users, User as UserIcon } from "lucide-react-native";
+import { LayoutGrid, ShoppingBag, BarChart3, Users, User as UserIcon } from "lucide-react-native";
 
 import DashboardScreen from "../screens/DashboardScreen";
 import GroceryListScreen from "../screens/GroceryListScreen";
@@ -37,7 +37,7 @@ const TabIcon = ({
 );
 
 /**
- * Standard Bottom Tab Navigator matching my-care-mobile architecture.
+ * Standard Bottom Tab Navigator matching app architecture.
  * Uses official @react-navigation/bottom-tabs to inject NavigationContext across all screens.
  */
 const TabNavigator: React.FC = () => {
@@ -78,7 +78,7 @@ const TabNavigator: React.FC = () => {
         tabBarActiveTintColor: activeTextColor,
         tabBarInactiveTintColor: inactiveTextColor,
         tabBarStyle: {
-          height: (Platform.OS === "ios" ? 60 : 56) + (insets.bottom > 0 ? insets.bottom : 8),
+          height: (Platform.OS === "ios" ? 62 : 58) + (insets.bottom > 0 ? insets.bottom : 8),
           paddingBottom: insets.bottom > 0 ? insets.bottom : 6,
           paddingTop: 6,
           backgroundColor: surfaceColor,
@@ -87,13 +87,14 @@ const TabNavigator: React.FC = () => {
           elevation: 8,
           shadowColor: colors.black,
           shadowOffset: { width: 0, height: -2 },
-          shadowOpacity: isDark ? 0.3 : 0.02,
+          shadowOpacity: isDark ? 0.3 : 0.04,
           shadowRadius: 8,
         },
         tabBarLabelStyle: {
-          fontSize: 11,
-          fontWeight: "700",
+          fontSize: 10,
+          fontWeight: "800",
           marginTop: 2,
+          letterSpacing: 0.5,
         },
       }}
     >
@@ -101,11 +102,11 @@ const TabNavigator: React.FC = () => {
         name={ROUTES.DASHBOARD}
         component={DashboardScreen as any}
         options={{
-          tabBarLabel: "Dashboard",
+          tabBarLabel: "DASH",
           tabBarIcon: ({ focused }) => (
             <TabIcon
               focused={focused}
-              Icon={Home}
+              Icon={LayoutGrid}
               activeColor={activeTextColor}
               inactiveColor={inactiveTextColor}
             />
@@ -116,11 +117,11 @@ const TabNavigator: React.FC = () => {
         name={ROUTES.GROCERIES}
         component={GroceryListScreen as any}
         options={{
-          tabBarLabel: "Groceries",
+          tabBarLabel: "SHOP",
           tabBarIcon: ({ focused }) => (
             <TabIcon
               focused={focused}
-              Icon={ShoppingBasket}
+              Icon={ShoppingBag}
               activeColor={activeTextColor}
               inactiveColor={inactiveTextColor}
             />
@@ -131,7 +132,7 @@ const TabNavigator: React.FC = () => {
         name={ROUTES.ANALYTICS}
         component={AnalyticsScreen as any}
         options={{
-          tabBarLabel: "Analytics",
+          tabBarLabel: "STATS",
           tabBarIcon: ({ focused }) => (
             <TabIcon
               focused={focused}
@@ -146,7 +147,7 @@ const TabNavigator: React.FC = () => {
         name={ROUTES.FAMILY}
         component={FamilyScreen as any}
         options={{
-          tabBarLabel: "Family",
+          tabBarLabel: "FAMILY",
           tabBarIcon: ({ focused }) => (
             <TabIcon
               focused={focused}
@@ -161,7 +162,7 @@ const TabNavigator: React.FC = () => {
         name={ROUTES.PROFILE}
         component={ProfileScreen as any}
         options={{
-          tabBarLabel: "Profile",
+          tabBarLabel: "ME",
           tabBarIcon: ({ focused }) => (
             <TabIcon
               focused={focused}

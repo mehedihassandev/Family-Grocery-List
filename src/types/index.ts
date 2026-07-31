@@ -71,6 +71,16 @@ export type AuthenticatedStackNavigatorParamList = {
   [ROUTES.NOTIFICATIONS]: undefined;
   /** Recipe packs and AI builder screen */
   [ROUTES.RECIPE_PACKS]: undefined;
+  /** Store & basket price comparison screen */
+  [ROUTES.STORE_COMPARISON]: undefined;
+  /** Meal planner screen */
+  [ROUTES.MEAL_PLAN]: { date?: string } | undefined;
+  /** Recipe detail screen */
+  [ROUTES.RECIPE_DETAIL]: { recipeId?: string } | undefined;
+  /** Cooking mode assistant screen */
+  [ROUTES.COOKING_MODE]: { recipeId?: string; stepNumber?: number } | undefined;
+  /** User profile screen */
+  [ROUTES.PROFILE]: undefined;
 };
 
 /** Unauthenticated Stack — Screens available before login */

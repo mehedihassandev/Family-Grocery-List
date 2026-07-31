@@ -7,6 +7,7 @@ import { Platform } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import {
   createUserWithEmailAndPassword,
+  deleteUser,
   GoogleAuthProvider,
   onAuthStateChanged,
   signInWithEmailAndPassword as firebaseSignInWithEmailAndPassword,
@@ -14,7 +15,7 @@ import {
   signOut as firebaseSignOut,
   updateProfile,
 } from "firebase/auth";
-import { doc, getDoc, setDoc, updateDoc, onSnapshot } from "firebase/firestore";
+import { doc, getDoc, setDoc, updateDoc, onSnapshot, deleteDoc } from "firebase/firestore";
 import { auth, db } from "./firebaseConfig";
 import { getEmailAuthErrorMessage } from "./authErrors";
 import { useAuthStore } from "../store/useAuthStore";
@@ -822,5 +823,38 @@ export const updateUserAccountProfile = async (
   } catch (error) {
     console.error("Update Profile Error:", error);
     throw error;
+  }
+};
+
+/**
+ * Deletes the current user's account from Firebase Auth and Firestore
+ */
+export const deleteUserAccount = async () => {
+  const currentUser = auth.currentUser;
+  if (!currentUser) return;
+
+  const { setUser, setLoading } = useAuthStore.getState();
+  setLoading(true);
+
+  try {
+    const userDocRef = doc(db, "users", currentUser.uid);
+    try {
+      await deleteDoc(userDocRef);
+    } catch (e) {
+      if (__DEV__) console.warn("Firestore user doc delete failed/skipped:", e);
+    }
+
+    await withTimeout(
+      deleteUser(currentUser),
+      AUTH_OPERATION_TIMEOUT_MS,
+      "Timed out while deleting user account.",
+    );
+  } catch (error) {
+    console.error("Delete Account Error:", error);
+    throw error;
+  } finally {
+    setUser(null);
+    await clearPersistedAuthSession();
+    setLoading(false);
   }
 };

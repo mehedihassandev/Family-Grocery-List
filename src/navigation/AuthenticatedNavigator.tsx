@@ -15,6 +15,11 @@ import {
   AnalyticsScreen,
   NotificationScreen,
   RecipePacksScreen,
+  StoreComparisonScreen,
+  ProfileScreen,
+  MealPlanScreen,
+  RecipeDetailScreen,
+  CookingModeScreen,
 } from "../screens";
 
 const Stack = createNativeStackNavigator<AuthenticatedStackNavigatorParamList>();
@@ -38,6 +43,7 @@ const AuthenticatedNavigator = () => {
       <Stack.Screen name={ROUTES.ROOT} component={TabNavigator} />
 
       {/* Secondary Screens */}
+      <Stack.Screen name={ROUTES.PROFILE} component={ProfileScreen as any} />
       <Stack.Screen name={ROUTES.FAMILY_SETUP} component={FamilySetupScreen} />
       <Stack.Screen name={ROUTES.EDIT_PROFILE} component={EditProfileScreen} />
       <Stack.Screen name={ROUTES.PRIVACY_SECURITY} component={PrivacySecurityScreen} />
@@ -45,6 +51,10 @@ const AuthenticatedNavigator = () => {
       <Stack.Screen name={ROUTES.ANALYZE} component={AnalyticsScreen} />
       <Stack.Screen name={ROUTES.NOTIFICATIONS} component={NotificationScreen} />
       <Stack.Screen name={ROUTES.RECIPE_PACKS} component={RecipePacksScreen} />
+      <Stack.Screen name={ROUTES.STORE_COMPARISON} component={StoreComparisonScreen} />
+      <Stack.Screen name={ROUTES.MEAL_PLAN} component={MealPlanScreen} />
+      <Stack.Screen name={ROUTES.RECIPE_DETAIL} component={RecipeDetailScreen} />
+      <Stack.Screen name={ROUTES.COOKING_MODE} component={CookingModeScreen} />
 
       {/* Modal Overlay Screens */}
       <Stack.Screen name={ROUTES.ITEM_DETAIL} component={ItemDetailScreen} />

@@ -1,104 +1,125 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useMemo, useState } from "react";
 import {
   View,
   Text,
   TouchableOpacity,
+  TextInput,
   ScrollView,
   KeyboardAvoidingView,
   Platform,
+  Image,
 } from "react-native";
-import { X, Check } from "lucide-react-native";
-import {
-  AuthenticatedStackNavigatorScreenProps,
-  Category,
-  Priority,
-  ROUTES,
-  TItemUnit,
-} from "../types";
-import { useAddGroceryItemBackend, useFamilyGroceryItemsBackend, useAppTheme } from "../hooks";
-import { addCustomCategory, subscribeToCategories, ICustomCategory } from "../services/categories";
-import { GROCERY_CATEGORIES } from "../features/grocery";
-import {
-  InputField,
-  DatePicker,
-  PrimaryButton,
-  Chip,
-  StatusModal,
-  LoadingOverlay,
-} from "../components/ui";
-import { useAuthStore } from "../store/useAuthStore";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { getSuggestedPriceForItem } from "../services/analytics";
+import {
+  ChevronLeft,
+  Search,
+  Mic,
+  ScanLine,
+  Plus,
+  Minus,
+  ChevronDown,
+  Sparkles,
+  ShoppingCart,
+  Users,
+  Check,
+  Apple,
+  Fish,
+  Egg,
+  IceCream,
+  Snowflake,
+  CupSoda,
+  Home,
+  Leaf,
+} from "lucide-react-native";
+import { AuthenticatedStackNavigatorScreenProps, Priority, ROUTES, TItemUnit } from "../types";
+import {
+  useAddGroceryItemBackend,
+  useFamilyMembers,
+  useAppTheme,
+  useTextFormatter,
+} from "../hooks";
+import { useAuthStore } from "../store/useAuthStore";
+import { LoadingOverlay, StatusModal, ScannerModal } from "../components/ui";
 
-const CATEGORIES: Category[] = [...GROCERY_CATEGORIES];
-const PRIORITIES: Priority[] = ["Low", "Medium", "Urgent"];
-const RECURRENCE_OPTIONS: ("none" | "weekly" | "monthly")[] = ["none", "weekly", "monthly"];
-const MEAL_TYPES: ("General" | "Breakfast" | "Lunch" | "Dinner" | "Snacks")[] = [
-  "General",
-  "Breakfast",
-  "Lunch",
-  "Dinner",
-  "Snacks",
+const SUGGESTIONS = [
+  "Hass Avocados",
+  "Almond Milk",
+  "Free Range Eggs",
+  "Organic Bananas",
+  "Whole Wheat Bread",
 ];
-const UNITS: TItemUnit[] = [
-  "pcs",
-  "kg",
-  "g",
-  "L",
-  "ml",
-  "pack",
-  "lb",
-  "oz",
-  "box",
-  "bottle",
-  "dozen",
+
+const CATEGORY_ITEMS = [
+  { name: "Produce", icon: Apple, bgColor: "#D1FAE5", iconColor: "#006837" },
+  { name: "Meat/Seafood", icon: Fish, bgColor: "#E0F2FE", iconColor: "#0284C7" },
+  { name: "Dairy/Eggs", icon: Egg, bgColor: "#EBF2FF", iconColor: "#4F46E5" },
+  { name: "Snacks", icon: IceCream, bgColor: "#F3E8FF", iconColor: "#7E22CE" },
+  { name: "Frozen", icon: Snowflake, bgColor: "#E0F2FE", iconColor: "#0284C7" },
+  { name: "Beverages", icon: CupSoda, bgColor: "#EBF2FF", iconColor: "#4F46E5" },
+  { name: "Household", icon: Home, bgColor: "#E0F2FE", iconColor: "#0284C7" },
+  { name: "Personal", icon: Leaf, bgColor: "#EBF2FF", iconColor: "#4F46E5" },
 ];
+
+const UNITS: { label: string; value: TItemUnit }[] = [
+  { label: "Pieces (pcs)", value: "pcs" },
+  { label: "Kilograms (kg)", value: "kg" },
+  { label: "Grams (g)", value: "g" },
+  { label: "Liters (L)", value: "L" },
+  { label: "Packs (pack)", value: "pack" },
+  { label: "Pounds (lb)", value: "lb" },
+  { label: "Boxes (box)", value: "box" },
+  { label: "Bottles (bottle)", value: "bottle" },
+];
+
+const PRIORITIES: Priority[] = ["Low", "Medium", "High"];
 
 /**
- * Add Item Screen
- * Why: To provide a robust screen for adding groceries via Python backend API.
+ * Add Item Screen redesigned to match exact modern UI mockup
  */
 const AddItemScreen = ({
   navigation,
 }: AuthenticatedStackNavigatorScreenProps<typeof ROUTES.ADD_ITEM>) => {
   const { user } = useAuthStore();
-  const { colors } = useAppTheme();
+  const { isDark, colors } = useAppTheme();
+  const { toInitial } = useTextFormatter();
   const familyId = user?.familyId || "";
 
   const [name, setName] = useState("");
-  const [category, setCategory] = useState<string>("Other");
+  const [category, setCategory] = useState<string>("Produce");
   const [priority, setPriority] = useState<Priority>("Medium");
-  const [mealType, setMealType] = useState<"General" | "Breakfast" | "Lunch" | "Dinner" | "Snacks">(
-    "General",
-  );
-  const [quantity, setQuantity] = useState("");
-  const [unit, setUnit] = useState<TItemUnit>("pcs");
-  const [notes, setNotes] = useState("");
-  const [recurrenceFrequency, setRecurrenceFrequency] = useState<"none" | "weekly" | "monthly">(
-    "none",
-  );
-  const [assigneeName, setAssigneeName] = useState("");
-  const [dueDateInput, setDueDateInput] = useState("");
-  const [reminderAtInput, setReminderAtInput] = useState("");
-  const [unitPriceInput, setUnitPriceInput] = useState("");
-  const [estimatedTotalInput, setEstimatedTotalInput] = useState("");
-  const [customCategories, setCustomCategories] = useState<ICustomCategory[]>([]);
-  const [newCatInput, setNewCatInput] = useState("");
-  const [showAddCat, setShowAddCat] = useState(false);
+  const [quantityCount, setQuantityCount] = useState(1);
+  const [selectedUnit, setSelectedUnit] = useState<TItemUnit>("pcs");
+  const [showUnitPicker, setShowUnitPicker] = useState(false);
+  const [assigneeName, setAssigneeName] = useState("Sarah");
+  const [isScannerOpen, setIsScannerOpen] = useState(false);
 
-  // TanStack Query Hook for Python Backend API
-  const { data: existingItems = [] } = useFamilyGroceryItemsBackend(familyId);
-  const addMutation = useAddGroceryItemBackend(familyId);
+  const { data: members = [] } = useFamilyMembers(familyId);
 
-  // Auto-suggest price when typing item name
-  useEffect(() => {
-    if (name.trim() && !unitPriceInput) {
-      const suggestedPrice = getSuggestedPriceForItem(existingItems, name);
-      if (suggestedPrice !== null) {
-        setUnitPriceInput(suggestedPrice.toString());
-      }
+  const assignableMembers = useMemo(() => {
+    const filtered = (members || []).filter((m) => m.uid !== user?.uid);
+    if (filtered.length > 0) {
+      return filtered.map((m) => ({
+        id: m.uid,
+        name: m.displayName || m.email?.split("@")[0] || "Member",
+        photoURL: m.photoURL,
+      }));
     }
-  }, [name, existingItems, unitPriceInput]);
+    return [
+      {
+        id: "sarah-demo",
+        name: "Sarah",
+        photoURL:
+          "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&auto=format&fit=crop",
+      },
+      {
+        id: "david-demo",
+        name: "David",
+        photoURL:
+          "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&auto=format&fit=crop",
+      },
+    ];
+  }, [members, user?.uid]);
+  const addMutation = useAddGroceryItemBackend(familyId);
 
   const [showSuccess, setShowSuccess] = useState(false);
   const [statusModal, setStatusModal] = useState<{
@@ -113,57 +134,18 @@ const AddItemScreen = ({
     type: "success",
   });
 
-  useEffect(() => {
-    if (!familyId) return;
-    const unsubscribe = subscribeToCategories(familyId, setCustomCategories);
-    return () => unsubscribe();
-  }, [familyId]);
-
-  const allCategories = useMemo(() => {
-    const normalizedCustomCategories = customCategories
-      .map((categoryItem) => categoryItem.name.trim())
-      .filter(Boolean);
-
-    return [...CATEGORIES, ...normalizedCustomCategories].filter(
-      (categoryName, index, source) =>
-        source.findIndex((value) => value.toLowerCase() === categoryName.toLowerCase()) === index,
-    );
-  }, [customCategories]);
-
-  /**
-   * Adds a new custom category to the family list
-   */
-  const handleAddCategory = async () => {
-    if (!newCatInput.trim()) return;
-    if (!familyId) {
-      setStatusModal({
-        visible: true,
-        title: "Category Failed",
-        message: "Join or create a family before adding custom categories.",
-        type: "error",
-      });
-      return;
-    }
-
-    try {
-      await addCustomCategory(familyId, newCatInput.trim());
-      setCategory(newCatInput.trim());
-      setNewCatInput("");
-      setShowAddCat(false);
-    } catch (error) {
-      setStatusModal({
-        visible: true,
-        title: "Category Failed",
-        message: error instanceof Error ? error.message : "Could not add category. Please retry.",
-        type: "error",
-      });
-    }
+  const handleScannedItem = (scanned: {
+    name: string;
+    category: any;
+    quantity: string;
+    priority: any;
+  }) => {
+    if (scanned.name) setName(scanned.name);
+    if (scanned.category) setCategory(scanned.category);
+    if (scanned.priority) setPriority(scanned.priority);
   };
 
-  /**
-   * Saves the new grocery item to the family list
-   */
-  const handleSave = async () => {
+  const handleSave = () => {
     if (!name.trim()) return;
     if (!familyId || !user?.uid) {
       setStatusModal({
@@ -175,90 +157,19 @@ const AddItemScreen = ({
       return;
     }
 
-    const parseDateInput = (value: string) => {
-      const normalized = value.trim();
-      if (!normalized) return null;
-      const parsed = new Date(normalized);
-      return Number.isNaN(parsed.getTime()) ? null : parsed;
-    };
-
-    const dueDate = parseDateInput(dueDateInput);
-    if (dueDateInput.trim() && !dueDate) {
-      setStatusModal({
-        visible: true,
-        title: "Invalid Due Date",
-        message: "Use format YYYY-MM-DD (example: 2026-05-15).",
-        type: "error",
-      });
-      return;
-    }
-
-    const reminderAt = parseDateInput(reminderAtInput);
-    if (reminderAtInput.trim() && !reminderAt) {
-      setStatusModal({
-        visible: true,
-        title: "Invalid Reminder Date",
-        message: "Use format YYYY-MM-DD (example: 2026-05-14).",
-        type: "error",
-      });
-      return;
-    }
-
-    const unitPriceValue = unitPriceInput.trim();
-    const unitPriceParsed = unitPriceValue ? Number(unitPriceValue) : NaN;
-    if (unitPriceValue && (!Number.isFinite(unitPriceParsed) || unitPriceParsed < 0)) {
-      setStatusModal({
-        visible: true,
-        title: "Invalid Unit Price",
-        message: "Enter a valid non-negative number.",
-        type: "error",
-      });
-      return;
-    }
-    const unitPrice = unitPriceValue ? unitPriceParsed : null;
-
-    const estimatedTotalValue = estimatedTotalInput.trim();
-    const estimatedTotalParsed = estimatedTotalValue ? Number(estimatedTotalValue) : NaN;
-    if (
-      estimatedTotalValue &&
-      (!Number.isFinite(estimatedTotalParsed) || estimatedTotalParsed < 0)
-    ) {
-      setStatusModal({
-        visible: true,
-        title: "Invalid Estimated Total",
-        message: "Enter a valid non-negative number.",
-        type: "error",
-      });
-      return;
-    }
-    const estimatedTotal = estimatedTotalValue ? estimatedTotalParsed : null;
-
     addMutation.mutate(
       {
         name: name.trim(),
         category,
         priority,
-        quantity: quantity.trim(),
-        unit,
-        notes: notes.trim(),
-        recurrenceFrequency,
-        assignee: assigneeName.trim() ? { name: assigneeName.trim() } : null,
-        dueDate,
-        reminderAt,
-        unitPrice,
-        estimatedTotal,
-        mealType,
+        quantity: `${quantityCount}`,
+        unit: selectedUnit,
+        assignee:
+          assigneeName.trim() && assigneeName !== "Anyone" ? { name: assigneeName.trim() } : null,
       },
       {
         onSuccess: () => {
           setShowSuccess(true);
-          setMealType("General");
-          setAssigneeName("");
-          setDueDateInput("");
-          setReminderAtInput("");
-          setUnitPriceInput("");
-          setEstimatedTotalInput("");
-          setRecurrenceFrequency("none");
         },
         onError: (error) => {
           setStatusModal({
@@ -272,16 +183,22 @@ const AddItemScreen = ({
     );
   };
 
-  /**
-   * Closes the success feedback and goes back
-   */
   const handleSuccessClose = () => {
     setShowSuccess(false);
     navigation.goBack();
   };
 
+  const activeUnitObj = useMemo(
+    () => UNITS.find((u) => u.value === selectedUnit) || UNITS[0],
+    [selectedUnit],
+  );
+
   return (
-    <SafeAreaView className="flex-1" style={{ backgroundColor: colors.bgCanvas }}>
+    <SafeAreaView
+      edges={["top", "left", "right"]}
+      className="flex-1"
+      style={{ backgroundColor: isDark ? "#0B132B" : "#F8FAFC" }}
+    >
       <LoadingOverlay visible={addMutation.isPending} />
       <StatusModal
         visible={showSuccess}
@@ -297,302 +214,470 @@ const AddItemScreen = ({
         onClose={() => setStatusModal((prev) => ({ ...prev, visible: false }))}
       />
 
+      <ScannerModal
+        visible={isScannerOpen}
+        onClose={() => setIsScannerOpen(false)}
+        onScannedItem={handleScannedItem}
+      />
+
+      {/* Top Header Row */}
+      <View className="px-5 py-3 flex-row items-center justify-between">
+        <TouchableOpacity
+          onPress={() => navigation.goBack()}
+          activeOpacity={0.75}
+          className="h-10 w-10 rounded-full items-center justify-center border shadow-xs"
+          style={{
+            backgroundColor: isDark ? "#17233D" : "#EEF4FF",
+            borderColor: isDark ? "#253347" : "#E2E8F0",
+          }}
+        >
+          <ChevronLeft stroke={isDark ? "#FFFFFF" : "#0F172A"} size={20} strokeWidth={2.5} />
+        </TouchableOpacity>
+
+        <Text
+          className="text-xl font-black tracking-tight"
+          style={{ color: isDark ? "#FFFFFF" : "#0F172A" }}
+        >
+          Add Item
+        </Text>
+
+        <TouchableOpacity
+          onPress={() => (navigation as any).navigate(ROUTES.PROFILE)}
+          activeOpacity={0.8}
+          className="h-10 w-10 rounded-full items-center justify-center overflow-hidden border shadow-xs"
+          style={{ backgroundColor: isDark ? "#10B981" : "#006837", borderColor: "transparent" }}
+        >
+          {user?.photoURL ? (
+            <Image source={{ uri: user.photoURL }} className="h-full w-full" />
+          ) : (
+            <Text className="text-white font-black text-sm">
+              {toInitial(user?.displayName || "M")}
+            </Text>
+          )}
+        </TouchableOpacity>
+      </View>
+
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : undefined}
-        className="flex-1 px-6"
+        className="flex-1 px-5"
       >
-        <View className="mb-8 mt-4 flex-row items-center justify-between">
-          <View>
-            <Text
-              className="mb-1 text-[11px] font-black uppercase tracking-[2px]"
-              style={{ color: colors.accent }}
-            >
-              New Grocery
-            </Text>
-            <Text
-              className="text-[28px] font-bold tracking-tight"
-              style={{ color: colors.textPrimary }}
-            >
-              Add Item
-            </Text>
-          </View>
-          <TouchableOpacity
-            onPress={() => navigation.goBack()}
-            activeOpacity={0.7}
-            className="h-11 w-11 items-center justify-center rounded-2xl border shadow-xs"
-            style={{ backgroundColor: colors.bgCard, borderColor: colors.border }}
-          >
-            <X stroke={colors.icon} size={20} strokeWidth={2.5} />
-          </TouchableOpacity>
-        </View>
-
         <ScrollView
           showsVerticalScrollIndicator={false}
-          contentContainerStyle={{ paddingBottom: 40 }}
+          contentContainerStyle={{ paddingBottom: 110 }}
           keyboardShouldPersistTaps="handled"
         >
-          <InputField
-            label="ITEM NAME"
-            placeholder="E.g. Fresh Milk, Organic Eggs"
-            value={name}
-            onChangeText={setName}
-            containerClassName="mb-6"
-            inputClassName="h-16 text-lg font-bold"
-          />
-
-          <View className="flex-row gap-4 mb-3">
-            <InputField
-              label="QUANTITY"
-              placeholder="E.g. 2"
-              value={quantity}
-              onChangeText={setQuantity}
-              keyboardType="numeric"
-              containerClassName="flex-1"
-              inputClassName="h-14 font-bold"
-            />
-            <View className="flex-1">
-              <Text
-                className="mb-2 ml-1 text-[11px] font-extrabold uppercase tracking-wider"
-                style={{ color: colors.textMuted }}
-              >
-                PRIORITY
-              </Text>
-              <View
-                className="h-14 flex-row rounded-xl p-1.5 items-center border"
-                style={{ backgroundColor: colors.bgInput, borderColor: colors.border }}
-              >
-                {PRIORITIES.map((p) => {
-                  const isActive = priority === p;
-                  const activeBg =
-                    p === "Low"
-                      ? colors.accentLightSubtle
-                      : p === "Medium"
-                        ? colors.warningLight
-                        : colors.dangerLight;
-                  const activeText =
-                    p === "Low" ? colors.accent : p === "Medium" ? colors.warning : colors.danger;
-
-                  return (
-                    <TouchableOpacity
-                      key={p}
-                      onPress={() => setPriority(p)}
-                      activeOpacity={0.7}
-                      className="flex-1 h-full items-center justify-center rounded-lg"
-                      style={{
-                        backgroundColor: isActive ? activeBg : "transparent",
-                      }}
-                    >
-                      <Text
-                        className="text-[12px] font-extrabold"
-                        style={{ color: isActive ? activeText : colors.textSecondary }}
-                      >
-                        {p}
-                      </Text>
-                    </TouchableOpacity>
-                  );
-                })}
-              </View>
-            </View>
-          </View>
-
-          {/* Unit Chips */}
-          <View className="mb-6">
+          {/* SECTION 1: ITEM NAME */}
+          <View className="mt-4 mb-6">
             <Text
-              className="mb-2 ml-1 text-[11px] font-extrabold uppercase tracking-wider"
-              style={{ color: colors.textMuted }}
+              className="text-[11px] font-extrabold uppercase tracking-wider mb-2"
+              style={{ color: isDark ? "#94A3B8" : "#475569" }}
             >
-              UNIT OF MEASURE
+              ITEM NAME
             </Text>
+
+            <View
+              className="flex-row items-center rounded-2xl px-4 h-14 border shadow-xs mb-3"
+              style={{
+                backgroundColor: isDark ? "#17233D" : "#EEF4FF",
+                borderColor: isDark ? "#253347" : "#D9E2FC",
+              }}
+            >
+              <Search stroke={isDark ? "#94A3B8" : "#64748B"} size={20} strokeWidth={2.2} />
+              <TextInput
+                value={name}
+                onChangeText={setName}
+                placeholder="e.g. Organic Honey..."
+                placeholderTextColor={isDark ? "#64748B" : "#94A3B8"}
+                className="ml-3 flex-1 text-[15px] font-bold"
+                style={{
+                  color: isDark ? "#FFFFFF" : "#0F172A",
+                  paddingVertical: 0,
+                  height: "100%",
+                }}
+              />
+
+              <TouchableOpacity
+                onPress={() => setIsScannerOpen(true)}
+                activeOpacity={0.7}
+                className="mr-3"
+              >
+                <ScanLine stroke={isDark ? "#34D399" : "#006837"} size={20} strokeWidth={2.2} />
+              </TouchableOpacity>
+
+              <TouchableOpacity activeOpacity={0.7}>
+                <Mic stroke={isDark ? "#34D399" : "#006837"} size={20} strokeWidth={2.2} />
+              </TouchableOpacity>
+            </View>
+
+            {/* Suggestions Horizontal Chips */}
             <ScrollView horizontal showsHorizontalScrollIndicator={false} className="flex-row py-1">
-              {UNITS.map((u) => {
-                const isActive = unit === u;
-                return (
-                  <Chip
-                    key={u}
-                    label={u}
-                    selected={isActive}
-                    onPress={() => setUnit(u)}
-                    className="mr-2 px-3.5 py-2"
-                  />
-                );
-              })}
+              {SUGGESTIONS.map((sug) => (
+                <TouchableOpacity
+                  key={sug}
+                  onPress={() => setName(sug)}
+                  activeOpacity={0.75}
+                  className="mr-2 px-3.5 py-2 rounded-full flex-row items-center border"
+                  style={{
+                    backgroundColor: isDark ? "#16233B" : "#E0E7FF",
+                    borderColor: isDark ? "#253347" : "#C7D2FE",
+                  }}
+                >
+                  <Sparkles size={13} stroke={isDark ? "#34D399" : "#4F46E5"} className="mr-1.5" />
+                  <Text
+                    className="text-[12px] font-bold"
+                    style={{ color: isDark ? "#F8FAFC" : "#312E81" }}
+                  >
+                    {sug}
+                  </Text>
+                </TouchableOpacity>
+              ))}
             </ScrollView>
           </View>
 
-          {/* MEAL TYPE SELECTOR */}
+          {/* SECTION 2: QUANTITY & UNIT */}
           <View className="mb-6">
             <Text
-              className="mb-2 ml-1 text-[11px] font-extrabold uppercase tracking-wider"
-              style={{ color: colors.textMuted }}
+              className="text-[11px] font-extrabold uppercase tracking-wider mb-2"
+              style={{ color: isDark ? "#94A3B8" : "#475569" }}
             >
-              MEAL TYPE
+              QUANTITY & UNIT
             </Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} className="flex-row">
-              {MEAL_TYPES.map((m) => {
-                const isActive = mealType === m;
-                return (
+
+            <View className="flex-row gap-3">
+              {/* Stepper Counter Pill */}
+              <View
+                className="flex-row items-center justify-between rounded-2xl px-3 h-14 border shadow-xs flex-1"
+                style={{
+                  backgroundColor: isDark ? "#17233D" : "#EEF4FF",
+                  borderColor: isDark ? "#253347" : "#D9E2FC",
+                }}
+              >
+                <TouchableOpacity
+                  onPress={() => setQuantityCount((prev) => Math.max(1, prev - 1))}
+                  activeOpacity={0.75}
+                  className="h-9 w-9 rounded-full items-center justify-center bg-white shadow-xs"
+                >
+                  <Minus stroke="#0F172A" size={16} strokeWidth={2.5} />
+                </TouchableOpacity>
+
+                <Text
+                  className="text-lg font-black"
+                  style={{ color: isDark ? "#FFFFFF" : "#0F172A" }}
+                >
+                  {quantityCount}
+                </Text>
+
+                <TouchableOpacity
+                  onPress={() => setQuantityCount((prev) => prev + 1)}
+                  activeOpacity={0.75}
+                  className="h-9 w-9 rounded-full items-center justify-center bg-white shadow-xs"
+                >
+                  <Plus stroke="#0F172A" size={16} strokeWidth={2.5} />
+                </TouchableOpacity>
+              </View>
+
+              {/* Unit Dropdown Selector Pill */}
+              <TouchableOpacity
+                onPress={() => setShowUnitPicker((prev) => !prev)}
+                activeOpacity={0.8}
+                className="flex-row items-center justify-between rounded-2xl px-4 h-14 border shadow-xs flex-[1.4]"
+                style={{
+                  backgroundColor: isDark ? "#17233D" : "#EEF4FF",
+                  borderColor: isDark ? "#253347" : "#D9E2FC",
+                }}
+              >
+                <Text
+                  className="text-[14px] font-bold"
+                  style={{ color: isDark ? "#FFFFFF" : "#0F172A" }}
+                >
+                  {activeUnitObj.label}
+                </Text>
+                <ChevronDown stroke={isDark ? "#94A3B8" : "#64748B"} size={18} strokeWidth={2.2} />
+              </TouchableOpacity>
+            </View>
+
+            {/* Inline Unit Picker Options */}
+            {showUnitPicker && (
+              <View
+                className="mt-2 p-2 rounded-2xl border shadow-md flex-row flex-wrap gap-1.5"
+                style={{
+                  backgroundColor: isDark ? "#16233B" : "#FFFFFF",
+                  borderColor: isDark ? "#253347" : "#E2E8F0",
+                }}
+              >
+                {UNITS.map((u) => (
                   <TouchableOpacity
-                    key={m}
-                    onPress={() => setMealType(m)}
-                    activeOpacity={0.75}
-                    className="mr-2 px-4 py-2.5 rounded-xl border"
+                    key={u.value}
+                    onPress={() => {
+                      setSelectedUnit(u.value);
+                      setShowUnitPicker(false);
+                    }}
+                    activeOpacity={0.8}
+                    className="px-3 py-1.5 rounded-xl"
                     style={{
-                      backgroundColor: isActive ? colors.accent : colors.bgInput,
-                      borderColor: isActive ? colors.accent : colors.border,
+                      backgroundColor:
+                        selectedUnit === u.value ? (isDark ? "#064E3B" : "#E0F2FE") : "transparent",
                     }}
                   >
                     <Text
-                      className="text-xs font-bold"
-                      style={{ color: isActive ? colors.white : colors.textSecondary }}
+                      className="text-[12px] font-bold"
+                      style={{
+                        color:
+                          selectedUnit === u.value
+                            ? isDark
+                              ? "#34D399"
+                              : "#0284C7"
+                            : isDark
+                              ? "#94A3B8"
+                              : "#475569",
+                      }}
                     >
-                      {m}
+                      {u.label}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            )}
+          </View>
+
+          {/* SECTION 3: CATEGORY (4x2 Grid) */}
+          <View className="mb-6">
+            <Text
+              className="text-[11px] font-extrabold uppercase tracking-wider mb-3"
+              style={{ color: isDark ? "#94A3B8" : "#475569" }}
+            >
+              CATEGORY
+            </Text>
+
+            <View className="flex-row flex-wrap justify-between gap-y-3">
+              {CATEGORY_ITEMS.map((cat) => {
+                const isSelected = category === cat.name;
+                const IconComp = cat.icon;
+
+                return (
+                  <TouchableOpacity
+                    key={cat.name}
+                    onPress={() => setCategory(cat.name)}
+                    activeOpacity={0.8}
+                    className="w-[23%] items-center justify-center py-3 rounded-2xl border shadow-xs"
+                    style={{
+                      backgroundColor: isSelected
+                        ? isDark
+                          ? "#1E2A3A"
+                          : "#EEF4FF"
+                        : isDark
+                          ? "#16233B"
+                          : "#FFFFFF",
+                      borderColor: isSelected
+                        ? isDark
+                          ? "#34D399"
+                          : "#6366F1"
+                        : isDark
+                          ? "#253347"
+                          : "#F1F5F9",
+                    }}
+                  >
+                    <View
+                      className="h-11 w-11 rounded-full items-center justify-center mb-2"
+                      style={{ backgroundColor: cat.bgColor }}
+                    >
+                      <IconComp stroke={cat.iconColor} size={20} strokeWidth={2.2} />
+                    </View>
+
+                    <Text
+                      className="text-[11px] font-extrabold text-center"
+                      style={{
+                        color: isSelected
+                          ? isDark
+                            ? "#FFFFFF"
+                            : "#0F172A"
+                          : isDark
+                            ? "#94A3B8"
+                            : "#475569",
+                      }}
+                      numberOfLines={1}
+                    >
+                      {cat.name}
                     </Text>
                   </TouchableOpacity>
                 );
               })}
-            </ScrollView>
+            </View>
           </View>
 
-          <View className="mb-8">
-            <View className="mb-4 flex-row items-center justify-between px-1">
-              <Text className="text-[11px] font-black uppercase tracking-[1.5px] text-text-muted">
-                CATEGORY
-              </Text>
+          {/* SECTION 4: PRIORITY LEVEL */}
+          <View className="mb-6">
+            <Text
+              className="text-[11px] font-extrabold uppercase tracking-wider mb-2"
+              style={{ color: isDark ? "#94A3B8" : "#475569" }}
+            >
+              PRIORITY LEVEL
+            </Text>
+
+            <View
+              className="h-14 flex-row rounded-2xl p-1.5 items-center border shadow-xs"
+              style={{
+                backgroundColor: isDark ? "#17233D" : "#EEF4FF",
+                borderColor: isDark ? "#253347" : "#D9E2FC",
+              }}
+            >
+              {PRIORITIES.map((p) => {
+                const isActive = priority === p;
+
+                return (
+                  <TouchableOpacity
+                    key={p}
+                    onPress={() => setPriority(p)}
+                    activeOpacity={0.8}
+                    className="flex-1 h-full items-center justify-center rounded-xl shadow-xs"
+                    style={{
+                      backgroundColor: isActive ? (isDark ? "#16233B" : "#FFFFFF") : "transparent",
+                    }}
+                  >
+                    <Text
+                      className="text-[13px] font-bold"
+                      style={{
+                        color: isActive
+                          ? isDark
+                            ? "#FFFFFF"
+                            : "#0F172A"
+                          : isDark
+                            ? "#64748B"
+                            : "#64748B",
+                      }}
+                    >
+                      {p}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          </View>
+
+          {/* SECTION 5: ASSIGN TO */}
+          <View className="mb-6">
+            <Text
+              className="text-[11px] font-extrabold uppercase tracking-wider mb-3"
+              style={{ color: isDark ? "#94A3B8" : "#475569" }}
+            >
+              ASSIGN TO
+            </Text>
+
+            <View className="flex-row items-center gap-4">
+              {/* Family Members (Excluding Current User) */}
+              {assignableMembers.map((m) => {
+                const isSelected = assigneeName === m.name;
+
+                return (
+                  <TouchableOpacity
+                    key={m.id || m.name}
+                    onPress={() => setAssigneeName(m.name)}
+                    activeOpacity={0.8}
+                    className="items-center"
+                  >
+                    <View className="relative mb-1.5">
+                      <View
+                        className="h-12 w-12 rounded-full items-center justify-center overflow-hidden border-2"
+                        style={{
+                          backgroundColor: isDark ? "#17233D" : "#006837",
+                          borderColor: isSelected
+                            ? isDark
+                              ? "#34D399"
+                              : "#006837"
+                            : "transparent",
+                        }}
+                      >
+                        {m.photoURL ? (
+                          <Image source={{ uri: m.photoURL }} className="h-full w-full" />
+                        ) : (
+                          <Text className="text-white text-sm font-black">{toInitial(m.name)}</Text>
+                        )}
+                      </View>
+
+                      {isSelected && (
+                        <View
+                          className="absolute -right-0.5 -bottom-0.5 h-4 w-4 rounded-full items-center justify-center border"
+                          style={{ backgroundColor: "#006837", borderColor: "#FFFFFF" }}
+                        >
+                          <Check stroke="#FFFFFF" size={10} strokeWidth={3} />
+                        </View>
+                      )}
+                    </View>
+
+                    <Text
+                      className="text-[12px] font-bold"
+                      style={{
+                        color: isSelected
+                          ? isDark
+                            ? "#FFFFFF"
+                            : "#0F172A"
+                          : isDark
+                            ? "#94A3B8"
+                            : "#64748B",
+                      }}
+                    >
+                      {m.name}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+
+              {/* Anyone Fallback Option */}
               <TouchableOpacity
-                onPress={() => setShowAddCat(!showAddCat)}
-                activeOpacity={0.75}
-                className="rounded-full border border-primary-500 px-3 py-1"
+                onPress={() => setAssigneeName("Anyone")}
+                activeOpacity={0.8}
+                className="items-center"
               >
-                <Text className="text-[10px] font-bold uppercase tracking-wider text-primary-500">
-                  {showAddCat ? "Cancel" : "+ Custom"}
+                <View
+                  className="h-12 w-12 rounded-full items-center justify-center mb-1.5 border-2"
+                  style={{
+                    backgroundColor: isDark ? "#17233D" : "#EEF4FF",
+                    borderColor: assigneeName === "Anyone" ? colors.accent : "transparent",
+                  }}
+                >
+                  <Users stroke={isDark ? "#34D399" : "#4F46E5"} size={20} strokeWidth={2.2} />
+                </View>
+
+                <Text
+                  className="text-[12px] font-bold"
+                  style={{
+                    color: assigneeName === "Anyone" ? colors.textPrimary : colors.textMuted,
+                  }}
+                >
+                  Anyone
                 </Text>
               </TouchableOpacity>
             </View>
-
-            {showAddCat && (
-              <View className="mb-6 flex-row gap-2">
-                <InputField
-                  placeholder="Category Name"
-                  value={newCatInput}
-                  onChangeText={setNewCatInput}
-                  containerClassName="flex-1"
-                  inputClassName="h-12"
-                />
-                <TouchableOpacity
-                  onPress={handleAddCategory}
-                  activeOpacity={0.8}
-                  className="h-12 items-center justify-center rounded-2xl bg-primary-600 px-6"
-                >
-                  <Check stroke="white" size={18} strokeWidth={3} />
-                </TouchableOpacity>
-              </View>
-            )}
-
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              className="flex-row"
-              contentContainerStyle={{ paddingRight: 20 }}
-            >
-              {allCategories.map((cat) => (
-                <Chip
-                  key={cat}
-                  label={cat}
-                  selected={category === cat}
-                  onPress={() => setCategory(cat)}
-                  className="mr-3"
-                />
-              ))}
-            </ScrollView>
           </View>
-
-          <InputField
-            label="ADDITIONAL NOTES"
-            placeholder="Brand, size, or specific store..."
-            value={notes}
-            onChangeText={setNotes}
-            multiline
-            numberOfLines={3}
-            containerClassName="mb-10"
-            inputClassName="h-32 pt-4 leading-6"
-            textAlignVertical="top"
-          />
-
-          <View className="mb-6">
-            <Text className="mb-2 ml-1 text-[11px] font-black uppercase tracking-[1.5px] text-text-muted">
-              RECURRING
-            </Text>
-            <View className="flex-row gap-2">
-              {RECURRENCE_OPTIONS.map((option) => (
-                <Chip
-                  key={option}
-                  label={option === "none" ? "One-time" : option}
-                  selected={recurrenceFrequency === option}
-                  onPress={() => setRecurrenceFrequency(option)}
-                  className="mr-2"
-                />
-              ))}
-            </View>
-          </View>
-
-          <View className="mb-6 flex-row gap-3">
-            <InputField
-              label="ASSIGNEE"
-              placeholder="Name (optional)"
-              value={assigneeName}
-              onChangeText={setAssigneeName}
-              containerClassName="flex-1"
-            />
-            <DatePicker
-              label="DUE DATE"
-              placeholder="YYYY-MM-DD"
-              value={dueDateInput}
-              onChange={setDueDateInput}
-              containerClassName="flex-1"
-            />
-          </View>
-
-          <View className="mb-10 flex-row gap-3">
-            <DatePicker
-              label="REMINDER"
-              placeholder="YYYY-MM-DD"
-              value={reminderAtInput}
-              onChange={setReminderAtInput}
-              containerClassName="flex-1"
-            />
-            <InputField
-              label="UNIT PRICE"
-              placeholder="e.g. 5.99"
-              value={unitPriceInput}
-              onChangeText={setUnitPriceInput}
-              keyboardType="decimal-pad"
-              containerClassName="flex-1"
-            />
-          </View>
-
-          <InputField
-            label="ESTIMATED TOTAL"
-            placeholder="e.g. 24.50"
-            value={estimatedTotalInput}
-            onChangeText={setEstimatedTotalInput}
-            keyboardType="decimal-pad"
-            containerClassName="mb-10"
-          />
-
-          <PrimaryButton
-            title="Add to List"
-            onPress={handleSave}
-            disabled={!name.trim() || addMutation.isPending}
-            icon={
-              <Check
-                size={20}
-                stroke={!name.trim() || addMutation.isPending ? colors.textMuted : colors.white}
-                strokeWidth={2.5}
-              />
-            }
-          />
         </ScrollView>
       </KeyboardAvoidingView>
+
+      {/* Floating Bottom Action Button */}
+      <View
+        className="px-5 pb-6 pt-3 border-t"
+        style={{ borderTopColor: isDark ? "#253347" : "#F1F5F9" }}
+      >
+        <TouchableOpacity
+          onPress={handleSave}
+          disabled={!name.trim() || addMutation.isPending}
+          activeOpacity={0.88}
+          className="h-14 w-full rounded-full flex-row items-center justify-center shadow-lg"
+          style={{
+            backgroundColor: isDark ? "#34D399" : "#006837",
+            opacity: !name.trim() || addMutation.isPending ? 0.6 : 1,
+          }}
+        >
+          <View style={{ marginRight: 8 }}>
+            <ShoppingCart stroke={isDark ? "#0B132B" : "#FFFFFF"} size={20} strokeWidth={2.5} />
+          </View>
+          <Text
+            className="text-base font-black tracking-tight"
+            style={{ color: isDark ? "#0B132B" : "#FFFFFF" }}
+          >
+            Add to List
+          </Text>
+        </TouchableOpacity>
+      </View>
     </SafeAreaView>
   );
 };

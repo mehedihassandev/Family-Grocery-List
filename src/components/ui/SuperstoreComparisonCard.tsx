@@ -1,5 +1,5 @@
 import React from "react";
-import { View, Text, TouchableOpacity, Linking, ActivityIndicator } from "react-native";
+import { View, Text, TouchableOpacity, Linking } from "react-native";
 import { Store, ExternalLink, CheckCircle2, AlertCircle, ShoppingBag } from "lucide-react-native";
 import { useSuperstoreComparison, useAppTheme } from "../../hooks";
 
@@ -18,8 +18,7 @@ export const SuperstoreComparisonCard: React.FC<SuperstoreComparisonCardProps> =
         className="rounded-xl p-4 border items-center justify-center my-2"
         style={{ backgroundColor: colors.bgCard, borderColor: colors.border }}
       >
-        <ActivityIndicator size="small" color={colors.accent} />
-        <Text className="text-xs mt-2 font-medium" style={{ color: colors.textMuted }}>
+        <Text className="text-xs font-medium" style={{ color: colors.textMuted }}>
           Comparing prices across Shwapno, Meena Bazar & Agora...
         </Text>
       </View>

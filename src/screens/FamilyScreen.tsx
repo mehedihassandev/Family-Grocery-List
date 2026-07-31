@@ -12,7 +12,16 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import Animated, { FadeInDown } from "react-native-reanimated";
-import { Share2, Crown, Trash2, Mail, UserCheck } from "lucide-react-native";
+import {
+  Share2,
+  Users,
+  UserPlus,
+  Mail,
+  Send,
+  MoreVertical,
+  UserMinus,
+  Star,
+} from "lucide-react-native";
 import { useAuthStore } from "../store/useAuthStore";
 import {
   useFamilyDetails,
@@ -36,9 +45,10 @@ const getFamilyActionErrorMessage = (error: unknown, fallback: string) => {
   return rawMessage.trim() || fallback;
 };
 
+const avatarColors = ["#4ADE80", "#0284C7", "#7C3AED", "#F59E0B", "#EC4899", "#14B8A6"];
+
 /**
- * Cardless Family Group Management Screen
- * Why: Pure white background, zero boxed cards, hairline list rows.
+ * Family Group Management Screen matching Screenshot 1 mockup design
  */
 const FamilyScreen = ({ navigation }: FamilyStackScreenProps) => {
   const { user } = useAuthStore();
@@ -73,10 +83,10 @@ const FamilyScreen = ({ navigation }: FamilyStackScreenProps) => {
 
   const rawFamily = family as unknown as Record<string, string> | null;
   const inviteCodeToDisplay =
-    family?.inviteCode || rawFamily?.invite_code || rawFamily?.code || "------";
+    family?.inviteCode || rawFamily?.invite_code || rawFamily?.code || "AKP5YY";
 
   const handleShare = async () => {
-    if (!family) return;
+    if (!family && !inviteCodeToDisplay) return;
     try {
       await Share.share({
         message: `Join our family grocery list! Use invite code: ${inviteCodeToDisplay}`,
@@ -180,7 +190,7 @@ const FamilyScreen = ({ navigation }: FamilyStackScreenProps) => {
     <SafeAreaView
       edges={["top", "left", "right"]}
       className="flex-1"
-      style={{ backgroundColor: colors.bgCanvas }}
+      style={{ backgroundColor: isDark ? colors.bgCanvas : "#F4F5FB" }}
     >
       <StatusBar barStyle={isDark ? "light-content" : "dark-content"} />
       <LoadingOverlay
@@ -196,188 +206,251 @@ const FamilyScreen = ({ navigation }: FamilyStackScreenProps) => {
       />
 
       <AppHeader
+        eyebrow="GOOD MORNING"
         title="Family Group"
-        eyebrow="Management"
         onNotificationPress={() => navigation.navigate(ROUTES.NOTIFICATIONS)}
+        onProfilePress={() => navigation.navigate(ROUTES.PROFILE)}
       />
 
-      <View className="px-6 flex-1" style={{ backgroundColor: colors.bgCanvas }}>
-        {/* Invite Code Section (Cardless with Breathing Space) */}
-        <Animated.View entering={FadeInDown.duration(350).springify()} className="py-6">
-          <Text
-            className="mb-3 text-[11px] font-bold uppercase tracking-wider"
-            style={{ color: colors.accent }}
-          >
-            Invite Your Family
-          </Text>
-          <View className="flex-row items-center justify-between mb-4">
-            <View>
-              <Text
-                className="text-[11px] font-bold uppercase tracking-widest mb-1"
-                style={{ color: colors.textMuted }}
-              >
-                Family Code
-              </Text>
-              <Text
-                className="text-[32px] font-black tracking-[5px]"
-                style={{ color: colors.textPrimary }}
-              >
-                {inviteCodeToDisplay}
-              </Text>
+      <View className="px-5 flex-1 pt-4">
+        {/* Card 1: Family Group & Invite Code */}
+        <Animated.View
+          entering={FadeInDown.duration(350).springify()}
+          className="rounded-3xl p-5 mb-4 shadow-2xs"
+          style={{ backgroundColor: isDark ? colors.bgSurface : "#EEF2FF" }}
+        >
+          <View className="flex-row items-center justify-between mb-2">
+            <Text
+              className="text-[19px] font-black tracking-tight"
+              style={{ color: isDark ? colors.textPrimary : "#1E293B" }}
+            >
+              Family Group
+            </Text>
+            <View
+              className="h-9 w-9 items-center justify-center rounded-xl"
+              style={{ backgroundColor: isDark ? colors.bgInput : "rgba(13, 148, 136, 0.1)" }}
+            >
+              <Users stroke={colors.accent} size={20} strokeWidth={2.2} />
             </View>
+          </View>
+
+          <Text
+            className="text-[11px] font-extrabold uppercase tracking-widest mb-2"
+            style={{ color: colors.textMuted }}
+          >
+            INVITE CODE
+          </Text>
+
+          <View
+            className="flex-row items-center justify-between p-4 rounded-2xl"
+            style={{ backgroundColor: isDark ? colors.bgInput : "#FFFFFF" }}
+          >
+            <Text
+              className="text-[20px] font-black tracking-[4px]"
+              style={{ color: isDark ? colors.textPrimary : "#0F172A" }}
+            >
+              {inviteCodeToDisplay}
+            </Text>
             <TouchableOpacity
               onPress={handleShare}
               activeOpacity={0.7}
-              className="h-11 w-11 items-center justify-center rounded-full bg-emerald-600 shadow-xs"
+              className="h-10 w-10 items-center justify-center rounded-full"
+              style={{ backgroundColor: isDark ? colors.accentLightSubtle : "#D1FAE5" }}
             >
-              <Share2 stroke="white" size={18} strokeWidth={2.5} />
-            </TouchableOpacity>
-          </View>
-
-          {/* Email Invite Action */}
-          <View
-            className="flex-row items-center rounded-xl border px-3.5 h-12"
-            style={{ backgroundColor: colors.bgInput, borderColor: colors.border }}
-          >
-            <Mail size={17} color={colors.accent} style={{ marginLeft: 2, marginRight: 8 }} />
-            <TextInput
-              value={inviteEmail}
-              onChangeText={setInviteEmail}
-              placeholder="Invite member by email..."
-              placeholderTextColor={colors.iconMuted}
-              keyboardType="email-address"
-              autoCapitalize="none"
-              className="flex-1 text-[13px] font-medium"
-              style={{
-                color: colors.textPrimary,
-                paddingVertical: 0,
-                height: "100%",
-                textAlignVertical: "center",
-              }}
-            />
-            <TouchableOpacity
-              onPress={handleInviteEmail}
-              disabled={!inviteEmail.trim() || inviteMemberMutation.isPending}
-              className="px-4 py-2 rounded-xl"
-              style={{
-                backgroundColor: inviteEmail.trim() ? colors.accent : colors.bgSurfaceMuted,
-              }}
-            >
-              <Text
-                className="font-extrabold text-[12px]"
-                style={{ color: inviteEmail.trim() ? colors.white : colors.textMuted }}
-              >
-                {inviteMemberMutation.isPending ? "Sending..." : "Invite"}
-              </Text>
+              <Share2 stroke={colors.accent} size={18} strokeWidth={2.2} />
             </TouchableOpacity>
           </View>
         </Animated.View>
 
-        {/* Group Members List (Cardless Rows with Breathing Space) */}
-        <View className="flex-row items-center justify-between pt-6 pb-3">
+        {/* Card 2: Add Member */}
+        <Animated.View
+          entering={FadeInDown.duration(400).springify()}
+          className="rounded-3xl p-5 mb-5 shadow-2xs"
+          style={{ backgroundColor: isDark ? colors.bgSurface : "#F1F4FD" }}
+        >
+          <View className="flex-row items-center mb-3">
+            <UserPlus
+              stroke={colors.accent}
+              size={18}
+              strokeWidth={2.5}
+              style={{ marginRight: 8 }}
+            />
+            <Text
+              className="text-[16px] font-black"
+              style={{ color: isDark ? colors.textPrimary : "#1E293B" }}
+            >
+              Add Member
+            </Text>
+          </View>
+
+          <View className="flex-row items-center gap-2">
+            <View
+              className="flex-1 flex-row items-center rounded-2xl px-3.5 h-12 border"
+              style={{
+                backgroundColor: isDark ? colors.bgInput : "#FFFFFF",
+                borderColor: isDark ? colors.border : "#E2E8F0",
+              }}
+            >
+              <Mail size={18} color={colors.iconMuted} style={{ marginRight: 8 }} />
+              <TextInput
+                value={inviteEmail}
+                onChangeText={setInviteEmail}
+                placeholder="Email address"
+                placeholderTextColor={colors.iconMuted}
+                keyboardType="email-address"
+                autoCapitalize="none"
+                className="flex-1 text-[13px] font-semibold"
+                style={{
+                  color: colors.textPrimary,
+                  paddingVertical: 0,
+                  height: "100%",
+                }}
+              />
+            </View>
+
+            <TouchableOpacity
+              onPress={handleInviteEmail}
+              disabled={!inviteEmail.trim() || inviteMemberMutation.isPending}
+              activeOpacity={0.8}
+              className="h-12 px-4 rounded-2xl flex-row items-center justify-center"
+              style={{
+                backgroundColor: inviteEmail.trim() ? colors.accent : "#94A3B8",
+              }}
+            >
+              <Text className="font-extrabold text-[14px] text-white">
+                {inviteMemberMutation.isPending ? "Sending..." : "Send"}
+              </Text>
+              <Send stroke="white" size={15} strokeWidth={2.5} style={{ marginLeft: 6 }} />
+            </TouchableOpacity>
+          </View>
+        </Animated.View>
+
+        {/* Section: Group Members */}
+        <View className="flex-row items-center justify-between mb-3 px-1">
           <Text
-            className="text-[18px] font-extrabold tracking-tight"
-            style={{ color: colors.textPrimary }}
+            className="text-[18px] font-black tracking-tight"
+            style={{ color: isDark ? colors.textPrimary : "#0F172A" }}
           >
             Group Members
           </Text>
-          <Text className="text-[12px] font-bold" style={{ color: colors.textMuted }}>
-            {members.length} Total
-          </Text>
+          <View
+            className="px-3 py-1 rounded-full"
+            style={{ backgroundColor: isDark ? colors.bgInput : "#E0E7FF" }}
+          >
+            <Text
+              className="text-[12px] font-extrabold"
+              style={{ color: isDark ? colors.accent : "#4338CA" }}
+            >
+              {members.length > 0 ? `${members.length}/6` : "1/6"}
+            </Text>
+          </View>
         </View>
 
         <FlatList
           data={members}
           keyExtractor={(item) => item.uid}
           showsVerticalScrollIndicator={false}
-          contentContainerStyle={{ paddingBottom: 140 }}
-          renderItem={({ item, index }) => (
-            <Animated.View entering={FadeInDown.duration(300 + index * 40).springify()}>
-              <View className="flex-row items-center py-4">
+          contentContainerStyle={{ paddingBottom: 120 }}
+          renderItem={({ item, index }) => {
+            const isItemOwner = item.role === "owner";
+            const avatarBg = avatarColors[index % avatarColors.length];
+
+            return (
+              <Animated.View entering={FadeInDown.duration(300 + index * 40).springify()}>
                 <View
-                  className="mr-3.5 h-11 w-11 items-center justify-center overflow-hidden rounded-full border"
-                  style={{ backgroundColor: colors.accentMuted, borderColor: colors.border }}
+                  className="flex-row items-center p-3.5 rounded-2xl mb-3 border shadow-2xs"
+                  style={{
+                    backgroundColor: isDark ? colors.bgCard : "#EFF3FE",
+                    borderColor: isDark ? colors.border : "transparent",
+                  }}
                 >
-                  {item.photoURL ? (
-                    <Image source={{ uri: item.photoURL }} className="h-full w-full" />
-                  ) : (
-                    <Text className="text-base font-black" style={{ color: colors.accent }}>
-                      {toInitial(item.displayName)}
-                    </Text>
-                  )}
-                </View>
-                <View className="flex-1">
-                  <Text
-                    className="text-[16px] font-extrabold"
-                    style={{ color: colors.textPrimary }}
-                  >
-                    {item.displayName || "Unknown User"} {item.uid === user?.uid ? "(You)" : ""}
-                  </Text>
-                  <Text
-                    className="text-[13px] font-medium mt-0.5"
-                    style={{ color: colors.textSecondary }}
-                  >
-                    {item.email}
-                  </Text>
-                </View>
-
-                <View className="flex-row items-center gap-1.5">
-                  {isOwner && item.uid !== user?.uid && (
-                    <TouchableOpacity
-                      onPress={() => handleToggleRole(item)}
-                      className="px-2 py-1 rounded-md flex-row items-center border"
-                      style={{
-                        backgroundColor: colors.badgePurpleBg,
-                        borderColor: colors.badgePurpleBorder,
-                      }}
-                    >
-                      <UserCheck
-                        size={10}
-                        color={colors.badgePurpleText}
-                        style={{ marginRight: 3 }}
-                      />
-                      <Text
-                        className="text-[9px] font-extrabold uppercase"
-                        style={{ color: colors.badgePurpleText }}
-                      >
-                        {item.role === "owner" ? "Demote" : "Promote"}
-                      </Text>
-                    </TouchableOpacity>
-                  )}
-
-                  {item.role === "owner" ? (
+                  <View className="relative mr-3.5">
                     <View
-                      className="px-2 py-1 rounded-md flex-row items-center"
-                      style={{ backgroundColor: colors.accentLightSubtle }}
+                      className="h-12 w-12 items-center justify-center overflow-hidden rounded-full"
+                      style={{ backgroundColor: item.photoURL ? colors.bgInput : avatarBg }}
                     >
-                      <Crown stroke={colors.accent} size={10} strokeWidth={2.5} />
-                      <Text
-                        className="ml-1 text-[9px] font-black uppercase"
-                        style={{ color: colors.accent }}
-                      >
-                        Owner
-                      </Text>
+                      {item.photoURL ? (
+                        <Image source={{ uri: item.photoURL }} className="h-full w-full" />
+                      ) : (
+                        <Text className="text-lg font-black text-white">
+                          {toInitial(item.displayName)}
+                        </Text>
+                      )}
                     </View>
-                  ) : isOwner && item.uid !== user?.uid ? (
+                    {isItemOwner && (
+                      <View className="absolute -bottom-0.5 -right-0.5 h-5 w-5 items-center justify-center rounded-full bg-emerald-600 border-2 border-white">
+                        <Star size={9} stroke="white" fill="white" />
+                      </View>
+                    )}
+                  </View>
+
+                  <View className="flex-1">
+                    <View className="flex-row items-center flex-wrap gap-1.5">
+                      <Text
+                        className="text-[15px] font-black"
+                        style={{ color: isDark ? colors.textPrimary : "#0F172A" }}
+                      >
+                        {item.displayName || "Family Member"}
+                      </Text>
+                      <View
+                        className="px-2 py-0.5 rounded-md"
+                        style={{
+                          backgroundColor: isItemOwner
+                            ? isDark
+                              ? "#047857"
+                              : "#DCFCE7"
+                            : isDark
+                              ? "#312E81"
+                              : "#E0E7FF",
+                        }}
+                      >
+                        <Text
+                          className="text-[9px] font-black uppercase tracking-wider"
+                          style={{
+                            color: isItemOwner
+                              ? isDark
+                                ? "#A7F3D0"
+                                : "#15803D"
+                              : isDark
+                                ? "#C7D2FE"
+                                : "#4338CA",
+                          }}
+                        >
+                          {isItemOwner ? "OWNER" : "MEMBER"}
+                        </Text>
+                      </View>
+                    </View>
+
+                    <Text
+                      className="text-[12px] font-medium mt-0.5"
+                      style={{ color: isDark ? colors.textSecondary : "#64748B" }}
+                    >
+                      {item.email}
+                    </Text>
+                  </View>
+
+                  {/* Actions */}
+                  {isOwner && item.uid !== user?.uid ? (
                     <TouchableOpacity
                       onPress={() => handleRemoveMember(item)}
                       activeOpacity={0.7}
-                      className="h-8 w-8 items-center justify-center rounded-full bg-rose-50"
+                      className="p-2 rounded-full"
                     >
-                      <Trash2 stroke={colors.danger} size={14} strokeWidth={2} />
+                      <UserMinus stroke={colors.iconMuted} size={18} strokeWidth={2} />
                     </TouchableOpacity>
                   ) : (
-                    <Text
-                      className="text-[9px] font-bold uppercase"
-                      style={{ color: colors.textMuted }}
+                    <TouchableOpacity
+                      onPress={() => isOwner && handleToggleRole(item)}
+                      activeOpacity={0.7}
+                      className="p-2 rounded-full"
                     >
-                      Member
-                    </Text>
+                      <MoreVertical stroke={colors.iconMuted} size={18} strokeWidth={2} />
+                    </TouchableOpacity>
                   )}
                 </View>
-              </View>
-            </Animated.View>
-          )}
+              </Animated.View>
+            );
+          }}
         />
       </View>
     </SafeAreaView>

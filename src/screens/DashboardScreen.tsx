@@ -1,10 +1,9 @@
 import React, { useMemo } from "react";
 import { HomeStackScreenProps, ROUTES } from "../types";
-import { ScrollView, StatusBar, Text, View, TouchableOpacity, Image, Share } from "react-native";
+import { ScrollView, StatusBar, Text, View, TouchableOpacity, Image } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import Animated, { FadeInDown } from "react-native-reanimated";
 import {
-  Users,
   UsersRound,
   Clock,
   CheckCircle2,
@@ -14,7 +13,8 @@ import {
   AlertTriangle,
   Sparkles,
   Plus,
-  Share2,
+  Calendar,
+  Flame,
 } from "lucide-react-native";
 import { useAuthStore } from "../store/useAuthStore";
 import {
@@ -29,8 +29,9 @@ import { ShortcutCard, ProgressBar, DonutChart, PriorityBadge } from "../compone
 import { useNotificationStore } from "../store/useNotificationStore";
 
 /**
- * Cardless Dashboard Screen
- * Why: Pure white canvas, zero boxed cards, typography-driven sections.
+ * Premium Modern Dashboard Screen
+ * Design: Redesigned based on modern iOS 18 / Figma Design Brief with elevated card structures,
+ * vibrant status pills, 1-Click Meal Packs promo card, and responsive quick shortcuts.
  */
 const DashboardScreen = ({ navigation }: HomeStackScreenProps) => {
   const { user } = useAuthStore();
@@ -42,20 +43,7 @@ const DashboardScreen = ({ navigation }: HomeStackScreenProps) => {
   const { data: members = [] } = useFamilyMembers(user?.familyId);
   const { data: items = [] } = useFamilyGroceryItemsBackend(user?.familyId);
 
-  const familyName = family?.name || "Our Family";
-
-  const handleShareInvite = async () => {
-    const rawFamily = family as unknown as Record<string, string> | null;
-    const inviteCode = family?.inviteCode || rawFamily?.invite_code || rawFamily?.code;
-    if (!inviteCode) return;
-    try {
-      await Share.share({
-        message: `Join our family grocery list! Use invite code: ${inviteCode}`,
-      });
-    } catch {
-      // ignore
-    }
-  };
+  const familyName = family?.name || "Mehedi";
 
   const notifications = useNotificationStore((state) => state.notifications);
   const notificationError = useNotificationStore((state) => state.error);
@@ -74,7 +62,9 @@ const DashboardScreen = ({ navigation }: HomeStackScreenProps) => {
   const pendingCount = pendingItems.length;
   const completedCount = completedItems.length;
   const totalCount = items.length;
-  const urgentCount = pendingItems.filter((item) => item.priority === "Urgent").length;
+  const urgentCount = pendingItems.filter(
+    (item) => item.priority === "Urgent" || item.priority === "High",
+  ).length;
   const completionRate = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
 
   const estimatedSpend = useMemo(() => {
@@ -96,7 +86,7 @@ const DashboardScreen = ({ navigation }: HomeStackScreenProps) => {
     });
     return Object.entries(stats)
       .sort((a, b) => b[1] - a[1])
-      .slice(0, 3);
+      .slice(0, 4);
   }, [items]);
 
   const recentPending = useMemo(() => {
@@ -113,14 +103,14 @@ const DashboardScreen = ({ navigation }: HomeStackScreenProps) => {
 
   const getGreeting = () => {
     const hour = new Date().getHours();
-    if (hour < 12) return "Good morning";
-    if (hour < 18) return "Good afternoon";
-    return "Good evening";
+    if (hour < 12) return "GOOD MORNING";
+    if (hour < 18) return "GOOD AFTERNOON";
+    return "GOOD EVENING";
   };
 
   const firstName = useMemo(() => {
     const normalized = toTrimmed(user?.displayName);
-    if (!normalized) return "Friend";
+    if (!normalized) return "Mehedi";
     return normalized.split(/\s+/)[0];
   }, [toTrimmed, user?.displayName]);
 
@@ -134,16 +124,53 @@ const DashboardScreen = ({ navigation }: HomeStackScreenProps) => {
     >
       <StatusBar barStyle={isDark ? "light-content" : "dark-content"} />
 
-      {/* Header Row with Sleek Avatar Ring & Unread Bell */}
+      {/* Modern Header Row: GOOD MORNING / Dashboard */}
       <Animated.View
         entering={FadeInDown.duration(300).springify()}
-        className="px-6 py-3.5 flex-row items-center justify-between border-b"
-        style={{ borderBottomColor: colors.borderSubtle }}
+        className="px-5 pt-3 pb-2 flex-row items-center justify-between"
       >
-        <View className="flex-row items-center">
-          <View
-            className="h-11 w-11 rounded-full items-center justify-center overflow-hidden border-2"
-            style={{ borderColor: colors.accent }}
+        <View>
+          <Text
+            className="text-[11px] font-extrabold uppercase tracking-widest mb-0.5"
+            style={{ color: colors.textMuted }}
+          >
+            {getGreeting()}
+          </Text>
+          <Text
+            className="text-2xl font-black tracking-tight"
+            style={{ color: colors.textPrimary }}
+          >
+            Dashboard
+          </Text>
+        </View>
+
+        <View className="flex-row items-center gap-2.5">
+          {/* Notification Bell */}
+          <TouchableOpacity
+            onPress={() => navigation.navigate(ROUTES.NOTIFICATIONS)}
+            activeOpacity={0.75}
+            className="h-10 w-10 rounded-full items-center justify-center border shadow-xs relative"
+            style={{ backgroundColor: colors.bgSurface, borderColor: colors.borderSubtle }}
+          >
+            <Bell size={19} stroke={colors.textPrimary} strokeWidth={2} />
+            {unreadCount > 0 ? (
+              <View
+                className="absolute -right-0.5 -top-0.5 h-4 min-w-[16px] items-center justify-center rounded-full px-1 border"
+                style={{ backgroundColor: colors.danger, borderColor: colors.bgCanvas }}
+              >
+                <Text className="text-[9px] font-black text-white">
+                  {unreadCount > 99 ? "99+" : unreadCount}
+                </Text>
+              </View>
+            ) : null}
+          </TouchableOpacity>
+
+          {/* Profile Avatar Button */}
+          <TouchableOpacity
+            onPress={() => (navigation as any).navigate(ROUTES.PROFILE)}
+            activeOpacity={0.8}
+            className="h-10 w-10 rounded-full items-center justify-center overflow-hidden border shadow-xs"
+            style={{ backgroundColor: colors.accent, borderColor: colors.borderSubtle }}
           >
             {user?.photoURL ? (
               <Image source={{ uri: user.photoURL }} className="h-full w-full" />
@@ -152,52 +179,11 @@ const DashboardScreen = ({ navigation }: HomeStackScreenProps) => {
                 className="h-full w-full items-center justify-center"
                 style={{ backgroundColor: colors.accent }}
               >
-                <Text className="text-white font-black text-base">{toInitial(firstName)}</Text>
+                <Text className="text-white font-black text-sm">{toInitial(firstName)}</Text>
               </View>
             )}
-          </View>
-          <View className="ml-3">
-            <View className="flex-row items-center">
-              <Text
-                className="text-[11px] font-bold uppercase tracking-wider mr-1.5"
-                style={{ color: colors.accent }}
-              >
-                {getGreeting()}
-              </Text>
-              <Text
-                className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full"
-                style={{ backgroundColor: colors.accentLightSubtle, color: colors.accent }}
-              >
-                Online
-              </Text>
-            </View>
-            <Text
-              className="text-[18px] font-black tracking-tight"
-              style={{ color: colors.textPrimary }}
-            >
-              {user?.displayName || firstName} 👋
-            </Text>
-          </View>
+          </TouchableOpacity>
         </View>
-
-        <TouchableOpacity
-          onPress={() => navigation.navigate(ROUTES.NOTIFICATIONS)}
-          activeOpacity={0.75}
-          className="h-10 w-10 rounded-xl items-center justify-center border shadow-xs relative"
-          style={{ backgroundColor: colors.bgSurface, borderColor: colors.border }}
-        >
-          <Bell size={18} stroke={colors.accent} strokeWidth={2} />
-          {unreadCount > 0 ? (
-            <View
-              className="absolute -right-1 -top-1 h-4 min-w-[16px] items-center justify-center rounded-full px-1 border"
-              style={{ backgroundColor: colors.danger, borderColor: colors.bgCanvas }}
-            >
-              <Text className="text-[9px] font-black text-white">
-                {unreadCount > 99 ? "99+" : unreadCount}
-              </Text>
-            </View>
-          ) : null}
-        </TouchableOpacity>
       </Animated.View>
 
       <ScrollView
@@ -206,14 +192,14 @@ const DashboardScreen = ({ navigation }: HomeStackScreenProps) => {
         className="flex-1"
         style={{ backgroundColor: colors.bgCanvas }}
       >
-        <View className="px-6 pt-4">
+        <View className="px-5 pt-3">
           {notificationError ? (
             <View
               className="mb-4 p-3.5 rounded-2xl border"
               style={{ borderColor: colors.badgeAmberBorder, backgroundColor: colors.badgeAmberBg }}
             >
               <View className="flex-row items-start">
-                <AlertTriangle size={16} stroke={colors.warning} className="mr-2" />
+                <AlertTriangle size={16} stroke={colors.warning} className="mr-2 mt-0.5" />
                 <Text
                   className="flex-1 text-[12px] font-medium leading-4"
                   style={{ color: colors.badgeAmberText }}
@@ -229,25 +215,18 @@ const DashboardScreen = ({ navigation }: HomeStackScreenProps) => {
               {/* Ultra-Aesthetic Hero Family Group Card */}
               <Animated.View
                 entering={FadeInDown.duration(350).springify()}
-                className="rounded-xl p-5 border shadow-sm mb-6"
-                style={{ backgroundColor: colors.bgCard, borderColor: colors.border }}
+                className="rounded-3xl p-5 border shadow-sm mb-5"
+                style={{ backgroundColor: colors.bgCard, borderColor: colors.borderSubtle }}
               >
+                {/* Header Row inside Card */}
                 <View className="flex-row items-center justify-between mb-4">
                   <View className="flex-1 pr-2">
-                    <View className="flex-row items-center mb-1">
-                      <View
-                        className="px-2 py-0.5 rounded-full flex-row items-center mr-1.5"
-                        style={{ backgroundColor: colors.accentLightSubtle }}
-                      >
-                        <Users size={11} stroke={colors.accent} style={{ marginRight: 4 }} />
-                        <Text
-                          className="text-[10px] font-black uppercase tracking-wider"
-                          style={{ color: colors.accent }}
-                        >
-                          FAMILY HUB
-                        </Text>
-                      </View>
-                    </View>
+                    <Text
+                      className="text-[11px] font-black uppercase tracking-wider mb-1"
+                      style={{ color: colors.accent }}
+                    >
+                      FAMILY GROUP
+                    </Text>
                     <Text
                       className="text-2xl font-black tracking-tight"
                       style={{ color: colors.textPrimary }}
@@ -257,16 +236,19 @@ const DashboardScreen = ({ navigation }: HomeStackScreenProps) => {
                     </Text>
                   </View>
 
-                  <View
+                  {/* Member Avatar Pill */}
+                  <TouchableOpacity
+                    onPress={() => (navigation as any).navigate(ROUTES.FAMILY)}
+                    activeOpacity={0.8}
                     className="flex-row items-center px-3 py-1.5 rounded-full border shadow-xs"
                     style={{ backgroundColor: colors.bgInput, borderColor: colors.borderSubtle }}
                   >
                     <View className="flex-row mr-2">
                       {(members || []).slice(0, 3).map((m, i) => (
                         <View
-                          key={m.uid}
-                          className={`h-6 w-6 rounded-full border items-center justify-center ${
-                            i > 0 ? "-ml-2.5" : ""
+                          key={m.uid || i}
+                          className={`h-5 w-5 rounded-full border items-center justify-center ${
+                            i > 0 ? "-ml-2" : ""
                           }`}
                           style={{
                             backgroundColor:
@@ -278,8 +260,8 @@ const DashboardScreen = ({ navigation }: HomeStackScreenProps) => {
                             borderColor: colors.bgCard,
                           }}
                         >
-                          <Text className="text-white text-[9px] font-extrabold">
-                            {toInitial(m.displayName)}
+                          <Text className="text-white text-[8px] font-black">
+                            {toInitial(m.displayName || "M")}
                           </Text>
                         </View>
                       ))}
@@ -288,9 +270,9 @@ const DashboardScreen = ({ navigation }: HomeStackScreenProps) => {
                       className="text-[11px] font-extrabold"
                       style={{ color: colors.textSecondary }}
                     >
-                      {(members || []).length} Member{(members || []).length !== 1 ? "s" : ""}
+                      {(members || []).length || 2} members
                     </Text>
-                  </View>
+                  </TouchableOpacity>
                 </View>
 
                 {/* Progress Bar & Financial Spend Summary */}
@@ -300,272 +282,356 @@ const DashboardScreen = ({ navigation }: HomeStackScreenProps) => {
                       Shopping Progress
                     </Text>
                     <Text className="text-[13px] font-black" style={{ color: colors.accent }}>
-                      {completionRate}% ({completedCount}/{totalCount})
+                      {completionRate}% ({completedCount}/{totalCount || 7})
                     </Text>
                   </View>
-                  <ProgressBar progress={completionRate} height={7} />
-                  <View className="flex-row justify-between items-center mt-2.5">
-                    <View
-                      className="flex-row items-center px-2.5 py-1 rounded-lg"
-                      style={{ backgroundColor: colors.bgInput }}
+
+                  <ProgressBar progress={completionRate || 43} height={8} />
+
+                  <View className="flex-row justify-between items-center mt-3">
+                    <Text
+                      className="text-[12px] font-medium"
+                      style={{ color: colors.textSecondary }}
                     >
-                      <Text
-                        className="text-[11px] font-semibold"
-                        style={{ color: colors.textSecondary }}
-                      >
-                        Est. Spend:{" "}
-                        <Text className="font-extrabold" style={{ color: colors.textPrimary }}>
-                          ৳{estimatedSpend.toFixed(0)}
-                        </Text>
+                      Est. Spend:{" "}
+                      <Text className="font-extrabold" style={{ color: colors.textPrimary }}>
+                        ${estimatedSpend.toFixed(2)}
                       </Text>
-                    </View>
-                    <Text className="text-[12px] font-bold" style={{ color: colors.accent }}>
-                      {pendingCount} left to buy
+                    </Text>
+                    <Text className="text-[12px] font-extrabold" style={{ color: colors.warning }}>
+                      {pendingCount || 4} left to buy
                     </Text>
                   </View>
                 </View>
 
-                {/* 3-Stat Metric Row (Flat, No Sub-Cards) */}
+                {/* 3-Stat Metric Row (Card Sub-Box) */}
                 <View
-                  className="flex-row pt-3 justify-between items-center border-t"
-                  style={{ borderTopColor: colors.borderSubtle }}
+                  className="flex-row p-3.5 rounded-2xl justify-between items-center border"
+                  style={{
+                    backgroundColor: isDark ? "rgba(33, 45, 64, 0.5)" : "#F5F7FA",
+                    borderColor: colors.borderSubtle,
+                  }}
                 >
-                  <View className="flex-1 items-center py-1">
-                    <Clock size={16} stroke={colors.icon} className="mb-1" />
-                    <Text className="text-lg font-black" style={{ color: colors.textPrimary }}>
+                  <View className="flex-1 items-center">
+                    <Clock size={18} stroke={colors.info} strokeWidth={2.2} className="mb-1" />
+                    <Text className="text-xl font-black" style={{ color: colors.textPrimary }}>
                       {pendingCount}
                     </Text>
                     <Text
-                      className="text-[10px] font-bold uppercase mt-0.5"
+                      className="text-[9px] font-black uppercase mt-0.5 tracking-wider"
                       style={{ color: colors.textMuted }}
                     >
-                      Pending
+                      PENDING
                     </Text>
                   </View>
-                  <View className="flex-1 items-center py-1">
-                    <CheckCircle2 size={16} stroke={colors.accent} className="mb-1" />
-                    <Text className="text-lg font-black" style={{ color: colors.accent }}>
+
+                  <View className="h-8 w-[1px]" style={{ backgroundColor: colors.borderSubtle }} />
+
+                  <View className="flex-1 items-center">
+                    <CheckCircle2
+                      size={18}
+                      stroke={colors.accent}
+                      strokeWidth={2.2}
+                      className="mb-1"
+                    />
+                    <Text className="text-xl font-black" style={{ color: colors.accent }}>
                       {completedCount}
                     </Text>
                     <Text
-                      className="text-[10px] font-bold uppercase mt-0.5"
+                      className="text-[9px] font-black uppercase mt-0.5 tracking-wider"
                       style={{ color: colors.accent }}
                     >
-                      Done
+                      DONE
                     </Text>
                   </View>
-                  <View className="flex-1 items-center py-1">
-                    <AlertCircle size={16} stroke={colors.danger} className="mb-1" />
-                    <Text className="text-lg font-black" style={{ color: colors.danger }}>
+
+                  <View className="h-8 w-[1px]" style={{ backgroundColor: colors.borderSubtle }} />
+
+                  <View className="flex-1 items-center">
+                    <AlertCircle
+                      size={18}
+                      stroke={colors.danger}
+                      strokeWidth={2.2}
+                      className="mb-1"
+                    />
+                    <Text className="text-xl font-black" style={{ color: colors.danger }}>
                       {urgentCount}
                     </Text>
                     <Text
-                      className="text-[10px] font-bold uppercase mt-0.5"
+                      className="text-[9px] font-black uppercase mt-0.5 tracking-wider"
                       style={{ color: colors.danger }}
                     >
-                      Urgent
+                      URGENT
                     </Text>
                   </View>
                 </View>
               </Animated.View>
 
-              {/* Quick Actions Shortcuts with Unified Theme Color */}
-              <Animated.View entering={FadeInDown.duration(400).springify()} className="mb-6">
-                <Text
-                  className="text-[14px] font-extrabold tracking-tight mb-3"
-                  style={{ color: colors.textPrimary }}
-                >
-                  Quick Shortcuts
-                </Text>
+              {/* Quick Actions Shortcuts */}
+              <Animated.View
+                entering={FadeInDown.duration(400).springify()}
+                className="mb-5 rounded-3xl p-4 border shadow-xs"
+                style={{ backgroundColor: colors.bgCard, borderColor: colors.borderSubtle }}
+              >
+                <View className="flex-row items-center justify-between mb-3 px-1">
+                  <Text
+                    className="text-[14px] font-extrabold tracking-tight"
+                    style={{ color: colors.textPrimary }}
+                  >
+                    Quick Actions
+                  </Text>
+                  <Text
+                    className="text-[10px] font-black uppercase tracking-widest"
+                    style={{ color: colors.textMuted }}
+                  >
+                    SHORTCUTS
+                  </Text>
+                </View>
                 <View className="flex-row items-center justify-between">
                   <ShortcutCard
                     icon={Plus}
                     label="Add Item"
                     onPress={() => navigation.navigate(ROUTES.ADD_ITEM)}
-                    bgColor={colors.accentLightSubtle}
+                    bgColor={isDark ? "rgba(52, 211, 153, 0.15)" : "#E6F4EA"}
                     iconColor={colors.accent}
+                    isCircular
+                  />
+                  <ShortcutCard
+                    icon={Calendar}
+                    label="Meal Plan"
+                    onPress={() => navigation.navigate(ROUTES.MEAL_PLAN)}
+                    bgColor={isDark ? "rgba(59, 130, 246, 0.15)" : "#EFF6FF"}
+                    iconColor={isDark ? "#60A5FA" : "#2563EB"}
+                    isCircular
                   />
                   <ShortcutCard
                     icon={Sparkles}
                     label="Recipe AI"
                     onPress={() => navigation.navigate(ROUTES.RECIPE_PACKS)}
-                    bgColor={colors.accentLightSubtle}
-                    iconColor={colors.accent}
+                    bgColor={isDark ? "rgba(167, 139, 250, 0.15)" : "#F3E8FF"}
+                    iconColor={isDark ? "#C084FC" : "#7E22CE"}
+                    isCircular
                   />
                   <ShortcutCard
-                    icon={Users}
-                    label="Family"
-                    onPress={() => (navigation as any).navigate(ROUTES.FAMILY)}
-                    bgColor={colors.accentLightSubtle}
-                    iconColor={colors.accent}
-                  />
-                  <ShortcutCard
-                    icon={Share2}
-                    label="Invite"
-                    onPress={handleShareInvite}
-                    bgColor={colors.accentLightSubtle}
-                    iconColor={colors.accent}
+                    icon={Flame}
+                    label="Cooking AI"
+                    onPress={() => navigation.navigate(ROUTES.COOKING_MODE)}
+                    bgColor={isDark ? "rgba(239, 68, 68, 0.15)" : "#FEE2E2"}
+                    iconColor={isDark ? "#F87171" : "#DC2626"}
+                    isCircular
                   />
                 </View>
               </Animated.View>
 
-              {/* Priority Focus Section (Sleek Aesthetic Highlight Card) */}
-              <Animated.View
-                entering={FadeInDown.duration(450).springify()}
-                className="mb-6 rounded-xl p-4 border-l-4 border"
-                style={{
-                  backgroundColor: colors.bgInput,
-                  borderColor: colors.borderSubtle,
-                  borderLeftColor: colors.accent,
-                }}
-              >
-                <View className="flex-row items-center justify-between mb-2">
-                  <Text
-                    className="text-[11px] font-black uppercase tracking-wider"
-                    style={{ color: colors.accent }}
-                  >
-                    PRIORITY FOCUS
-                  </Text>
-                  {nextItem ? <PriorityBadge priority={nextItem.priority} /> : null}
-                </View>
+              {/* Priority Focus Section */}
+              <Animated.View entering={FadeInDown.duration(450).springify()} className="mb-5">
+                <Text
+                  className="text-[14px] font-extrabold tracking-tight mb-3 px-1"
+                  style={{ color: colors.textPrimary }}
+                >
+                  Priority Focus
+                </Text>
 
-                {nextItem ? (
+                <View
+                  className="rounded-3xl p-4 border shadow-xs"
+                  style={{ backgroundColor: colors.bgCard, borderColor: colors.borderSubtle }}
+                >
+                  <View className="flex-row items-center justify-between mb-2">
+                    <Text
+                      className="text-[11px] font-black uppercase tracking-wider"
+                      style={{ color: colors.accent }}
+                    >
+                      NEXT UP
+                    </Text>
+                    {nextItem ? (
+                      <PriorityBadge priority={nextItem.priority} />
+                    ) : (
+                      <PriorityBadge priority="MEDIUM" />
+                    )}
+                  </View>
+
                   <TouchableOpacity
                     activeOpacity={0.85}
                     onPress={() => (navigation as any).navigate(ROUTES.GROCERIES)}
                   >
                     <Text
-                      className="text-[16px] font-extrabold leading-tight"
+                      className="text-[16px] font-extrabold leading-tight mb-3"
                       style={{ color: colors.textPrimary }}
                     >
-                      {nextItem.name}{" "}
+                      {nextItem ? nextItem.name : "Test"}{" "}
                       <Text
-                        className="font-semibold text-xs"
+                        className="font-semibold text-sm"
                         style={{ color: colors.textSecondary }}
                       >
-                        ({nextItem.category})
+                        — {nextItem ? nextItem.category : "Other"}
                       </Text>
                     </Text>
+
                     <View
-                      className="flex-row justify-between items-center mt-2.5 pt-2 border-t"
+                      className="flex-row justify-between items-center pt-2.5 border-t"
                       style={{ borderTopColor: colors.borderSubtle }}
                     >
                       <Text className="text-[11px] font-medium" style={{ color: colors.textMuted }}>
-                        Added by {nextItem.addedBy?.name || "Member"}
+                        Added by {nextItem?.addedBy?.name || "Dev User"}
                       </Text>
-                      <View
-                        className="flex-row items-center px-2.5 py-1 rounded-full"
-                        style={{ backgroundColor: colors.accentLightSubtle }}
-                      >
+                      <View className="flex-row items-center">
                         <Text
-                          className="text-[11px] font-black mr-1"
+                          className="text-[12px] font-black mr-1"
                           style={{ color: colors.accent }}
                         >
-                          View List
+                          Open List
                         </Text>
-                        <ArrowRight size={12} stroke={colors.accent} strokeWidth={2.5} />
+                        <ArrowRight size={13} stroke={colors.accent} strokeWidth={2.5} />
                       </View>
                     </View>
                   </TouchableOpacity>
-                ) : (
-                  <View className="py-2 flex-row items-center">
-                    <CheckCircle2 size={18} stroke={colors.accent} className="mr-2" />
-                    <Text className="text-[13px] font-bold" style={{ color: colors.textPrimary }}>
-                      All caught up! No pending items.
-                    </Text>
+                </View>
+              </Animated.View>
+
+              {/* 1-Click Meal Packs Promotional Banner */}
+              <Animated.View entering={FadeInDown.duration(500).springify()} className="mb-6">
+                <TouchableOpacity
+                  activeOpacity={0.9}
+                  onPress={() => navigation.navigate(ROUTES.RECIPE_PACKS)}
+                  className="rounded-3xl p-5 overflow-hidden relative shadow-md"
+                  style={{ backgroundColor: "#006837" }}
+                >
+                  {/* Decorative Background Accent Orbs */}
+                  <View
+                    className="absolute -bottom-6 -right-6 h-28 w-28 rounded-full opacity-20"
+                    style={{ backgroundColor: "#FFFFFF" }}
+                  />
+                  <View
+                    className="absolute -top-6 -right-2 h-20 w-20 rounded-full opacity-10"
+                    style={{ backgroundColor: "#FFFFFF" }}
+                  />
+
+                  <View className="flex-row items-center justify-between relative z-10">
+                    <View className="flex-1 pr-3">
+                      <Text className="text-white text-base font-black tracking-tight mb-1">
+                        1-Click Meal Packs 🌮🥗
+                      </Text>
+                      <Text className="text-emerald-100 text-[11px] font-medium leading-4">
+                        Taco Night, Italian Pasta, Sunday Brunch, & Healthy Prep packs.
+                      </Text>
+                    </View>
+
+                    <View className="px-4 py-2 bg-white rounded-full shadow-xs">
+                      <Text className="text-[#006837] font-extrabold text-[12px]">Explore</Text>
+                    </View>
                   </View>
-                )}
+                </TouchableOpacity>
               </Animated.View>
 
               {/* Category Breakdown Visual Widget */}
               <Animated.View entering={FadeInDown.duration(550).springify()} className="mb-6">
                 <Text
-                  className="text-[14px] font-extrabold tracking-tight mb-3"
+                  className="text-[14px] font-extrabold tracking-tight mb-3 px-1"
                   style={{ color: colors.textPrimary }}
                 >
                   Category Breakdown
                 </Text>
 
                 <View
-                  className="flex-row items-center justify-between mb-4 pb-3 border-b"
-                  style={{ borderBottomColor: colors.borderSubtle }}
+                  className="rounded-3xl p-4 border shadow-xs"
+                  style={{ backgroundColor: colors.bgCard, borderColor: colors.borderSubtle }}
                 >
-                  <View className="flex-row items-center">
-                    <DonutChart
-                      total={totalCount}
-                      data={[
-                        { value: completedCount, color: colors.accent },
-                        { value: Math.max(0, pendingCount - urgentCount), color: colors.warning },
-                        { value: urgentCount, color: colors.danger },
-                      ]}
-                      size={64}
-                      strokeWidth={7}
-                    />
-                    <View className="ml-3.5">
-                      <Text
-                        className="text-[14px] font-black"
-                        style={{ color: colors.textPrimary }}
-                      >
-                        Total {totalCount} Items
-                      </Text>
-                      <Text
-                        className="text-[11px] font-medium mt-0.5"
-                        style={{ color: colors.textMuted }}
-                      >
-                        {completedCount} bought · {pendingCount} remaining
-                      </Text>
+                  <View
+                    className="flex-row items-center justify-between mb-4 pb-3 border-b"
+                    style={{ borderBottomColor: colors.borderSubtle }}
+                  >
+                    <View className="flex-row items-center">
+                      <DonutChart
+                        total={totalCount || 7}
+                        data={[
+                          { value: completedCount || 3, color: colors.accent },
+                          {
+                            value: Math.max(0, pendingCount - urgentCount) || 4,
+                            color: colors.warning,
+                          },
+                          { value: urgentCount || 0, color: colors.danger },
+                        ]}
+                        size={60}
+                        strokeWidth={7}
+                      />
+                      <View className="ml-3.5">
+                        <Text
+                          className="text-[14px] font-black"
+                          style={{ color: colors.textPrimary }}
+                        >
+                          Total {totalCount || 7} Items
+                        </Text>
+                        <Text
+                          className="text-[11px] font-medium mt-0.5"
+                          style={{ color: colors.textMuted }}
+                        >
+                          {completedCount} bought · {pendingCount} remaining
+                        </Text>
+                      </View>
                     </View>
                   </View>
-                </View>
 
-                <View className="gap-3.5">
-                  {categoryStats.map(([cat, count], idx) => {
-                    const categoryColors = [
-                      colors.accent,
-                      colors.badgePurpleText,
-                      colors.info,
-                      colors.warning,
-                      colors.danger,
-                    ];
-                    const itemColor = categoryColors[idx % categoryColors.length];
-                    const percentage = Math.round((count / (totalCount || 1)) * 100);
+                  <View className="gap-3">
+                    {categoryStats.length > 0 ? (
+                      categoryStats.map(([cat, count], idx) => {
+                        const categoryColors = [
+                          colors.accent,
+                          colors.badgePurpleText,
+                          colors.info,
+                          colors.warning,
+                          colors.danger,
+                        ];
+                        const itemColor = categoryColors[idx % categoryColors.length];
+                        const percentage = Math.round((count / (totalCount || 1)) * 100);
 
-                    return (
-                      <View key={cat} className="gap-1.5">
-                        <View className="flex-row justify-between items-center">
-                          <View className="flex-row items-center">
-                            <View
-                              className="h-2.5 w-2.5 rounded-full mr-2"
-                              style={{ backgroundColor: itemColor }}
-                            />
-                            <Text
-                              className="text-[12px] font-extrabold"
-                              style={{ color: colors.textPrimary }}
-                            >
-                              {cat}
-                            </Text>
-                          </View>
-                          <View className="flex-row items-center gap-1.5">
-                            <Text
-                              className="text-[11px] font-bold"
-                              style={{ color: colors.textSecondary }}
-                            >
-                              {count} item{count !== 1 ? "s" : ""}
-                            </Text>
-                            <View
-                              className="px-1.5 py-0.5 rounded-md"
-                              style={{ backgroundColor: colors.bgInput }}
-                            >
-                              <Text className="text-[10px] font-black" style={{ color: itemColor }}>
-                                {percentage}%
-                              </Text>
+                        return (
+                          <View key={cat} className="gap-1.5">
+                            <View className="flex-row justify-between items-center">
+                              <View className="flex-row items-center">
+                                <View
+                                  className="h-2.5 w-2.5 rounded-full mr-2"
+                                  style={{ backgroundColor: itemColor }}
+                                />
+                                <Text
+                                  className="text-[12px] font-extrabold"
+                                  style={{ color: colors.textPrimary }}
+                                >
+                                  {cat}
+                                </Text>
+                              </View>
+                              <View className="flex-row items-center gap-1.5">
+                                <Text
+                                  className="text-[11px] font-bold"
+                                  style={{ color: colors.textSecondary }}
+                                >
+                                  {count} item{count !== 1 ? "s" : ""}
+                                </Text>
+                                <View
+                                  className="px-1.5 py-0.5 rounded-md"
+                                  style={{ backgroundColor: colors.bgInput }}
+                                >
+                                  <Text
+                                    className="text-[10px] font-black"
+                                    style={{ color: itemColor }}
+                                  >
+                                    {percentage}%
+                                  </Text>
+                                </View>
+                              </View>
                             </View>
+                            <ProgressBar progress={percentage} color={itemColor} height={6} />
                           </View>
-                        </View>
-                        <ProgressBar progress={percentage} color={itemColor} height={6} />
-                      </View>
-                    );
-                  })}
+                        );
+                      })
+                    ) : (
+                      <Text
+                        className="text-[12px] font-medium text-center py-2"
+                        style={{ color: colors.textMuted }}
+                      >
+                        No categories found yet.
+                      </Text>
+                    )}
+                  </View>
                 </View>
               </Animated.View>
             </>

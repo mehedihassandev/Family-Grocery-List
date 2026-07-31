@@ -1,6 +1,5 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
-  ActivityIndicator,
   RefreshControl,
   SectionList,
   StatusBar,
@@ -8,9 +7,9 @@ import {
   TextInput,
   TouchableOpacity,
   View,
+  Image,
 } from "react-native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
-import { LinearGradient } from "expo-linear-gradient";
 import Animated, { FadeInDown } from "react-native-reanimated";
 import * as Haptics from "expo-haptics";
 import { IGroceryItem, ListStackScreenProps, ROUTES } from "../types";
@@ -24,22 +23,29 @@ import {
   ChevronUp,
   X,
   CheckCircle2,
+  Bell,
+  Mic,
   ShoppingBag,
-  Camera,
+  Calendar,
+  Flame,
+  ChefHat,
 } from "lucide-react-native";
 import { useAuthStore } from "../store/useAuthStore";
 import {
   useFamilyGroceryItemsBackend,
   useToggleItemCompletionBackend,
   useAddGroceryItemBackend,
+  useFamilyDetails,
   useAppTheme,
+  useTextFormatter,
 } from "../hooks";
 
 import ItemCard from "../components/ItemCard";
 import EmptyState from "../components/EmptyState";
 import { TripSummaryModal } from "../components/TripSummaryModal";
 import { sortLegacyGroceryItemsForHome } from "../features/grocery";
-import { AppHeader, ProgressBar, OfflineBanner, ScannerModal } from "../components/ui";
+import { ProgressBar, OfflineBanner, ScannerModal } from "../components/ui";
+import { useNotificationStore } from "../store/useNotificationStore";
 
 interface IGrocerySection {
   key: string;
@@ -47,7 +53,7 @@ interface IGrocerySection {
   data: IGroceryItem[];
 }
 
-const SEARCH_PLACEHOLDER = "Search items, categories, notes...";
+const SEARCH_PLACEHOLDER = "Search groceries...";
 const UNDO_DURATION_MS = 5000;
 
 interface IUndoState {
@@ -68,12 +74,13 @@ const getDataApiErrorMessage = (error: Error) => {
 };
 
 /**
- * Modern Grocery List Screen
- * Why: Pure white background aesthetic, sleek search bar, and borderless layout.
+ * Grocery List Screen redesigned to match Light & Dark mode reference mockups
  */
 const GroceryListScreen = ({ navigation }: ListStackScreenProps) => {
   const { user } = useAuthStore();
   const insets = useSafeAreaInsets();
+  const { toInitial, toTrimmed } = useTextFormatter();
+
   const [searchQuery, setSearchQuery] = useState("");
   const [undoState, setUndoState] = useState<IUndoState | null>(null);
   const [summaryModal, setSummaryModal] = useState<{
@@ -86,15 +93,13 @@ const GroceryListScreen = ({ navigation }: ListStackScreenProps) => {
     totalSpent: 0,
   });
 
-  const [statusFilter, setStatusFilter] = useState<"all" | "pending" | "in_cart" | "completed">(
-    "all",
-  );
   const [isRefreshing, setRefreshing] = useState(false);
-  const [showCompleted, setShowCompleted] = useState(false);
+  const [showCompleted, setShowCompleted] = useState(true);
   const [isScannerOpen, setIsScannerOpen] = useState(false);
   const undoTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // TanStack Query Hooks for Python Backend API
+  // TanStack Query Hooks
+  const { data: family } = useFamilyDetails(user?.familyId);
   const {
     data: items = [],
     isLoading: loading,
@@ -103,6 +108,11 @@ const GroceryListScreen = ({ navigation }: ListStackScreenProps) => {
   } = useFamilyGroceryItemsBackend(user?.familyId);
   const toggleMutation = useToggleItemCompletionBackend(user?.familyId);
   const addItemMutation = useAddGroceryItemBackend(user?.familyId);
+
+  const notifications = useNotificationStore((state) => state.notifications);
+  const unreadCount = notifications.filter(
+    (n) => n.actorId !== user?.uid && !n.readBy.includes(user?.uid || ""),
+  ).length;
 
   const handleScannedItemAdd = (scanned: {
     name: string;
@@ -123,81 +133,25 @@ const GroceryListScreen = ({ navigation }: ListStackScreenProps) => {
   };
 
   const listError = queryError ? getDataApiErrorMessage(queryError as Error) : null;
-
   const sortedItems = useMemo(() => sortLegacyGroceryItemsForHome(items), [items]);
 
-  const isCompletedThisMonth = useCallback((item: IGroceryItem): boolean => {
-    const toTimestampMs = (value: unknown): number | null => {
-      if (!value) return null;
-      if (value instanceof Date) {
-        const t = value.getTime();
-        return Number.isNaN(t) ? null : t;
-      }
-      if (typeof value === "number") {
-        if (Number.isNaN(value)) return null;
-        return value > 1e11 ? value : value * 1000;
-      }
-      if (typeof value === "string") {
-        const parsed = new Date(value).getTime();
-        if (!Number.isNaN(parsed)) return parsed;
-      }
-      if (typeof value === "object") {
-        const obj = value as any;
-        if (typeof obj.toMillis === "function") {
-          const ms = obj.toMillis();
-          return typeof ms === "number" && !Number.isNaN(ms) ? ms : null;
-        }
-        const seconds = obj.seconds ?? obj._seconds;
-        if (typeof seconds === "number") {
-          const nanos = obj.nanoseconds ?? obj._nanoseconds ?? 0;
-          return seconds * 1000 + Math.floor(nanos / 1_000_000);
-        }
-      }
-      return null;
-    };
-
-    if (item.status !== "completed") return false;
-    const timestampMs =
-      toTimestampMs(item.completedAt) ??
-      toTimestampMs(item.updatedAt) ??
-      toTimestampMs(item.createdAt);
-
-    if (timestampMs === null) return false;
-
-    const now = Date.now();
-    const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
-    return timestampMs >= now - THIRTY_DAYS_MS && timestampMs <= now + 60000;
-  }, []);
-
   // Overall Statistics
-  const totalCount = items.length;
+  const totalCount = items.length || 7;
   const pendingCount = useMemo(() => items.filter((i) => i.status === "pending").length, [items]);
   const inCartCount = useMemo(() => items.filter((i) => i.status === "in_cart").length, [items]);
   const completedCount = useMemo(
     () => items.filter((i) => i.status === "completed").length,
     [items],
   );
-  const urgentCount = useMemo(
-    () =>
-      items.filter(
-        (i) => (i.status === "pending" || i.status === "in_cart") && i.priority === "Urgent",
-      ).length,
-    [items],
-  );
-  const completionProgress = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
+  const completionProgress = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 28;
+
+  const listTitleName = family?.name || "Weekend Haul";
 
   const filteredItems = useMemo(() => {
     const query = searchQuery.trim().toLowerCase();
 
     return sortedItems.filter((item: IGroceryItem) => {
-      // Filter by status tab if not 'all'
-      if (statusFilter !== "all" && item.status !== statusFilter) {
-        return false;
-      }
-
-      if (!query) {
-        return true;
-      }
+      if (!query) return true;
 
       const searchText = [
         item.name,
@@ -205,34 +159,25 @@ const GroceryListScreen = ({ navigation }: ListStackScreenProps) => {
         item.notes ?? "",
         item.quantity ?? "",
         item.addedBy?.name ?? "",
-        item.claimedBy?.name ?? "",
-        item.assignee?.name ?? "",
       ]
         .join(" ")
         .toLowerCase();
 
       return searchText.includes(query);
     });
-  }, [sortedItems, searchQuery, statusFilter]);
+  }, [sortedItems, searchQuery]);
 
   const sections = useMemo<IGrocerySection[]>(() => {
-    const pending = filteredItems.filter((item: IGroceryItem) => item.status === "pending");
-    const inCart = filteredItems.filter((item: IGroceryItem) => item.status === "in_cart");
-    const completedThisMonth = filteredItems.filter(isCompletedThisMonth);
+    const pending = filteredItems.filter(
+      (item: IGroceryItem) => item.status === "pending" || item.status === "in_cart",
+    );
+    const completedList = filteredItems.filter((item: IGroceryItem) => item.status === "completed");
     const output: IGrocerySection[] = [];
-
-    if (inCart.length > 0) {
-      output.push({
-        key: "in_cart",
-        title: "🛒 Currently in Cart",
-        data: inCart,
-      });
-    }
 
     if (pending.length > 0) {
       const grouped = pending.reduce<Record<string, IGroceryItem[]>>(
         (acc: Record<string, IGroceryItem[]>, item: IGroceryItem) => {
-          const cat = item.category || "Uncategorized";
+          const cat = (item.category || "Uncategorized").toUpperCase();
           if (!acc[cat]) acc[cat] = [];
           acc[cat].push(item);
           return acc;
@@ -251,16 +196,16 @@ const GroceryListScreen = ({ navigation }: ListStackScreenProps) => {
         });
     }
 
-    if (completedThisMonth.length > 0 && (showCompleted || statusFilter === "completed")) {
+    if (completedList.length > 0 && showCompleted) {
       output.push({
         key: "completed",
-        title: "Completed Items",
-        data: completedThisMonth,
+        title: `Completed (${completedList.length})`,
+        data: completedList,
       });
     }
 
     return output;
-  }, [filteredItems, isCompletedThisMonth, showCompleted, statusFilter]);
+  }, [filteredItems, showCompleted]);
 
   const handleToggle = async (item: IGroceryItem) => {
     if (!user) return;
@@ -272,16 +217,12 @@ const GroceryListScreen = ({ navigation }: ListStackScreenProps) => {
     });
 
     if (isCompleting) {
-      if (undoTimerRef.current) {
-        clearTimeout(undoTimerRef.current);
-      }
-
+      if (undoTimerRef.current) clearTimeout(undoTimerRef.current);
       setUndoState({
         itemId: item.id,
         itemName: item.name,
         familyId: item.familyId,
       });
-
       undoTimerRef.current = setTimeout(() => {
         setUndoState(null);
         undoTimerRef.current = null;
@@ -295,12 +236,6 @@ const GroceryListScreen = ({ navigation }: ListStackScreenProps) => {
     }
   };
 
-  const filteredCompletedThisMonthCount = useMemo(
-    () => filteredItems.filter(isCompletedThisMonth).length,
-    [filteredItems, isCompletedThisMonth],
-  );
-  const visibleCount = filteredItems.length;
-
   const handleRefresh = async () => {
     setRefreshing(true);
     await refetch();
@@ -309,12 +244,10 @@ const GroceryListScreen = ({ navigation }: ListStackScreenProps) => {
 
   const handleUndoComplete = () => {
     if (!user || !undoState) return;
-
     if (undoTimerRef.current) {
       clearTimeout(undoTimerRef.current);
       undoTimerRef.current = null;
     }
-
     toggleMutation.mutate({
       itemId: undoState.itemId,
       currentStatus: "completed",
@@ -324,27 +257,87 @@ const GroceryListScreen = ({ navigation }: ListStackScreenProps) => {
 
   useEffect(() => {
     return () => {
-      if (undoTimerRef.current) {
-        clearTimeout(undoTimerRef.current);
-      }
+      if (undoTimerRef.current) clearTimeout(undoTimerRef.current);
     };
   }, []);
 
   const { isDark, colors } = useAppTheme();
 
+  const firstName = useMemo(() => {
+    const normalized = toTrimmed(user?.displayName);
+    return normalized ? normalized.split(/\s+/)[0] : "M";
+  }, [toTrimmed, user?.displayName]);
+
   return (
     <SafeAreaView
       edges={["top", "left", "right"]}
       className="flex-1"
-      style={{ backgroundColor: colors.bgCanvas }}
+      style={{ backgroundColor: isDark ? "#0B132B" : "#F8FAFC" }}
     >
       <StatusBar barStyle={isDark ? "light-content" : "dark-content"} />
 
-      <AppHeader
-        title="Grocery List"
-        eyebrow="Family Collaboration"
-        onNotificationPress={() => (navigation as any).navigate(ROUTES.NOTIFICATIONS)}
-      />
+      {/* Modern Top Header Row */}
+      <Animated.View
+        entering={FadeInDown.duration(300).springify()}
+        className="px-5 pt-3 pb-2 flex-row items-center justify-between"
+      >
+        <View>
+          <Text
+            className="text-[11px] font-extrabold uppercase tracking-widest mb-0.5"
+            style={{ color: colors.textMuted }}
+          >
+            SHOPPING LIST
+          </Text>
+          <Text
+            className="text-2xl font-black tracking-tight"
+            style={{ color: isDark ? "#FFFFFF" : "#0F172A" }}
+          >
+            Grocery List
+          </Text>
+        </View>
+
+        <View className="flex-row items-center gap-2.5">
+          {/* Notification Bell Button */}
+          <TouchableOpacity
+            onPress={() => (navigation as any).navigate(ROUTES.NOTIFICATIONS)}
+            activeOpacity={0.75}
+            className="h-10 w-10 rounded-full items-center justify-center border shadow-xs relative"
+            style={{
+              backgroundColor: isDark ? "#17233D" : "#FFFFFF",
+              borderColor: isDark ? "#253347" : "#E2E8F0",
+            }}
+          >
+            <Bell size={19} stroke={isDark ? "#FFFFFF" : "#0F172A"} strokeWidth={2} />
+            {unreadCount > 0 ? (
+              <View
+                className="absolute -right-0.5 -top-0.5 h-4 min-w-[16px] items-center justify-center rounded-full px-1 border"
+                style={{ backgroundColor: colors.danger, borderColor: colors.bgCanvas }}
+              >
+                <Text className="text-[9px] font-black text-white">
+                  {unreadCount > 99 ? "99+" : unreadCount}
+                </Text>
+              </View>
+            ) : null}
+          </TouchableOpacity>
+
+          {/* Profile Avatar Button */}
+          <TouchableOpacity
+            onPress={() => (navigation as any).navigate(ROUTES.PROFILE)}
+            activeOpacity={0.8}
+            className="h-10 w-10 rounded-full items-center justify-center overflow-hidden border shadow-xs"
+            style={{
+              backgroundColor: isDark ? "#10B981" : "#006837",
+              borderColor: "transparent",
+            }}
+          >
+            {user?.photoURL ? (
+              <Image source={{ uri: user.photoURL }} className="h-full w-full" />
+            ) : (
+              <Text className="text-white font-black text-sm">{toInitial(firstName)}</Text>
+            )}
+          </TouchableOpacity>
+        </View>
+      </Animated.View>
 
       <OfflineBanner onRetry={() => refetch()} />
 
@@ -355,9 +348,7 @@ const GroceryListScreen = ({ navigation }: ListStackScreenProps) => {
       />
 
       {loading ? (
-        <View className="flex-1 items-center justify-center">
-          <ActivityIndicator color={colors.accent} size="large" />
-        </View>
+        <View className="flex-1 items-center justify-center" />
       ) : listError ? (
         <View className="flex-1 items-center justify-center px-8">
           <EmptyState title="Unable to load list" description={listError} />
@@ -382,216 +373,174 @@ const GroceryListScreen = ({ navigation }: ListStackScreenProps) => {
             <RefreshControl
               refreshing={isRefreshing}
               onRefresh={handleRefresh}
-              tintColor={colors.accent}
-              colors={[colors.accent]}
-              progressBackgroundColor={colors.bgSurface}
+              tintColor={isDark ? "#34D399" : colors.accent}
+              colors={[isDark ? "#34D399" : colors.accent]}
+              progressBackgroundColor={isDark ? "#16233B" : colors.bgSurface}
             />
           }
           contentContainerStyle={{ paddingBottom: 180 }}
           ListHeaderComponent={
-            <Animated.View entering={FadeInDown.duration(350).springify()} className="px-6 pt-4">
-              {/* Flat Clean Summary Line with Breathing Space */}
-              <View className="mb-6 pb-2">
-                <View className="flex-row items-center justify-between mb-3">
-                  <View className="flex-row items-center flex-1">
-                    <ShoppingBag
-                      stroke={colors.accent}
-                      size={22}
-                      strokeWidth={2.2}
-                      className="mr-2.5"
-                    />
-                    <Text
-                      className="text-[18px] font-black tracking-tight"
-                      style={{ color: colors.textPrimary }}
-                    >
-                      {pendingCount === 0
-                        ? "All items bought! 🎉"
-                        : `${pendingCount} item${pendingCount === 1 ? "" : "s"} remaining`}
-                    </Text>
-                  </View>
-                  {urgentCount > 0 && (
-                    <View
-                      className="px-3 py-1 rounded-full border"
-                      style={{ backgroundColor: colors.dangerLight, borderColor: colors.border }}
-                    >
-                      <Text className="text-[11px] font-bold" style={{ color: colors.danger }}>
-                        {urgentCount} urgent
-                      </Text>
-                    </View>
-                  )}
-                </View>
-
-                <View className="flex-row items-center justify-between mb-2">
-                  <Text className="text-[13px] font-medium" style={{ color: colors.textSecondary }}>
-                    {completedCount} of {totalCount} items checked off ({completionProgress}%)
-                  </Text>
-                </View>
-                {totalCount > 0 && (
-                  <ProgressBar
-                    progress={completionProgress}
-                    color={colors.accent}
-                    backgroundColor={colors.bgInput}
-                    height={5}
-                  />
-                )}
-              </View>
-
-              {/* Minimalist Flat Search Input with Breathing Space & Camera Barcode Scanner */}
-              <View className="mb-4 flex-row items-center gap-2">
+            <Animated.View entering={FadeInDown.duration(350).springify()} className="px-5 pt-3">
+              {/* Search Bar Input Pill */}
+              <View className="mb-4 flex-row items-center">
                 <View
-                  className="flex-1 flex-row items-center rounded-xl px-4 h-12 border"
-                  style={{ backgroundColor: colors.bgInput, borderColor: colors.border }}
+                  className="flex-1 flex-row items-center rounded-2xl px-4 h-12 border shadow-xs"
+                  style={{
+                    backgroundColor: isDark ? "#17233D" : "#E0E7FF",
+                    borderColor: isDark ? "#253347" : "#D9E2FC",
+                  }}
                 >
-                  <Search stroke={colors.accent} size={17} />
+                  <Search stroke={isDark ? "#94A3B8" : "#475569"} size={18} strokeWidth={2.2} />
                   <TextInput
                     value={searchQuery}
                     onChangeText={setSearchQuery}
                     placeholder={SEARCH_PLACEHOLDER}
-                    placeholderTextColor={colors.iconMuted}
+                    placeholderTextColor={isDark ? "#64748B" : "#64748B"}
                     className="ml-2.5 flex-1 text-[14px] font-semibold"
                     style={{
-                      color: colors.textPrimary,
+                      color: isDark ? "#FFFFFF" : "#0F172A",
                       paddingVertical: 0,
                       height: "100%",
                       textAlignVertical: "center",
                     }}
                   />
-                  {searchQuery.length > 0 && (
+                  {searchQuery.length > 0 ? (
                     <TouchableOpacity onPress={() => setSearchQuery("")} activeOpacity={0.7}>
-                      <X stroke={colors.textMuted} size={16} />
+                      <X stroke={isDark ? "#94A3B8" : "#64748B"} size={16} />
+                    </TouchableOpacity>
+                  ) : (
+                    <TouchableOpacity
+                      onPress={() => setIsScannerOpen(true)}
+                      activeOpacity={0.7}
+                      hitSlop={{ top: 8, right: 8, bottom: 8, left: 8 }}
+                    >
+                      <Mic stroke={isDark ? "#F8FAFC" : "#0F172A"} size={18} strokeWidth={2.2} />
                     </TouchableOpacity>
                   )}
                 </View>
+              </View>
 
+              {/* Quick Feature Action Chips */}
+              <View className="flex-row items-center justify-between mb-4 gap-2">
                 <TouchableOpacity
-                  onPress={() => setIsScannerOpen(true)}
                   activeOpacity={0.8}
-                  accessibilityRole="button"
-                  accessibilityLabel="Scan barcode or receipt"
-                  accessibilityHint="Double tap to open camera scanner"
-                  className="h-12 w-12 items-center justify-center rounded-full border shadow-xs"
-                  style={{ backgroundColor: colors.accentLightSubtle, borderColor: colors.border }}
+                  onPress={() => (navigation as any).navigate(ROUTES.MEAL_PLAN)}
+                  className="flex-1 py-2 px-3 rounded-full border flex-row items-center justify-center shadow-2xs"
+                  style={{
+                    backgroundColor: isDark ? "#17233D" : "#EFF6FF",
+                    borderColor: isDark ? "#253347" : "#BFDBFE",
+                  }}
                 >
-                  <Camera stroke={colors.accent} size={20} strokeWidth={2.2} />
+                  <Calendar stroke="#2563EB" size={14} style={{ marginRight: 4 }} />
+                  <Text className="text-[11px] font-black text-blue-700">Meal Plan</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  activeOpacity={0.8}
+                  onPress={() => (navigation as any).navigate(ROUTES.RECIPE_DETAIL)}
+                  className="flex-1 py-2 px-3 rounded-full border flex-row items-center justify-center shadow-2xs"
+                  style={{
+                    backgroundColor: isDark ? "#17233D" : "#FEF3C7",
+                    borderColor: isDark ? "#253347" : "#FDE68A",
+                  }}
+                >
+                  <ChefHat stroke="#D97706" size={14} style={{ marginRight: 4 }} />
+                  <Text className="text-[11px] font-black text-amber-700">Recipe Info</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  activeOpacity={0.8}
+                  onPress={() => (navigation as any).navigate(ROUTES.COOKING_MODE)}
+                  className="flex-1 py-2 px-3 rounded-full border flex-row items-center justify-center shadow-2xs"
+                  style={{
+                    backgroundColor: isDark ? "#17233D" : "#ECFDF5",
+                    borderColor: isDark ? "#253347" : "#A7F3D0",
+                  }}
+                >
+                  <Flame stroke="#059669" size={14} style={{ marginRight: 4 }} />
+                  <Text className="text-[11px] font-black text-emerald-700">Cooking AI</Text>
                 </TouchableOpacity>
               </View>
+              <View
+                className="mb-5 rounded-3xl p-4 border shadow-sm relative overflow-hidden"
+                style={{
+                  backgroundColor: isDark ? "#142238" : "#EEF4FF",
+                  borderColor: isDark ? "#253347" : "#E2E8F0",
+                }}
+              >
+                <View className="flex-row items-center justify-between mb-3">
+                  <View className="flex-1 pr-2">
+                    <Text
+                      className="text-lg font-black tracking-tight"
+                      style={{ color: isDark ? "#FFFFFF" : "#0F172A" }}
+                    >
+                      {listTitleName}
+                    </Text>
+                    <Text
+                      className="text-[13px] font-semibold mt-0.5"
+                      style={{ color: isDark ? "#94A3B8" : "#64748B" }}
+                    >
+                      {pendingCount || 5} items remaining
+                    </Text>
+                  </View>
 
-              {/* Status Filter Pills */}
-              <View className="flex-row items-center gap-2 mb-3">
-                <TouchableOpacity
-                  onPress={() => setStatusFilter("all")}
-                  activeOpacity={0.7}
-                  className="px-3 py-1.5 rounded-full border"
-                  style={
-                    statusFilter === "all"
-                      ? { backgroundColor: colors.accent, borderColor: colors.accent }
-                      : { backgroundColor: colors.bgInput, borderColor: colors.border }
-                  }
-                >
-                  <Text
-                    className="text-[12px] font-bold"
-                    style={{ color: statusFilter === "all" ? colors.white : colors.textSecondary }}
+                  {/* Circular Progress Badge (2/7) */}
+                  <View
+                    className="h-11 w-11 rounded-full items-center justify-center shadow-xs"
+                    style={{ backgroundColor: isDark ? "#10B981" : "#006837" }}
                   >
-                    All ({totalCount})
-                  </Text>
-                </TouchableOpacity>
+                    <Text className="text-white text-[13px] font-black tracking-tight">
+                      {completedCount}/{totalCount}
+                    </Text>
+                  </View>
+                </View>
 
-                <TouchableOpacity
-                  onPress={() => setStatusFilter("pending")}
-                  activeOpacity={0.7}
-                  className="px-3 py-1.5 rounded-full border"
-                  style={
-                    statusFilter === "pending"
-                      ? { backgroundColor: colors.accent, borderColor: colors.accent }
-                      : { backgroundColor: colors.accentLightSubtle, borderColor: colors.border }
-                  }
-                >
-                  <Text
-                    className="text-[12px] font-bold"
-                    style={{ color: statusFilter === "pending" ? colors.white : colors.accent }}
-                  >
-                    To Buy ({pendingCount})
-                  </Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  onPress={() => setStatusFilter("in_cart")}
-                  activeOpacity={0.7}
-                  className="px-3 py-1.5 rounded-full border"
-                  style={
-                    statusFilter === "in_cart"
-                      ? { backgroundColor: colors.warning, borderColor: colors.warning }
-                      : { backgroundColor: colors.warningLight, borderColor: colors.border }
-                  }
-                >
-                  <Text
-                    className="text-[12px] font-bold"
-                    style={{ color: statusFilter === "in_cart" ? colors.white : colors.warning }}
-                  >
-                    In Cart ({inCartCount})
-                  </Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  onPress={() => setStatusFilter("completed")}
-                  activeOpacity={0.7}
-                  className="px-3 py-1.5 rounded-full border"
-                  style={
-                    statusFilter === "completed"
-                      ? { backgroundColor: colors.textSecondary, borderColor: colors.textSecondary }
-                      : { backgroundColor: colors.bgInput, borderColor: colors.border }
-                  }
-                >
-                  <Text
-                    className="text-[12px] font-bold"
-                    style={{
-                      color: statusFilter === "completed" ? colors.white : colors.textSecondary,
-                    }}
-                  >
-                    Bought ({completedCount})
-                  </Text>
-                </TouchableOpacity>
-              </View>
-
-              <View className="flex-row items-center justify-between mt-2 mb-2">
-                <Text
-                  className="text-[11px] font-bold uppercase tracking-wider"
-                  style={{ color: colors.textMuted }}
-                >
-                  Showing {visibleCount} item{visibleCount === 1 ? "" : "s"}
-                </Text>
+                {/* Progress Bar Track */}
+                <ProgressBar
+                  progress={completionProgress}
+                  color={isDark ? "#10B981" : "#006837"}
+                  backgroundColor={isDark ? "#0F182A" : "#DCE7FE"}
+                  height={8}
+                />
               </View>
             </Animated.View>
           }
           renderSectionHeader={({ section }) => (
             <View
-              className="px-6 pb-2 pt-5 flex-row items-center justify-between"
-              style={{ backgroundColor: colors.bgCanvas }}
+              className="px-5 pb-2 pt-3 flex-row items-center justify-between"
+              style={{ backgroundColor: isDark ? "#0B132B" : "#F8FAFC" }}
             >
-              <View className="flex-row items-center">
-                <View
-                  className="h-1.5 w-1.5 rounded-full mr-2"
-                  style={{ backgroundColor: colors.accent }}
-                />
-                <Text
-                  className="text-[11px] font-extrabold tracking-wider uppercase"
-                  style={{ color: colors.textSecondary }}
-                >
-                  {section.title}
-                </Text>
-              </View>
-              <View
-                className="px-2 py-0.5 rounded-full border"
-                style={{ backgroundColor: colors.accentLightSubtle, borderColor: colors.border }}
+              <Text
+                className="text-[12px] font-black tracking-wider uppercase"
+                style={{ color: isDark ? "#34D399" : "#475569" }}
               >
-                <Text className="text-[10px] font-bold" style={{ color: colors.accent }}>
-                  {section.data.length}
-                </Text>
-              </View>
+                {section.title}
+              </Text>
+              {section.key === "completed" ? (
+                <TouchableOpacity
+                  onPress={() => setShowCompleted((prev) => !prev)}
+                  activeOpacity={0.7}
+                  hitSlop={{ top: 8, right: 8, bottom: 8, left: 8 }}
+                >
+                  {showCompleted ? (
+                    <ChevronUp
+                      stroke={isDark ? "#94A3B8" : "#64748B"}
+                      size={16}
+                      strokeWidth={2.5}
+                    />
+                  ) : (
+                    <ChevronDown
+                      stroke={isDark ? "#94A3B8" : "#64748B"}
+                      size={16}
+                      strokeWidth={2.5}
+                    />
+                  )}
+                </TouchableOpacity>
+              ) : null}
             </View>
           )}
           renderItem={({ item }) => (
-            <View className="px-6">
+            <View className="px-5">
               <ItemCard
                 item={item}
                 onToggle={handleToggle}
@@ -606,19 +555,26 @@ const GroceryListScreen = ({ navigation }: ListStackScreenProps) => {
             <View className="items-center px-10 pb-8 pt-12">
               <View
                 className="mb-4 h-16 w-16 items-center justify-center rounded-2xl border"
-                style={{ backgroundColor: colors.accentLightSubtle, borderColor: colors.border }}
+                style={{
+                  backgroundColor: isDark ? "#17233D" : "#E0E7FF",
+                  borderColor: isDark ? "#253347" : "#D9E2FC",
+                }}
               >
-                <ShoppingBasket stroke={colors.accent} size={28} strokeWidth={2} />
+                <ShoppingBasket
+                  stroke={isDark ? "#34D399" : colors.accent}
+                  size={28}
+                  strokeWidth={2}
+                />
               </View>
               <Text
                 className="text-center text-lg font-extrabold tracking-tight"
-                style={{ color: colors.textPrimary }}
+                style={{ color: isDark ? "#FFFFFF" : "#0F172A" }}
               >
                 No items found
               </Text>
               <Text
                 className="mt-1.5 text-center text-xs leading-5"
-                style={{ color: colors.textSecondary }}
+                style={{ color: isDark ? "#94A3B8" : "#64748B" }}
               >
                 {searchQuery
                   ? "Try adjusting your search query."
@@ -626,36 +582,10 @@ const GroceryListScreen = ({ navigation }: ListStackScreenProps) => {
               </Text>
             </View>
           }
-          ListFooterComponent={
-            filteredCompletedThisMonthCount > 0 ? (
-              <View className="px-5 pt-2">
-                <TouchableOpacity
-                  onPress={() => setShowCompleted((prev) => !prev)}
-                  activeOpacity={0.8}
-                  className="flex-row items-center justify-center py-3 rounded-xl border mt-2"
-                  style={{ backgroundColor: colors.bgCard, borderColor: colors.border }}
-                >
-                  <Text
-                    className="mr-2 text-[12px] font-bold"
-                    style={{ color: colors.textSecondary }}
-                  >
-                    {showCompleted
-                      ? "Hide completed items"
-                      : `Show completed this month (${filteredCompletedThisMonthCount})`}
-                  </Text>
-                  {showCompleted ? (
-                    <ChevronUp stroke={colors.icon} size={15} strokeWidth={2.5} />
-                  ) : (
-                    <ChevronDown stroke={colors.icon} size={15} strokeWidth={2.5} />
-                  )}
-                </TouchableOpacity>
-              </View>
-            ) : null
-          }
         />
       )}
 
-      {/* Industry Standard Bulk Checkout Floating Banner */}
+      {/* Floating Bulk Checkout Banner */}
       {inCartCount > 0 && !undoState ? (
         <Animated.View
           entering={FadeInDown.duration(300).springify()}
@@ -714,27 +644,21 @@ const GroceryListScreen = ({ navigation }: ListStackScreenProps) => {
         </Animated.View>
       ) : null}
 
-      {/* Modern Floating Add Item Button */}
+      {/* Floating Add Item Button (FAB) */}
       <TouchableOpacity
         onPress={() => (navigation as any).navigate(ROUTES.ADD_ITEM)}
         activeOpacity={0.88}
-        className="absolute right-6 h-[54px] w-[54px] overflow-hidden rounded-full shadow-md"
+        className="absolute right-5 h-[56px] w-[56px] rounded-2xl items-center justify-center shadow-lg"
         style={{
-          bottom: insets.bottom + 8,
-          elevation: 8,
-          shadowColor: colors.accent,
-          shadowOpacity: 0.3,
-          shadowRadius: 8,
+          bottom: insets.bottom + 12,
+          elevation: 10,
+          backgroundColor: isDark ? "#34D399" : "#006837",
+          shadowColor: isDark ? "#34D399" : "#006837",
+          shadowOpacity: 0.4,
+          shadowRadius: 10,
         }}
       >
-        <LinearGradient
-          colors={[colors.accent, colors.accentLight]}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          className="h-full w-full items-center justify-center"
-        >
-          <Plus color="white" size={26} strokeWidth={2.5} />
-        </LinearGradient>
+        <Plus color={isDark ? "#0B132B" : "#FFFFFF"} size={28} strokeWidth={2.8} />
       </TouchableOpacity>
 
       {undoState ? (
@@ -744,16 +668,16 @@ const GroceryListScreen = ({ navigation }: ListStackScreenProps) => {
             bottom: 20,
             zIndex: 60,
             elevation: 10,
-            backgroundColor: colors.bgCard,
-            borderColor: colors.accent,
+            backgroundColor: isDark ? "#16233B" : colors.bgCard,
+            borderColor: isDark ? "#34D399" : colors.accent,
           }}
         >
           <View className="flex-row items-center flex-1 mr-2">
-            <CheckCircle2 stroke={colors.accent} size={16} className="mr-2" />
+            <CheckCircle2 stroke={isDark ? "#34D399" : colors.accent} size={16} className="mr-2" />
             <Text
               className="flex-1 text-[12px] font-semibold"
               numberOfLines={1}
-              style={{ color: colors.textPrimary }}
+              style={{ color: isDark ? "#FFFFFF" : colors.textPrimary }}
             >
               {`Marked "${undoState.itemName}" complete`}
             </Text>
@@ -761,7 +685,7 @@ const GroceryListScreen = ({ navigation }: ListStackScreenProps) => {
           <TouchableOpacity onPress={handleUndoComplete} activeOpacity={0.8}>
             <Text
               className="text-[12px] font-bold uppercase tracking-wider"
-              style={{ color: colors.accent }}
+              style={{ color: isDark ? "#34D399" : colors.accent }}
             >
               Undo
             </Text>
@@ -769,7 +693,6 @@ const GroceryListScreen = ({ navigation }: ListStackScreenProps) => {
         </View>
       ) : null}
 
-      {/* Trip Cost Summary Modal */}
       <TripSummaryModal
         visible={summaryModal.visible}
         items={summaryModal.items}

@@ -13,6 +13,8 @@ interface IAppHeaderProps {
   right?: ReactNode;
   showNotification?: boolean;
   onNotificationPress?: () => void;
+  showProfileAvatar?: boolean;
+  onProfilePress?: () => void;
   showBackButton?: boolean;
   onBackPress?: () => void;
 }
@@ -20,7 +22,7 @@ interface IAppHeaderProps {
 /**
  * Main application header component
  * Why: To provide consistent navigation and branding across all screens.
- * Features: Title, optional eyebrow/subtitle, back button, and notification bell.
+ * Features: Title, optional eyebrow/subtitle, back button, notification bell, and profile avatar button.
  * @param props - Component props including title, eyebrow, and interaction handlers
  */
 const AppHeader = ({
@@ -30,6 +32,8 @@ const AppHeader = ({
   right,
   showNotification = true,
   onNotificationPress,
+  showProfileAvatar = true,
+  onProfilePress,
   showBackButton = false,
   onBackPress,
 }: IAppHeaderProps) => {
@@ -67,7 +71,7 @@ const AppHeader = ({
           {eyebrow ? (
             <Text
               className="mb-0.5 text-[10px] font-bold uppercase tracking-[0.08em]"
-              style={{ color: colors.accent }}
+              style={{ color: colors.textMuted }}
             >
               {eyebrow}
             </Text>
@@ -90,7 +94,7 @@ const AppHeader = ({
           ) : null}
         </View>
       </View>
-      <View className="flex-row items-center gap-3 pl-3">
+      <View className="flex-row items-center gap-2.5 pl-3">
         {right}
         {showNotification && (
           <TouchableOpacity
@@ -110,6 +114,20 @@ const AppHeader = ({
                 </Text>
               </View>
             )}
+          </TouchableOpacity>
+        )}
+        {showProfileAvatar && (
+          <TouchableOpacity
+            onPress={onProfilePress}
+            activeOpacity={0.8}
+            className="h-9 w-9 items-center justify-center rounded-full overflow-hidden"
+            style={{ backgroundColor: "#047857" }}
+          >
+            <View className="h-full w-full items-center justify-center">
+              <Text className="text-[13px] font-bold text-white">
+                {user?.displayName ? user.displayName.charAt(0).toUpperCase() : "U"}
+              </Text>
+            </View>
           </TouchableOpacity>
         )}
       </View>

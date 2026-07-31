@@ -28,6 +28,10 @@ export const ROUTES = {
   ANALYZE: "Analyze",
   NOTIFICATIONS: "Notifications",
   RECIPE_PACKS: "RecipePacks",
+  STORE_COMPARISON: "StoreComparison",
+  MEAL_PLAN: "MealPlan",
+  RECIPE_DETAIL: "RecipeDetail",
+  COOKING_MODE: "CookingMode",
 
   // ── Bottom tab screens ─────────────────────────────────────────────────────
   DASHBOARD: "Dashboard",

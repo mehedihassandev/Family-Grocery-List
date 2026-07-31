@@ -1,9 +1,9 @@
-import React, { useRef } from "react";
+import React, { useMemo, useRef } from "react";
 import { View, Text, TouchableOpacity, Image } from "react-native";
 import Animated, { FadeInDown } from "react-native-reanimated";
 import Swipeable, { SwipeableMethods } from "react-native-gesture-handler/ReanimatedSwipeable";
 import * as Haptics from "expo-haptics";
-import { Check, Calendar, Tag, User, ShoppingCart } from "lucide-react-native";
+import { Check, ShoppingCart, User } from "lucide-react-native";
 import { IGroceryItem } from "../types";
 import { useDateFormatter, useTextFormatter, useAppTheme } from "../hooks";
 import { PriorityBadge } from "./ui";
@@ -16,13 +16,13 @@ interface IItemCardProps {
 }
 
 /**
- * Modern Sleek Grocery Item Card with Swipe Actions & Theme Support
+ * Redesigned Grocery Item Card matching Light & Dark mode mockups
  */
 const ItemCard = ({ item, onToggle, onPress }: IItemCardProps) => {
   const swipeableRef = useRef<SwipeableMethods>(null);
   const { toRelativeTime } = useDateFormatter();
-  const { toInitial } = useTextFormatter();
-  const { colors } = useAppTheme();
+  const { toTrimmed } = useTextFormatter();
+  const { isDark, colors } = useAppTheme();
   const isCompleted = item.status === "completed";
   const isInCart = item.status === "in_cart";
 
@@ -34,6 +34,11 @@ const ItemCard = ({ item, onToggle, onPress }: IItemCardProps) => {
         : item.createdAt,
   );
 
+  const addedByName = useMemo(() => {
+    const raw = toTrimmed(item.addedBy?.name);
+    return raw ? raw.split(/\s+/)[0] : "Mehedi";
+  }, [toTrimmed, item.addedBy?.name]);
+
   const handleTogglePress = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
     onToggle(item);
@@ -42,7 +47,7 @@ const ItemCard = ({ item, onToggle, onPress }: IItemCardProps) => {
   const renderLeftActions = () => {
     return (
       <View
-        className="justify-center items-start px-5 mb-2.5 rounded-xl flex-row items-center"
+        className="justify-center items-start px-5 mb-2.5 rounded-2xl flex-row items-center"
         style={{ backgroundColor: colors.warning }}
       >
         <ShoppingCart stroke={colors.white} size={18} strokeWidth={2.5} />
@@ -66,55 +71,67 @@ const ItemCard = ({ item, onToggle, onPress }: IItemCardProps) => {
         }}
       >
         <TouchableOpacity
-          activeOpacity={0.8}
+          activeOpacity={0.85}
           onPress={() => onPress && onPress(item)}
-          style={{ opacity: isCompleted ? 0.55 : 1 }}
+          style={{ opacity: isCompleted ? 0.6 : 1 }}
         >
           <View
-            className="flex-row items-center p-3.5 rounded-xl border"
+            className="flex-row items-start p-3.5 rounded-2xl border shadow-xs"
             style={{
-              backgroundColor: isInCart ? colors.bgCartActive : colors.bgCard,
-              borderColor: isInCart ? colors.warning : colors.border,
+              backgroundColor: isInCart
+                ? isDark
+                  ? "#1E2A3A"
+                  : "#FEF3C7"
+                : isDark
+                  ? "#16233B"
+                  : "#FFFFFF",
+              borderColor: isInCart ? colors.warning : isDark ? "#253347" : "#F1F5F9",
             }}
           >
-            {/* Circular Checkbox */}
+            {/* Square Checkbox Box */}
             <TouchableOpacity
               onPress={handleTogglePress}
               activeOpacity={0.8}
-              className="mr-3.5 h-6 w-6 items-center justify-center rounded-full"
-              hitSlop={{ top: 12, right: 12, bottom: 12, left: 12 }}
+              className="mr-3 mt-0.5 h-7 w-7 items-center justify-center rounded-xl border"
+              style={{
+                backgroundColor: isCompleted
+                  ? isDark
+                    ? "#10B981"
+                    : "#006837"
+                  : isInCart
+                    ? colors.warning
+                    : isDark
+                      ? "#0F182A"
+                      : "#EBF2FF",
+                borderColor: isCompleted
+                  ? isDark
+                    ? "#10B981"
+                    : "#006837"
+                  : isInCart
+                    ? colors.warning
+                    : isDark
+                      ? "#253347"
+                      : "#DCE7FE",
+              }}
+              hitSlop={{ top: 8, right: 8, bottom: 8, left: 8 }}
             >
-              <View
-                className="h-5 w-5 rounded-full items-center justify-center border"
-                style={{
-                  backgroundColor: isCompleted
-                    ? colors.accent
-                    : isInCart
-                      ? colors.warning
-                      : "transparent",
-                  borderColor: isCompleted
-                    ? colors.accent
-                    : isInCart
-                      ? colors.warning
-                      : colors.iconMuted,
-                }}
-              >
-                {isCompleted ? (
-                  <Check stroke={colors.white} size={12} strokeWidth={3} />
-                ) : isInCart ? (
-                  <ShoppingCart stroke={colors.white} size={11} strokeWidth={2.5} />
-                ) : null}
-              </View>
+              {isCompleted ? (
+                <Check stroke="#FFFFFF" size={16} strokeWidth={3} />
+              ) : isInCart ? (
+                <ShoppingCart stroke="#FFFFFF" size={14} strokeWidth={2.5} />
+              ) : null}
             </TouchableOpacity>
 
             {/* Item Details */}
             <View className="flex-1">
               <View className="flex-row items-center justify-between">
                 <Text
-                  className={`text-[15px] font-bold tracking-tight ${
+                  className={`text-[15px] font-extrabold tracking-tight ${
                     isCompleted ? "line-through" : ""
                   }`}
-                  style={{ color: isCompleted ? colors.textMuted : colors.textPrimary }}
+                  style={{
+                    color: isCompleted ? colors.textMuted : isDark ? "#F8FAFC" : "#0F172A",
+                  }}
                   numberOfLines={1}
                 >
                   {item.name}
@@ -123,13 +140,16 @@ const ItemCard = ({ item, onToggle, onPress }: IItemCardProps) => {
                 {isInCart ? (
                   <View
                     className="px-2 py-0.5 rounded-full border"
-                    style={{ backgroundColor: colors.warningLight, borderColor: colors.warning }}
+                    style={{
+                      backgroundColor: isDark ? "#3A2E16" : colors.warningLight,
+                      borderColor: colors.warning,
+                    }}
                   >
                     <Text
                       className="text-[9px] font-black uppercase tracking-wider"
                       style={{ color: colors.warning }}
                     >
-                      {item.claimedBy?.name ? `In ${item.claimedBy.name}'s Cart` : "In Cart"}
+                      In Cart
                     </Text>
                   </View>
                 ) : !isCompleted && item.priority ? (
@@ -137,89 +157,38 @@ const ItemCard = ({ item, onToggle, onPress }: IItemCardProps) => {
                 ) : null}
               </View>
 
-              {/* Sub-row Details */}
-              <View className="flex-row items-center justify-between mt-1.5">
-                <View className="flex-row items-center flex-wrap flex-1 gap-2">
-                  <View className="flex-row items-center">
-                    <Tag stroke={colors.accent} size={11} className="mr-1" />
-                    <Text className="text-[11px] font-bold" style={{ color: colors.accent }}>
-                      {item.category}
-                    </Text>
-                  </View>
+              {/* Quantity */}
+              {item.quantity ? (
+                <Text
+                  className="text-[12px] font-medium mt-0.5 mb-1.5"
+                  style={{ color: isDark ? "#94A3B8" : "#64748B" }}
+                >
+                  {item.quantity}
+                </Text>
+              ) : null}
 
-                  {item.storeName ? (
-                    <View
-                      className="flex-row items-center px-1.5 py-0.5 rounded-md border"
-                      style={{ backgroundColor: colors.bgInput, borderColor: colors.border }}
-                    >
-                      <Text
-                        className="text-[10px] font-bold"
-                        style={{ color: colors.textSecondary }}
-                      >
-                        🏬 {item.storeName}
-                      </Text>
-                    </View>
-                  ) : null}
-
-                  {item.actualPrice || item.estimatedTotal || item.unitPrice ? (
-                    <View
-                      className="border px-1.5 py-0.5 rounded-md"
-                      style={{
-                        backgroundColor: colors.accentLightSubtle,
-                        borderColor: colors.border,
-                      }}
-                    >
-                      <Text className="text-[10px] font-extrabold" style={{ color: colors.accent }}>
-                        ৳
-                        {(item.actualPrice || item.estimatedTotal || item.unitPrice || 0).toFixed(
-                          0,
-                        )}
-                      </Text>
-                    </View>
-                  ) : null}
-
-                  {item.quantity ? (
-                    <Text className="text-[11px] font-bold" style={{ color: colors.textSecondary }}>
-                      • {item.quantity}
-                    </Text>
-                  ) : null}
-
-                  {item.dueDate ? (
-                    <View className="flex-row items-center ml-1">
-                      <Calendar stroke={colors.warning} size={11} className="mr-1" />
-                      <Text className="text-[11px] font-bold" style={{ color: colors.warning }}>
-                        Due
-                      </Text>
-                    </View>
-                  ) : null}
-
-                  {item.assignee?.name ? (
-                    <View className="flex-row items-center ml-1">
-                      <User stroke={colors.info} size={11} className="mr-1" />
-                      <Text className="text-[11px] font-bold" style={{ color: colors.info }}>
-                        {item.assignee.name}
-                      </Text>
-                    </View>
-                  ) : null}
+              {/* Added By & Time Metadata Row */}
+              <View className="flex-row items-center mt-0.5">
+                <View
+                  className="h-4 w-4 rounded-full items-center justify-center mr-1.5"
+                  style={{ backgroundColor: isDark ? "#064E3B" : "#006837" }}
+                >
+                  {item.addedBy?.photoURL ? (
+                    <Image
+                      source={{ uri: item.addedBy.photoURL }}
+                      className="h-full w-full rounded-full"
+                    />
+                  ) : (
+                    <User stroke="#FFFFFF" size={9} strokeWidth={2.5} />
+                  )}
                 </View>
 
-                <View className="flex-row items-center ml-2">
-                  <Text
-                    className="text-[10px] font-medium mr-1.5"
-                    style={{ color: colors.textMuted }}
-                  >
-                    {timeAgo}
-                  </Text>
-                  <View className="h-5 w-5 rounded-full bg-emerald-600 items-center justify-center overflow-hidden">
-                    {item.addedBy?.photoURL ? (
-                      <Image source={{ uri: item.addedBy.photoURL }} className="h-full w-full" />
-                    ) : (
-                      <Text className="text-white text-[8px] font-bold">
-                        {toInitial(item.addedBy?.name || "U")}
-                      </Text>
-                    )}
-                  </View>
-                </View>
+                <Text
+                  className="text-[11px] font-semibold"
+                  style={{ color: isDark ? "#34D399" : "#475569" }}
+                >
+                  Added by {addedByName} • {timeAgo}
+                </Text>
               </View>
             </View>
           </View>

@@ -8,13 +8,20 @@ import {
   ActivityIndicator,
   TextInput,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import Animated, { FadeInDown } from "react-native-reanimated";
-import { Check, ShoppingBasket, Wand2 } from "lucide-react-native";
+import {
+  Check,
+  ShoppingBasket,
+  Wand2,
+  CheckCircle2,
+  Sparkles,
+  ArrowRight,
+} from "lucide-react-native";
 
 import { useAddGroceryItemBackend, useRecipeToGrocery, useAppTheme } from "../hooks";
 import { useAuthStore } from "../store/useAuthStore";
-import { Category, Priority } from "../types";
+import { Category, Priority, ROUTES } from "../types";
 import { AppHeader } from "../components/ui";
 
 interface IRecipeItem {
@@ -36,33 +43,12 @@ interface IRecipePack {
 
 const RECIPE_PACKS: IRecipePack[] = [
   {
-    id: "taco-night",
-    title: "Taco Tuesday",
-    description: "Everything you need for a delicious Mexican taco feast.",
-    icon: "🌮",
-    tag: "Family Favorite",
-    color: "#F59E0B",
-    items: [
-      { name: "Ground Beef / Turkey", category: "Meat", quantity: "1 lb", priority: "Urgent" },
-      {
-        name: "Soft Tortillas & Shells",
-        category: "Household",
-        quantity: "1 Pack",
-        priority: "Medium",
-      },
-      { name: "Salsa & Pico de Gallo", category: "Snacks", quantity: "1 Jar", priority: "Medium" },
-      { name: "Shredded Mexican Cheese", category: "Dairy", quantity: "8 oz", priority: "Medium" },
-      { name: "Avocados & Lime", category: "Fruits", quantity: "3 pcs", priority: "Low" },
-      { name: "Sour Cream", category: "Dairy", quantity: "8 oz", priority: "Low" },
-    ],
-  },
-  {
     id: "pasta-night",
     title: "Italian Pasta Feast",
-    description: "Classic Italian dinner with pasta, sauce, and fresh herbs.",
+    description: "Classic Italian dinner with pasta, garlic cream sauce, and fresh basil.",
     icon: "🍝",
     tag: "Quick Dinner",
-    color: "#EF4444",
+    color: "#047857",
     items: [
       {
         name: "Penne or Spaghetti Pasta",
@@ -92,12 +78,32 @@ const RECIPE_PACKS: IRecipePack[] = [
     ],
   },
   {
+    id: "taco-night",
+    title: "Taco Tuesday",
+    description: "Everything you need for a delicious Mexican taco feast with avocados.",
+    icon: "🌮",
+    tag: "Family Favorite",
+    color: "#F59E0B",
+    items: [
+      { name: "Ground Beef / Turkey", category: "Meat", quantity: "1 lb", priority: "Urgent" },
+      {
+        name: "Soft Tortillas & Shells",
+        category: "Household",
+        quantity: "1 Pack",
+        priority: "Medium",
+      },
+      { name: "Salsa & Pico de Gallo", category: "Snacks", quantity: "1 Jar", priority: "Medium" },
+      { name: "Shredded Mexican Cheese", category: "Dairy", quantity: "8 oz", priority: "Medium" },
+      { name: "Avocados & Lime", category: "Fruits", quantity: "3 pcs", priority: "Low" },
+    ],
+  },
+  {
     id: "pancake-breakfast",
     title: "Sunday Pancake Breakfast",
-    description: "Fluffy pancakes, maple syrup, eggs, bacon, and juice.",
+    description: "Fluffy pancakes, maple syrup, eggs, bacon, and orange juice.",
     icon: "🥞",
     tag: "Weekend Brunch",
-    color: "#10B981",
+    color: "#4F46E5",
     items: [
       {
         name: "Pancake & Waffle Mix",
@@ -108,19 +114,13 @@ const RECIPE_PACKS: IRecipePack[] = [
       { name: "Pure Maple Syrup", category: "Household", quantity: "1 Bottle", priority: "Medium" },
       { name: "Grade A Large Eggs", category: "Dairy", quantity: "1 Dozen", priority: "Urgent" },
       { name: "Smoked Bacon or Sausage", category: "Meat", quantity: "1 Pack", priority: "Medium" },
-      {
-        name: "Fresh Strawberries & Blueberries",
-        category: "Fruits",
-        quantity: "2 Tubs",
-        priority: "Low",
-      },
       { name: "100% Orange Juice", category: "Drinks", quantity: "1 Carton", priority: "Medium" },
     ],
   },
   {
     id: "fitness-prep",
     title: "Healthy Meal Prep",
-    description: "Lean proteins, complex carbs, and fresh greens for the week.",
+    description: "Lean proteins, quinoa, sweet potatoes, and fresh broccoli.",
     icon: "🥗",
     tag: "High Protein",
     color: "#0EA5E9",
@@ -139,41 +139,18 @@ const RECIPE_PACKS: IRecipePack[] = [
         priority: "Medium",
       },
       { name: "Sweet Potatoes", category: "Vegetables", quantity: "4 pcs", priority: "Low" },
-      { name: "Plain Greek Yogurt", category: "Dairy", quantity: "32 oz", priority: "Medium" },
-    ],
-  },
-  {
-    id: "smoothie-station",
-    title: "Smoothie & Energy Station",
-    description: "Refreshing fruits, greens, and plant-based boosters.",
-    icon: "🍹",
-    tag: "Superfood",
-    color: "#8B5CF6",
-    items: [
-      { name: "Frozen Mixed Berries", category: "Fruits", quantity: "1 Bag", priority: "Medium" },
-      { name: "Ripe Bananas", category: "Fruits", quantity: "1 Bunch", priority: "Urgent" },
-      { name: "Baby Spinach", category: "Vegetables", quantity: "1 Clamshell", priority: "Medium" },
-      {
-        name: "Unsweetened Almond Milk",
-        category: "Drinks",
-        quantity: "1 Carton",
-        priority: "Medium",
-      },
-      { name: "Organic Chia Seeds", category: "Snacks", quantity: "1 Bag", priority: "Low" },
     ],
   },
 ];
 
 /**
- * Cardless Recipe Packs Screen
- * Why: Seamless canvas, dark mode theme support, hairline item rows.
+ * AI Recipe Generator & Meal Packs Screen
+ * Redesigned to match Meal Planner & Cooking AI visual aesthetics
  */
 const RecipePacksScreen = ({ navigation }: any) => {
+  const insets = useSafeAreaInsets();
   const { user } = useAuthStore();
   const { isDark, colors } = useAppTheme();
-  const familyId = user?.familyId || "";
-  const addMutation = useAddGroceryItemBackend(familyId);
-  const parseRecipeMutation = useRecipeToGrocery();
 
   const [aiPrompt, setAiPrompt] = useState("");
   const [selectedPack, setSelectedPack] = useState<IRecipePack>(RECIPE_PACKS[0]);
@@ -183,31 +160,8 @@ const RecipePacksScreen = ({ navigation }: any) => {
   const [adding, setAdding] = useState(false);
   const [successCount, setSuccessCount] = useState<number | null>(null);
 
-  const handleAiRecipeConvert = () => {
-    if (!aiPrompt.trim()) return;
-
-    parseRecipeMutation.mutate(aiPrompt.trim(), {
-      onSuccess: (data) => {
-        const customPack: IRecipePack = {
-          id: `ai-${Date.now()}`,
-          title: data.recipeName || aiPrompt,
-          description: `AI-generated ingredients for ${data.servings || 4} servings.`,
-          icon: "🤖",
-          tag: "AI Generated",
-          color: "#8B5CF6",
-          items: data.ingredients.map((ing) => ({
-            name: ing.name,
-            category: (ing.category as Category) || "Other",
-            quantity: ing.quantity || "1 unit",
-            priority: "Medium" as Priority,
-          })),
-        };
-        setSelectedPack(customPack);
-        setSelectedItemNames(customPack.items.map((i) => i.name));
-        setAiPrompt("");
-      },
-    });
-  };
+  const parseRecipeMutation = useRecipeToGrocery();
+  const addGroceryMutation = useAddGroceryItemBackend();
 
   const handleSelectPack = (pack: IRecipePack) => {
     setSelectedPack(pack);
@@ -215,40 +169,65 @@ const RecipePacksScreen = ({ navigation }: any) => {
     setSuccessCount(null);
   };
 
-  const toggleItemSelection = (itemName: string) => {
-    setSelectedItemNames((prev: string[]) =>
-      prev.includes(itemName) ? prev.filter((n: string) => n !== itemName) : [...prev, itemName],
+  const toggleItemSelection = (name: string) => {
+    setSelectedItemNames((prev) =>
+      prev.includes(name) ? prev.filter((n) => n !== name) : [...prev, name],
     );
   };
 
-  const handleAddBundleToList = async () => {
-    if (!familyId || selectedItemNames.length === 0 || adding) return;
+  const handleAiRecipeConvert = async () => {
+    if (!aiPrompt.trim()) return;
 
     try {
-      setAdding(true);
-      const itemsToAdd = selectedPack.items.filter((item: IRecipeItem) =>
-        selectedItemNames.includes(item.name),
-      );
+      const result = await parseRecipeMutation.mutateAsync(aiPrompt);
+      const rawList = Array.isArray(result) ? result : (result as any)?.items || [];
+      const convertedItems: IRecipeItem[] = rawList.map((item: any) => ({
+        name: item.name,
+        category: (item.category as Category) || "Household",
+        quantity: item.quantity || "1",
+        priority: (item.priority as Priority) || "Medium",
+      }));
 
-      for (const item of itemsToAdd) {
-        await addMutation.mutateAsync({
+      const dynamicPack: IRecipePack = {
+        id: `custom-${Date.now()}`,
+        title: aiPrompt.trim(),
+        description: "AI-generated recipe bundle tailored for your family.",
+        icon: "🤖",
+        tag: "AI Custom",
+        color: "#4F46E5",
+        items: convertedItems,
+      };
+
+      setSelectedPack(dynamicPack);
+      setSelectedItemNames(convertedItems.map((i) => i.name));
+      setAiPrompt("");
+    } catch (err) {
+      console.warn("AI conversion error:", err);
+    }
+  };
+
+  const handleAddBundleToList = async () => {
+    if (!user?.familyId || selectedItemNames.length === 0) return;
+
+    setAdding(true);
+    setSuccessCount(null);
+
+    const targetItems = selectedPack.items.filter((item) => selectedItemNames.includes(item.name));
+
+    try {
+      for (const item of targetItems) {
+        await addGroceryMutation.mutateAsync({
           name: item.name,
           category: item.category,
-          priority: item.priority,
           quantity: item.quantity,
-          notes: `Added via ${selectedPack.title} bundle`,
+          priority: item.priority,
+          notes: `Added from ${selectedPack.title}`,
         });
       }
-
-      setSuccessCount(itemsToAdd.length);
-      setTimeout(() => {
-        setSuccessCount(null);
-        navigation.goBack();
-      }, 1500);
+      setSuccessCount(targetItems.length);
+      setTimeout(() => setSuccessCount(null), 3000);
     } catch (error) {
-      if (__DEV__) {
-        console.warn("Error adding recipe bundle:", error);
-      }
+      console.warn("Error adding recipe bundle:", error);
     } finally {
       setAdding(false);
     }
@@ -258,212 +237,273 @@ const RecipePacksScreen = ({ navigation }: any) => {
     <SafeAreaView
       edges={["top", "left", "right"]}
       className="flex-1"
-      style={{ backgroundColor: colors.bgCanvas }}
+      style={{ backgroundColor: isDark ? colors.bgCanvas : "#F8F9FD" }}
     >
       <StatusBar barStyle={isDark ? "light-content" : "dark-content"} />
 
-      {/* Header */}
       <AppHeader
-        title="Recipe Packs"
-        eyebrow="Instant Meal Bundles"
+        eyebrow="AI RECIPE GENERATOR"
+        title="Grocery List"
         showBackButton
         onBackPress={() => navigation.goBack()}
-        showNotification={false}
+        onNotificationPress={() => navigation.navigate(ROUTES.NOTIFICATIONS)}
+        onProfilePress={() => navigation.navigate(ROUTES.PROFILE)}
       />
 
       <ScrollView
         showsVerticalScrollIndicator={false}
-        className="flex-1 px-6 pt-3"
-        style={{ backgroundColor: colors.bgCanvas }}
-        contentContainerStyle={{ paddingBottom: 140 }}
+        contentContainerStyle={{ paddingBottom: 180 }}
+        className="flex-1 px-5 pt-3"
       >
-        <Animated.View entering={FadeInDown.duration(350).springify()}>
+        {/* Hero AI Prompt Box */}
+        <Animated.View
+          entering={FadeInDown.duration(300).springify()}
+          className="rounded-3xl p-5 mb-5 shadow-2xs border"
+          style={{
+            backgroundColor: isDark ? colors.bgSurface : "#EFF3FE",
+            borderColor: isDark ? colors.border : "transparent",
+          }}
+        >
+          <View className="flex-row items-center mb-2">
+            <View className="h-8 w-8 items-center justify-center rounded-full bg-emerald-600 mr-2.5">
+              <Sparkles stroke="white" size={16} />
+            </View>
+            <Text
+              className="text-[17px] font-black tracking-tight"
+              style={{ color: isDark ? colors.textPrimary : "#0F172A" }}
+            >
+              Ask AI Chef
+            </Text>
+          </View>
+
           <Text
-            className="text-[13px] mb-5 font-medium leading-5"
-            style={{ color: colors.textSecondary }}
+            className="text-[12px] font-medium leading-relaxed mb-3.5"
+            style={{ color: isDark ? colors.textSecondary : "#475569" }}
           >
-            Quickly add curated meal bundles to your family grocery list, or use our smart AI to
-            translate any custom recipe into items instantly.
+            Type any dish or recipe name to instantly generate ingredients, add missing items to
+            your cart, and save to your database.
           </Text>
 
-          {/* AI Recipe Converter (Cardless & Non-Clipped) */}
-          <View className="mb-6 py-4">
-            <View className="flex-row items-center mb-3">
-              <Wand2 size={16} color={colors.accent} style={{ marginRight: 6 }} />
-              <Text className="text-[14px] font-extrabold" style={{ color: colors.accent }}>
-                AI Recipe Converter
-              </Text>
-            </View>
+          {/* Input Pill Container */}
+          <View className="flex-row items-center mb-2">
             <View
-              className="flex-row items-center rounded-xl border px-4 py-1.5"
-              style={{ backgroundColor: colors.bgInput, borderColor: colors.border }}
+              className="flex-1 flex-row items-center rounded-2xl h-12 px-4 border mr-2"
+              style={{
+                backgroundColor: isDark ? colors.bgCard : "#FFFFFF",
+                borderColor: isDark ? colors.border : "#CBD5E1",
+              }}
             >
+              <Wand2 stroke="#047857" size={18} style={{ marginRight: 8 }} />
               <TextInput
                 value={aiPrompt}
                 onChangeText={setAiPrompt}
-                placeholder="e.g. Beef Tehari for 6 people..."
-                placeholderTextColor={colors.iconMuted}
-                className="flex-1 text-[14px] font-medium"
+                placeholder="e.g. Beef Tehari for 4 people..."
+                placeholderTextColor="#94A3B8"
+                className="flex-1 text-[13px] font-semibold"
                 style={{
-                  color: colors.textPrimary,
+                  color: isDark ? colors.textPrimary : "#0F172A",
                   paddingVertical: 0,
                   height: "100%",
-                  textAlignVertical: "center",
                 }}
               />
-              <TouchableOpacity
-                onPress={handleAiRecipeConvert}
-                disabled={!aiPrompt.trim() || parseRecipeMutation.isPending}
-                className="px-4 py-2 rounded-xl"
-                style={{
-                  backgroundColor: aiPrompt.trim() ? colors.accent : colors.bgSurfaceMuted,
-                }}
-              >
-                {parseRecipeMutation.isPending ? (
-                  <ActivityIndicator color="white" size="small" />
-                ) : (
-                  <Text className="text-white font-extrabold text-[12px]">Convert</Text>
-                )}
-              </TouchableOpacity>
             </View>
-          </View>
 
-          {/* Horizontal Pack Selector */}
-          <View className="mb-6">
-            <Text
-              className="text-[16px] font-extrabold tracking-tight mb-3"
-              style={{ color: colors.textPrimary }}
+            <TouchableOpacity
+              onPress={handleAiRecipeConvert}
+              disabled={!aiPrompt.trim() || parseRecipeMutation.isPending}
+              activeOpacity={0.85}
+              className="h-12 px-4 rounded-2xl bg-emerald-700 items-center justify-center shadow-xs flex-row"
+              style={{ opacity: !aiPrompt.trim() ? 0.6 : 1 }}
             >
-              Select a Meal Pack
-            </Text>
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={{ paddingRight: 16 }}
-            >
-              {RECIPE_PACKS.map((pack) => {
-                const isSelected = selectedPack.id === pack.id;
-                return (
-                  <TouchableOpacity
-                    key={pack.id}
-                    onPress={() => handleSelectPack(pack)}
-                    activeOpacity={0.8}
-                    className="mr-2.5 px-4 py-2.5 rounded-full flex-row items-center border"
+              {parseRecipeMutation.isPending ? (
+                <ActivityIndicator color="white" size="small" />
+              ) : (
+                <>
+                  <Text className="text-white font-black text-[13px] mr-1">Convert</Text>
+                  <ArrowRight stroke="white" size={14} strokeWidth={2.5} />
+                </>
+              )}
+            </TouchableOpacity>
+          </View>
+        </Animated.View>
+
+        {/* Horizontal Recipe Packs Category Selector */}
+        <Animated.View entering={FadeInDown.duration(350).springify()} className="mb-5">
+          <Text
+            className="text-[15px] font-black tracking-tight mb-2.5 px-1"
+            style={{ color: isDark ? colors.textPrimary : "#0F172A" }}
+          >
+            Curated Meal Bundles
+          </Text>
+
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={{ paddingRight: 10 }}
+          >
+            {RECIPE_PACKS.map((pack) => {
+              const isSelected = selectedPack.id === pack.id;
+
+              return (
+                <TouchableOpacity
+                  key={pack.id}
+                  activeOpacity={0.8}
+                  onPress={() => handleSelectPack(pack)}
+                  className="mr-2 py-2 px-3.5 rounded-2xl flex-row items-center border"
+                  style={{
+                    backgroundColor: isSelected ? "#047857" : isDark ? colors.bgCard : "#FFFFFF",
+                    borderColor: isSelected ? "#047857" : isDark ? colors.border : "#E2E8F0",
+                  }}
+                >
+                  <Text className="text-base mr-1.5">{pack.icon}</Text>
+                  <Text
+                    className="text-[12px] font-extrabold"
                     style={{
-                      backgroundColor: isSelected ? colors.accent : colors.bgCard,
-                      borderColor: colors.border,
+                      color: isSelected ? "#FFFFFF" : isDark ? colors.textPrimary : "#0F172A",
                     }}
                   >
-                    <Text className="text-lg mr-2">{pack.icon}</Text>
-                    <Text
-                      className="text-[13px] font-extrabold"
-                      style={{ color: isSelected ? colors.white : colors.textPrimary }}
-                    >
-                      {pack.title}
-                    </Text>
-                  </TouchableOpacity>
-                );
-              })}
-            </ScrollView>
-          </View>
+                    {pack.title}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </ScrollView>
+        </Animated.View>
 
-          {/* Pack Details & Items List (Spacious Cardless Rows) */}
-          <View className="py-2">
-            <View className="flex-row items-center justify-between mb-1.5">
-              <View className="flex-row items-center">
-                <Text className="text-2xl mr-2">{selectedPack.icon}</Text>
-                <Text className="text-[18px] font-black" style={{ color: colors.textPrimary }}>
-                  {selectedPack.title}
-                </Text>
-              </View>
+        {/* Selected Recipe Bundle Details Card */}
+        <Animated.View
+          entering={FadeInDown.duration(400).springify()}
+          className="rounded-3xl p-5 mb-5 shadow-2xs border"
+          style={{
+            backgroundColor: isDark ? colors.bgCard : "#FFFFFF",
+            borderColor: isDark ? colors.border : "#F1F5F9",
+          }}
+        >
+          <View className="flex-row items-center justify-between mb-2">
+            <View className="flex-row items-center flex-1 mr-2">
+              <Text className="text-2xl mr-2.5">{selectedPack.icon}</Text>
               <Text
-                className="text-[11px] font-bold uppercase tracking-wider"
-                style={{ color: colors.accent }}
+                className="text-[18px] font-black tracking-tight"
+                style={{ color: isDark ? colors.textPrimary : "#0F172A" }}
               >
+                {selectedPack.title}
+              </Text>
+            </View>
+
+            <View className="px-3 py-1 rounded-full bg-emerald-100">
+              <Text className="text-[10px] font-black text-emerald-800 uppercase">
                 {selectedPack.tag}
               </Text>
             </View>
-            <Text
-              className="text-[13px] mb-5 leading-5 font-medium"
-              style={{ color: colors.textSecondary }}
-            >
-              {selectedPack.description}
-            </Text>
-
-            <View className="border-t pt-1" style={{ borderColor: colors.border }}>
-              {selectedPack.items.map((item: IRecipeItem) => {
-                const checked = selectedItemNames.includes(item.name);
-                return (
-                  <TouchableOpacity
-                    key={item.name}
-                    onPress={() => toggleItemSelection(item.name)}
-                    activeOpacity={0.8}
-                    className="py-4 flex-row items-center justify-between border-b"
-                    style={{ borderColor: colors.borderSubtle }}
-                  >
-                    <View className="flex-row items-center flex-1 mr-3">
-                      <View
-                        className="h-6 w-6 items-center justify-center rounded-full border mr-3"
-                        style={{
-                          backgroundColor: checked ? colors.accent : colors.bgCard,
-                          borderColor: checked ? colors.accent : colors.border,
-                        }}
-                      >
-                        {checked && <Check size={13} stroke="white" strokeWidth={3} />}
-                      </View>
-                      <Text
-                        className={`text-[14px] font-extrabold ${checked ? "" : "line-through"}`}
-                        style={{ color: checked ? colors.textPrimary : colors.textMuted }}
-                        numberOfLines={1}
-                      >
-                        {item.name}
-                      </Text>
-                    </View>
-
-                    <Text className="text-[13px] font-bold" style={{ color: colors.textSecondary }}>
-                      {item.quantity}
-                    </Text>
-                  </TouchableOpacity>
-                );
-              })}
-            </View>
           </View>
+
+          <Text
+            className="text-[13px] font-medium leading-relaxed mb-4"
+            style={{ color: isDark ? colors.textSecondary : "#64748B" }}
+          >
+            {selectedPack.description}
+          </Text>
+
+          {/* Ingredients Checklist */}
+          <Text
+            className="text-[13px] font-black uppercase tracking-wider mb-2.5"
+            style={{ color: colors.textMuted }}
+          >
+            Included Items ({selectedItemNames.length}/{selectedPack.items.length})
+          </Text>
+
+          {selectedPack.items.map((item) => {
+            const checked = selectedItemNames.includes(item.name);
+
+            return (
+              <TouchableOpacity
+                key={item.name}
+                activeOpacity={0.8}
+                onPress={() => toggleItemSelection(item.name)}
+                className="rounded-2xl p-3.5 mb-2 flex-row items-center justify-between border"
+                style={{
+                  backgroundColor: checked
+                    ? isDark
+                      ? colors.bgSurface
+                      : "#EFF3FE"
+                    : isDark
+                      ? colors.bgInput
+                      : "#F8FAFC",
+                  borderColor: isDark ? colors.border : "#F1F5F9",
+                }}
+              >
+                <View className="flex-row items-center flex-1 mr-2">
+                  <View
+                    className="h-7 w-7 items-center justify-center rounded-full mr-3"
+                    style={{
+                      backgroundColor: checked ? "#047857" : "#E2E8F0",
+                    }}
+                  >
+                    <CheckCircle2
+                      stroke={checked ? "white" : "#94A3B8"}
+                      size={15}
+                      strokeWidth={2.5}
+                    />
+                  </View>
+
+                  <Text
+                    className="text-[14px] font-extrabold"
+                    style={{
+                      color: checked ? (isDark ? colors.textPrimary : "#0F172A") : colors.textMuted,
+                      textDecorationLine: checked ? "none" : "line-through",
+                    }}
+                  >
+                    {item.name}
+                  </Text>
+                </View>
+
+                <Text className="text-[12px] font-bold" style={{ color: colors.textSecondary }}>
+                  {item.quantity}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
         </Animated.View>
       </ScrollView>
 
-      {/* Floating Sticky Action Button */}
+      {/* Clean & Aligned Single Floating Action Bar */}
       <View
-        className="absolute bottom-0 left-0 right-0 border-t px-6 py-3"
-        style={{ backgroundColor: colors.bgCanvas, borderColor: colors.border }}
+        className="absolute left-5 right-5"
+        style={{ bottom: Math.max(insets.bottom + 12, 20) }}
       >
-        {successCount !== null ? (
-          <View className="h-[48px] rounded-xl bg-emerald-600 items-center justify-center flex-row">
-            <Check size={18} stroke="white" strokeWidth={3} className="mr-2" />
-            <Text className="text-[14px] font-bold text-white">
-              Added {successCount} items to list!
-            </Text>
-          </View>
-        ) : (
-          <TouchableOpacity
-            onPress={handleAddBundleToList}
-            disabled={adding || selectedItemNames.length === 0}
-            activeOpacity={0.85}
-            className={`h-[48px] rounded-xl bg-emerald-600 items-center justify-center flex-row ${
-              selectedItemNames.length === 0 || adding ? "opacity-50" : ""
-            }`}
-          >
-            {adding ? (
-              <ActivityIndicator color="white" />
-            ) : (
-              <>
-                <ShoppingBasket size={17} stroke="white" className="mr-2" />
-                <Text className="text-[14px] font-bold text-white">
-                  Add {selectedItemNames.length} Items to Family List
-                </Text>
-              </>
-            )}
-          </TouchableOpacity>
-        )}
+        <Animated.View
+          entering={FadeInDown.duration(450).springify()}
+          className="rounded-full shadow-lg overflow-hidden"
+        >
+          {successCount !== null ? (
+            <View className="h-13 rounded-full bg-emerald-600 items-center justify-center flex-row">
+              <Check size={18} stroke="white" strokeWidth={3} style={{ marginRight: 6 }} />
+              <Text className="text-[15px] font-black text-white">
+                Added {successCount} items to list!
+              </Text>
+            </View>
+          ) : (
+            <TouchableOpacity
+              onPress={handleAddBundleToList}
+              disabled={adding || selectedItemNames.length === 0}
+              activeOpacity={0.85}
+              className={`h-13 rounded-full bg-emerald-700 items-center justify-center flex-row shadow-md ${
+                selectedItemNames.length === 0 || adding ? "opacity-50" : ""
+              }`}
+            >
+              {adding ? (
+                <ActivityIndicator color="white" />
+              ) : (
+                <>
+                  <ShoppingBasket size={18} stroke="white" style={{ marginRight: 8 }} />
+                  <Text className="text-[15px] font-black text-white">
+                    Add {selectedItemNames.length} Items to Family List
+                  </Text>
+                </>
+              )}
+            </TouchableOpacity>
+          )}
+        </Animated.View>
       </View>
     </SafeAreaView>
   );

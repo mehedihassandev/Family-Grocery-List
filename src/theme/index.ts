@@ -58,7 +58,7 @@ export const appThemeColors = {
     // Borders & Dividers
     border: "#E2E8F0",
     borderSubtle: "#F1F5F9",
-    borderFocus: "#059669",
+    borderFocus: "#006837",
 
     // Typography
     textPrimary: "#0F172A",
@@ -70,12 +70,12 @@ export const appThemeColors = {
     icon: "#475569",
     iconMuted: "#94A3B8",
 
-    // Brand Accents
-    accent: "#059669",
-    accentLight: "#10B981",
-    accentDark: "#047857",
+    // Brand Accents (Figma Forest Emerald)
+    accent: "#006837",
+    accentLight: "#0E6E45",
+    accentDark: "#00542C",
     accentMuted: "#D1FAE5",
-    accentGlow: "rgba(5, 150, 105, 0.12)",
+    accentGlow: "rgba(0, 104, 55, 0.12)",
 
     // Status Colors
     danger: "#EF4444",
@@ -84,8 +84,8 @@ export const appThemeColors = {
     warningLight: "#FEF3C7",
     info: "#0284C7",
     infoLight: "#EFF6FF",
-    success: "#10B981",
-    successLight: "#D1FAE5",
+    success: "#006837",
+    successLight: "#ECFDF5",
 
     // Navigation & Components
     tabBarBg: "#FFFFFF",
@@ -110,7 +110,7 @@ export const appThemeColors = {
     badgeAmberText: "#B45309",
 
     // Category Specific Accents
-    categoryProduce: "#059669",
+    categoryProduce: "#006837",
     categoryMeat: "#DC2626",
     categoryFish: "#0284C7",
     categoryDairy: "#D97706",
@@ -145,11 +145,11 @@ export const appThemeColors = {
     icon: "#94A3B8",
     iconMuted: "#64748B",
 
-    // Brand Accents
+    // Brand Accents (Vibrant Mint Emerald in Dark Mode)
     accent: "#34D399",
-    accentLight: "#10B981",
-    accentDark: "#059669",
-    accentMuted: "#064E3B",
+    accentLight: "#00B368",
+    accentDark: "#006837",
+    accentMuted: "#004021",
     accentGlow: "rgba(52, 211, 153, 0.18)",
 
     // Status Colors
@@ -160,7 +160,7 @@ export const appThemeColors = {
     info: "#60A5FA",
     infoLight: "#102A45",
     success: "#34D399",
-    successLight: "#064E3B",
+    successLight: "#004021",
 
     // Navigation & Components
     tabBarBg: "#161F2E",
