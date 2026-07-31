@@ -1,7 +1,7 @@
 import React, { useRef } from "react";
 import { View, Text, TouchableOpacity, Image } from "react-native";
 import Animated, { FadeInDown } from "react-native-reanimated";
-import Swipeable from "react-native-gesture-handler/Swipeable";
+import Swipeable, { SwipeableMethods } from "react-native-gesture-handler/ReanimatedSwipeable";
 import * as Haptics from "expo-haptics";
 import { Check, Calendar, Tag, User, ShoppingCart } from "lucide-react-native";
 import { IGroceryItem } from "../types";
@@ -19,7 +19,7 @@ interface IItemCardProps {
  * Modern Sleek Grocery Item Card with Swipe Actions & Theme Support
  */
 const ItemCard = ({ item, onToggle, onPress }: IItemCardProps) => {
-  const swipeableRef = useRef<Swipeable>(null);
+  const swipeableRef = useRef<SwipeableMethods>(null);
   const { toRelativeTime } = useDateFormatter();
   const { toInitial } = useTextFormatter();
   const { colors } = useAppTheme();
@@ -58,7 +58,7 @@ const ItemCard = ({ item, onToggle, onPress }: IItemCardProps) => {
       <Swipeable
         ref={swipeableRef}
         renderLeftActions={renderLeftActions}
-        onSwipeableOpen={(direction) => {
+        onSwipeableOpen={(direction: "left" | "right") => {
           if (direction === "left") {
             handleTogglePress();
             swipeableRef.current?.close();

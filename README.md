@@ -251,7 +251,7 @@ Family-Grocery-List/
 
 Ensure your environment meets the following requirements:
 
-- **Node.js**: `>=20.19.0` (LTS recommended)
+- **Node.js**: `>=22.12.0` (LTS recommended)
 - **Package Manager**: `yarn` or `npm` (Yarn `1.22+` recommended)
 - **iOS Development** (macOS only): Xcode 15+, CocoaPods
 - **Android Development**: Android Studio, JDK 17, Android SDK & Emulator

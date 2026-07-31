@@ -18,13 +18,13 @@ export const useAppTheme = () => {
     } else if (themeMode === "light" && colorScheme !== "light") {
       setColorScheme("light");
     } else if (themeMode === "system" && colorScheme !== undefined) {
-      setColorScheme("system");
+      setColorScheme("system" as any);
     }
   }, [themeMode, colorScheme, setColorScheme]);
 
   const setThemeMode = (mode: ThemeMode) => {
     setStoreThemeMode(mode);
-    setColorScheme(mode);
+    setColorScheme(mode as any);
   };
 
   const isDark = colorScheme === "dark" || themeMode === "dark";
