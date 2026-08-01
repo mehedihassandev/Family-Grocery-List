@@ -169,6 +169,126 @@ const MealPlanScreen = ({ navigation }: any) => {
           </TouchableOpacity>
         </Animated.View>
 
+        {/* AI Suggestions Horizontal Section */}
+        <Animated.View entering={FadeInDown.duration(380).springify()} className="mb-6">
+          <View className="flex-row items-center justify-between mb-3 px-1">
+            <View className="flex-row items-center">
+              <Flame size={16} stroke={colors.tertiary || "#494BD6"} style={{ marginRight: 6 }} />
+              <Text
+                className="text-[13px] font-black uppercase tracking-wider"
+                style={{ color: colors.textPrimary }}
+              >
+                AI MEAL SUGGESTIONS
+              </Text>
+            </View>
+            <TouchableOpacity
+              activeOpacity={0.7}
+              onPress={() => navigation.navigate(ROUTES.RECIPE_PACKS)}
+            >
+              <Text
+                className="text-[11px] font-extrabold uppercase"
+                style={{ color: colors.accent }}
+              >
+                VIEW ALL
+              </Text>
+            </TouchableOpacity>
+          </View>
+
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} className="-mx-5 px-5">
+            <TouchableOpacity
+              activeOpacity={0.85}
+              onPress={() => {
+                setNewMealName("Mediterranean Quinoa");
+                setNewMealCategory("lunch");
+                setIsAddModalOpen(true);
+              }}
+              className="mr-3 w-64 rounded-2xl overflow-hidden border p-3"
+              style={{
+                backgroundColor: isDark ? "rgba(18, 37, 62, 0.8)" : "#FFFFFF",
+                borderColor: isDark ? "rgba(255, 255, 255, 0.1)" : "#E2E8F0",
+              }}
+            >
+              <Image
+                source={{
+                  uri: "https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=400&auto=format&fit=crop&q=80",
+                }}
+                className="h-28 w-full rounded-xl mb-2.5"
+                resizeMode="cover"
+              />
+              <View className="flex-row items-center justify-between mb-1">
+                <Text
+                  className="text-[14px] font-black flex-1 mr-2"
+                  style={{ color: colors.textPrimary }}
+                  numberOfLines={1}
+                >
+                  Mediterranean Quinoa
+                </Text>
+                <Text className="text-[10px] font-bold" style={{ color: colors.accent }}>
+                  15 min
+                </Text>
+              </View>
+              <Text className="text-[11px] font-medium mb-3" style={{ color: colors.textMuted }}>
+                Fiber rich • Healthy bowl
+              </Text>
+              <View
+                className="py-2 rounded-xl items-center justify-center flex-row"
+                style={{ backgroundColor: colors.accent }}
+              >
+                <Plus stroke="#FFFFFF" size={14} strokeWidth={3} style={{ marginRight: 4 }} />
+                <Text className="text-white font-black text-[11px] uppercase tracking-wider">
+                  ADD TO PLAN
+                </Text>
+              </View>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              activeOpacity={0.85}
+              onPress={() => {
+                setNewMealName("Lemon Garlic Salmon");
+                setNewMealCategory("dinner");
+                setIsAddModalOpen(true);
+              }}
+              className="mr-3 w-64 rounded-2xl overflow-hidden border p-3"
+              style={{
+                backgroundColor: isDark ? "rgba(18, 37, 62, 0.8)" : "#FFFFFF",
+                borderColor: isDark ? "rgba(255, 255, 255, 0.1)" : "#E2E8F0",
+              }}
+            >
+              <Image
+                source={{
+                  uri: "https://images.unsplash.com/photo-1467003909585-2f8a72700288?w=400&auto=format&fit=crop&q=80",
+                }}
+                className="h-28 w-full rounded-xl mb-2.5"
+                resizeMode="cover"
+              />
+              <View className="flex-row items-center justify-between mb-1">
+                <Text
+                  className="text-[14px] font-black flex-1 mr-2"
+                  style={{ color: colors.textPrimary }}
+                  numberOfLines={1}
+                >
+                  Lemon Garlic Salmon
+                </Text>
+                <Text className="text-[10px] font-bold" style={{ color: colors.accent }}>
+                  25 min
+                </Text>
+              </View>
+              <Text className="text-[11px] font-medium mb-3" style={{ color: colors.textMuted }}>
+                High Protein • Omega 3
+              </Text>
+              <View
+                className="py-2 rounded-xl items-center justify-center flex-row"
+                style={{ backgroundColor: colors.accent }}
+              >
+                <Plus stroke="#FFFFFF" size={14} strokeWidth={3} style={{ marginRight: 4 }} />
+                <Text className="text-white font-black text-[11px] uppercase tracking-wider">
+                  ADD TO PLAN
+                </Text>
+              </View>
+            </TouchableOpacity>
+          </ScrollView>
+        </Animated.View>
+
         {/* BREAKFAST Section */}
         <View className="mb-5">
           <View className="flex-row items-center mb-2.5">
@@ -188,7 +308,7 @@ const MealPlanScreen = ({ navigation }: any) => {
               onPress={() =>
                 navigation.navigate(ROUTES.RECIPE_DETAIL, { recipeId: "avocado-toast" })
               }
-              className="rounded-3xl p-3.5 flex-row items-center justify-between shadow-2xs mb-2 border"
+              className="rounded-2xl p-3.5 flex-row items-center justify-between shadow-2xs mb-2 border"
               style={{
                 backgroundColor: isDark ? colors.bgCard : "#FFFFFF",
                 borderColor: isDark ? colors.border : "transparent",
@@ -240,7 +360,7 @@ const MealPlanScreen = ({ navigation }: any) => {
               setNewMealCategory("breakfast");
               setIsAddModalOpen(true);
             }}
-            className="rounded-3xl p-5 border-2 border-dashed flex-row items-center justify-center mt-1"
+            className="rounded-2xl p-5 border-2 border-dashed flex-row items-center justify-center mt-1"
             style={{
               backgroundColor: isDark ? colors.bgSurface : "#F1F4FD",
               borderColor: isDark ? colors.border : "#CBD5E1",
@@ -272,7 +392,7 @@ const MealPlanScreen = ({ navigation }: any) => {
               onPress={() =>
                 navigation.navigate(ROUTES.RECIPE_DETAIL, { recipeId: "creamy-garlic-pasta" })
               }
-              className="rounded-3xl p-3.5 flex-row items-center justify-between shadow-2xs mb-2 border"
+              className="rounded-2xl p-3.5 flex-row items-center justify-between shadow-2xs mb-2 border"
               style={{
                 backgroundColor: isDark ? colors.bgCard : "#FFFFFF",
                 borderColor: isDark ? colors.border : "transparent",
@@ -324,7 +444,7 @@ const MealPlanScreen = ({ navigation }: any) => {
               setNewMealCategory("lunch");
               setIsAddModalOpen(true);
             }}
-            className="rounded-3xl p-5 border-2 border-dashed flex-row items-center justify-center mt-1"
+            className="rounded-2xl p-5 border-2 border-dashed flex-row items-center justify-center mt-1"
             style={{
               backgroundColor: isDark ? colors.bgSurface : "#F1F4FD",
               borderColor: isDark ? colors.border : "#CBD5E1",
@@ -356,7 +476,7 @@ const MealPlanScreen = ({ navigation }: any) => {
               onPress={() =>
                 navigation.navigate(ROUTES.RECIPE_DETAIL, { recipeId: "creamy-garlic-pasta" })
               }
-              className="rounded-3xl p-3.5 flex-row items-center justify-between shadow-2xs mb-2 border"
+              className="rounded-2xl p-3.5 flex-row items-center justify-between shadow-2xs mb-2 border"
               style={{
                 backgroundColor: isDark ? colors.bgCard : "#FFFFFF",
                 borderColor: isDark ? colors.border : "transparent",
@@ -396,7 +516,7 @@ const MealPlanScreen = ({ navigation }: any) => {
               setNewMealCategory("dinner");
               setIsAddModalOpen(true);
             }}
-            className="rounded-3xl p-5 border-2 border-dashed flex-row items-center justify-center"
+            className="rounded-2xl p-5 border-2 border-dashed flex-row items-center justify-center"
             style={{
               backgroundColor: isDark ? colors.bgSurface : "#F1F4FD",
               borderColor: isDark ? colors.border : "#CBD5E1",
@@ -428,7 +548,7 @@ const MealPlanScreen = ({ navigation }: any) => {
               onPress={() =>
                 navigation.navigate(ROUTES.RECIPE_DETAIL, { recipeId: "creamy-garlic-pasta" })
               }
-              className="rounded-3xl p-3.5 flex-row items-center justify-between shadow-2xs mb-2 border"
+              className="rounded-2xl p-3.5 flex-row items-center justify-between shadow-2xs mb-2 border"
               style={{
                 backgroundColor: isDark ? colors.bgCard : "#FFFFFF",
                 borderColor: isDark ? colors.border : "transparent",
@@ -462,7 +582,7 @@ const MealPlanScreen = ({ navigation }: any) => {
               setNewMealCategory("snacks");
               setIsAddModalOpen(true);
             }}
-            className="rounded-3xl p-5 border-2 border-dashed flex-row items-center justify-center"
+            className="rounded-2xl p-5 border-2 border-dashed flex-row items-center justify-center"
             style={{
               backgroundColor: isDark ? colors.bgSurface : "#F1F4FD",
               borderColor: isDark ? colors.border : "#CBD5E1",
@@ -478,7 +598,7 @@ const MealPlanScreen = ({ navigation }: any) => {
       <Modal visible={isAddModalOpen} transparent animationType="fade">
         <View className="flex-1 justify-center items-center bg-black/60 px-5">
           <View
-            className="w-full rounded-3xl p-5 border shadow-xl"
+            className="w-full rounded-2xl p-5 border shadow-xl"
             style={{
               backgroundColor: isDark ? colors.bgCard : "#FFFFFF",
               borderColor: isDark ? colors.border : "#E2E8F0",

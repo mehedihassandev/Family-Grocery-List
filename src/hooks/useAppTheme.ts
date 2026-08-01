@@ -4,27 +4,46 @@ import { useThemeStore, ThemeMode } from "../store/useThemeStore";
 import { appThemeColors } from "../theme";
 
 /**
+ * Root App Theme Synchronization Hook
+ * Why: Synchronizes Zustand theme store with NativeWind's color scheme ONCE at the app root level.
+ * Using requestAnimationFrame defers NativeWind event emissions so they don't interrupt React component mount passes.
+ */
+export const useSyncAppTheme = () => {
+  const { colorScheme, setColorScheme } = useColorScheme();
+  const themeMode = useThemeStore((state) => state.themeMode);
+
+  useEffect(() => {
+    let targetScheme: "dark" | "light" | "system" | undefined;
+    if (themeMode === "dark" && colorScheme !== "dark") {
+      targetScheme = "dark";
+    } else if (themeMode === "light" && colorScheme !== "light") {
+      targetScheme = "light";
+    } else if (themeMode === "system" && colorScheme !== undefined) {
+      targetScheme = "system";
+    }
+
+    if (targetScheme) {
+      const handle = requestAnimationFrame(() => {
+        setColorScheme(targetScheme as any);
+      });
+      return () => cancelAnimationFrame(handle);
+    }
+  }, [themeMode, colorScheme, setColorScheme]);
+};
+
+/**
  * Custom App Theme Hook
- * Why: Provides centralized, clean theme management for Light and Dark modes.
- * Returns theme state (isDark), centralized colors (colors.accent, colors.icon, etc.), and theme switcher handler.
+ * Why: Provides centralized, clean presentational theme state (isDark), colors, and theme toggle handler for components.
  */
 export const useAppTheme = () => {
   const { colorScheme, setColorScheme } = useColorScheme();
   const { themeMode, setThemeMode: setStoreThemeMode } = useThemeStore();
 
-  useEffect(() => {
-    if (themeMode === "dark" && colorScheme !== "dark") {
-      setColorScheme("dark");
-    } else if (themeMode === "light" && colorScheme !== "light") {
-      setColorScheme("light");
-    } else if (themeMode === "system" && colorScheme !== undefined) {
-      setColorScheme("system" as any);
-    }
-  }, [themeMode, colorScheme, setColorScheme]);
-
   const setThemeMode = (mode: ThemeMode) => {
     setStoreThemeMode(mode);
-    setColorScheme(mode as any);
+    requestAnimationFrame(() => {
+      setColorScheme(mode as any);
+    });
   };
 
   const isDark = colorScheme === "dark" || themeMode === "dark";

@@ -360,19 +360,19 @@ const FamilyScreen = ({ navigation }: FamilyStackScreenProps) => {
         {/* Card 1: Family Group & Invite Code */}
         <Animated.View
           entering={FadeInDown.duration(350).springify()}
-          className="rounded-3xl p-5 mb-4 shadow-2xs"
-          style={{ backgroundColor: isDark ? colors.bgSurface : "#EEF2FF" }}
+          className="rounded-2xl p-4 mb-4 border shadow-xs"
+          style={{ backgroundColor: colors.bgCard, borderColor: colors.borderSubtle }}
         >
           <View className="flex-row items-center justify-between mb-2">
             <Text
-              className="text-[19px] font-black tracking-tight"
-              style={{ color: isDark ? colors.textPrimary : "#1E293B" }}
+              className="text-[18px] font-black tracking-tight"
+              style={{ color: colors.textPrimary }}
             >
               Family Group
             </Text>
             <View
               className="h-9 w-9 items-center justify-center rounded-xl"
-              style={{ backgroundColor: isDark ? colors.bgInput : "rgba(13, 148, 136, 0.1)" }}
+              style={{ backgroundColor: colors.accentMuted }}
             >
               <Users stroke={colors.accent} size={20} strokeWidth={2.2} />
             </View>
@@ -386,12 +386,12 @@ const FamilyScreen = ({ navigation }: FamilyStackScreenProps) => {
           </Text>
 
           <View
-            className="flex-row items-center justify-between p-4 rounded-2xl"
-            style={{ backgroundColor: isDark ? colors.bgInput : "#FFFFFF" }}
+            className="flex-row items-center justify-between p-3.5 rounded-xl border"
+            style={{ backgroundColor: colors.bgInput, borderColor: colors.borderSubtle }}
           >
             <Text
               className="text-[20px] font-black tracking-[4px]"
-              style={{ color: isDark ? colors.textPrimary : "#0F172A" }}
+              style={{ color: colors.textPrimary }}
             >
               {inviteCodeToDisplay}
             </Text>
@@ -399,7 +399,7 @@ const FamilyScreen = ({ navigation }: FamilyStackScreenProps) => {
               onPress={handleShare}
               activeOpacity={0.7}
               className="h-10 w-10 items-center justify-center rounded-full"
-              style={{ backgroundColor: isDark ? colors.accentLightSubtle : "#D1FAE5" }}
+              style={{ backgroundColor: colors.accentMuted }}
             >
               <Share2 stroke={colors.accent} size={18} strokeWidth={2.2} />
             </TouchableOpacity>
@@ -409,8 +409,8 @@ const FamilyScreen = ({ navigation }: FamilyStackScreenProps) => {
         {/* Card 2: Add Member */}
         <Animated.View
           entering={FadeInDown.duration(400).springify()}
-          className="rounded-3xl p-5 mb-5 shadow-2xs"
-          style={{ backgroundColor: isDark ? colors.bgSurface : "#F1F4FD" }}
+          className="rounded-2xl p-4 mb-5 border shadow-xs"
+          style={{ backgroundColor: colors.bgCard, borderColor: colors.borderSubtle }}
         >
           <View className="flex-row items-center mb-3">
             <UserPlus
@@ -420,8 +420,8 @@ const FamilyScreen = ({ navigation }: FamilyStackScreenProps) => {
               style={{ marginRight: 8 }}
             />
             <Text
-              className="text-[16px] font-black"
-              style={{ color: isDark ? colors.textPrimary : "#1E293B" }}
+              className="text-[16px] font-black tracking-tight"
+              style={{ color: colors.textPrimary }}
             >
               Add Member
             </Text>
@@ -429,42 +429,44 @@ const FamilyScreen = ({ navigation }: FamilyStackScreenProps) => {
 
           <View className="flex-row items-center gap-2">
             <View
-              className="flex-1 flex-row items-center rounded-2xl px-3.5 h-12 border"
+              className="flex-1 flex-row items-center rounded-xl px-3.5 h-12 border"
               style={{
-                backgroundColor: isDark ? colors.bgInput : "#FFFFFF",
-                borderColor: isDark ? colors.border : "#E2E8F0",
+                backgroundColor: colors.bgInput,
+                borderColor: colors.borderSubtle,
               }}
             >
               <Mail size={18} color={colors.iconMuted} style={{ marginRight: 8 }} />
               <TextInput
                 value={inviteEmail}
                 onChangeText={setInviteEmail}
-                placeholder="Email address"
-                placeholderTextColor={colors.iconMuted}
+                placeholder="Enter member email"
+                placeholderTextColor={colors.textMuted}
                 keyboardType="email-address"
                 autoCapitalize="none"
-                className="flex-1 text-[13px] font-semibold"
-                style={{
-                  color: colors.textPrimary,
-                  paddingVertical: 0,
-                  height: "100%",
-                }}
+                style={{ color: colors.textPrimary, flex: 1, fontSize: 14, fontWeight: "500" }}
               />
             </View>
 
             <TouchableOpacity
               onPress={handleInviteEmail}
-              disabled={!inviteEmail.trim() || inviteMemberMutation.isPending}
+              disabled={inviteMemberMutation.isPending || !inviteEmail.trim()}
               activeOpacity={0.8}
-              className="h-12 px-4 rounded-2xl flex-row items-center justify-center"
+              className="h-12 px-4 rounded-xl items-center justify-center flex-row gap-1.5"
               style={{
-                backgroundColor: inviteEmail.trim() ? colors.accent : "#94A3B8",
+                backgroundColor: inviteEmail.trim() ? colors.accent : colors.bgInput,
               }}
             >
-              <Text className="font-extrabold text-[14px] text-white">
-                {inviteMemberMutation.isPending ? "Sending..." : "Send"}
+              <Send
+                size={16}
+                color={inviteEmail.trim() ? "#FFFFFF" : colors.textMuted}
+                strokeWidth={2.2}
+              />
+              <Text
+                className="text-xs font-extrabold"
+                style={{ color: inviteEmail.trim() ? "#FFFFFF" : colors.textMuted }}
+              >
+                Invite
               </Text>
-              <Send stroke="white" size={15} strokeWidth={2.5} style={{ marginLeft: 6 }} />
             </TouchableOpacity>
           </View>
         </Animated.View>
@@ -473,18 +475,15 @@ const FamilyScreen = ({ navigation }: FamilyStackScreenProps) => {
         <View className="flex-row items-center justify-between mb-3 px-1">
           <Text
             className="text-[18px] font-black tracking-tight"
-            style={{ color: isDark ? colors.textPrimary : "#0F172A" }}
+            style={{ color: colors.textPrimary }}
           >
             Group Members
           </Text>
           <View
-            className="px-3 py-1 rounded-full"
-            style={{ backgroundColor: isDark ? colors.bgInput : "#E0E7FF" }}
+            className="px-3 py-1 rounded-full border"
+            style={{ backgroundColor: colors.bgInput, borderColor: colors.borderSubtle }}
           >
-            <Text
-              className="text-[12px] font-extrabold"
-              style={{ color: isDark ? colors.accent : "#4338CA" }}
-            >
+            <Text className="text-[12px] font-extrabold" style={{ color: colors.accent }}>
               {members.length > 0 ? `${members.length}/6` : "1/6"}
             </Text>
           </View>
@@ -502,10 +501,10 @@ const FamilyScreen = ({ navigation }: FamilyStackScreenProps) => {
             return (
               <Animated.View entering={FadeInDown.duration(300 + index * 40).springify()}>
                 <View
-                  className="flex-row items-center p-3.5 rounded-2xl mb-3 border shadow-2xs"
+                  className="flex-row items-center p-3.5 rounded-2xl mb-3 border shadow-xs"
                   style={{
-                    backgroundColor: isDark ? colors.bgCard : "#EFF3FE",
-                    borderColor: isDark ? colors.border : "transparent",
+                    backgroundColor: colors.bgCard,
+                    borderColor: colors.borderSubtle,
                   }}
                 >
                   <View className="relative mr-3.5">
@@ -573,14 +572,16 @@ const FamilyScreen = ({ navigation }: FamilyStackScreenProps) => {
                     </Text>
                   </View>
 
-                  {/* 3-dots action button — opens bottom sheet */}
-                  <TouchableOpacity
-                    onPress={() => setMenuMember(item)}
-                    activeOpacity={0.7}
-                    className="p-2 rounded-full"
-                  >
-                    <MoreVertical stroke={colors.iconMuted} size={18} strokeWidth={2} />
-                  </TouchableOpacity>
+                  {/* 3-dots action button — only show if current user is owner and target is not self */}
+                  {isOwner && item.uid !== user?.uid ? (
+                    <TouchableOpacity
+                      onPress={() => setMenuMember(item)}
+                      activeOpacity={0.7}
+                      className="p-2 rounded-full"
+                    >
+                      <MoreVertical stroke={colors.iconMuted} size={18} strokeWidth={2} />
+                    </TouchableOpacity>
+                  ) : null}
                 </View>
               </Animated.View>
             );

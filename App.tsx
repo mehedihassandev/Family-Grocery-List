@@ -4,13 +4,16 @@ import React, { useEffect, useState } from "react";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import Navigator from "./src/navigation";
+import { useFonts } from "expo-font";
 import {
-  useFonts,
-  DMSans_400Regular,
-  DMSans_500Medium,
-  DMSans_700Bold,
-} from "@expo-google-fonts/dm-sans";
-import { DMMono_400Regular, DMMono_500Medium } from "@expo-google-fonts/dm-mono";
+  PlusJakartaSans_400Regular,
+  PlusJakartaSans_500Medium,
+  PlusJakartaSans_700Bold,
+} from "@expo-google-fonts/plus-jakarta-sans";
+import {
+  JetBrainsMono_400Regular,
+  JetBrainsMono_500Medium,
+} from "@expo-google-fonts/jetbrains-mono";
 
 import * as SplashScreen from "expo-splash-screen";
 
@@ -21,6 +24,7 @@ import { listenToAuthChanges } from "./src/services/auth";
 import { LoadingScreen } from "./src/screens";
 import { GlobalLoadingOverlay } from "./src/components/ui";
 import { NavigationContainer } from "@react-navigation/native";
+import { useSyncAppTheme } from "./src/hooks";
 
 // Keep the splash screen visible while we fetch resources
 void SplashScreen.preventAutoHideAsync();
@@ -32,12 +36,14 @@ const MIN_LOADING_SCREEN_MS = 800;
  * Why: Orchestrates the root configuration including fonts, providers, NavigationContainer, main navigator, and global app logo loader overlay.
  */
 export default function App() {
+  useSyncAppTheme();
+
   const [fontsLoaded, fontError] = useFonts({
-    DMSans_400Regular,
-    DMSans_500Medium,
-    DMSans_700Bold,
-    DMMono_400Regular,
-    DMMono_500Medium,
+    PlusJakartaSans_400Regular,
+    PlusJakartaSans_500Medium,
+    PlusJakartaSans_700Bold,
+    JetBrainsMono_400Regular,
+    JetBrainsMono_500Medium,
   });
 
   const hasHydrated = useAuthStore((state) => state.hasHydrated);

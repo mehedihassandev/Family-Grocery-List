@@ -71,14 +71,14 @@ const styles = StyleSheet.create({
   totalValue: {
     fontSize: 22,
     fontWeight: "800",
-    fontFamily: "DMSans_700Bold",
+    fontFamily: "PlusJakartaSans_700Bold",
   },
   totalLabel: {
     fontSize: 10,
     fontWeight: "700",
     letterSpacing: 1,
     marginTop: -2,
-    fontFamily: "DMSans_700Bold",
+    fontFamily: "PlusJakartaSans_700Bold",
   },
 });
 

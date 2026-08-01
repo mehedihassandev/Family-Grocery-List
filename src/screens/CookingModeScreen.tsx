@@ -123,7 +123,7 @@ const CookingModeScreen = ({ navigation, route }: any) => {
           <TouchableOpacity
             activeOpacity={0.9}
             onPress={() => navigation.navigate(ROUTES.RECIPE_PACKS)}
-            className="rounded-3xl p-4 mb-5 flex-row items-center justify-between border shadow-2xs"
+            className="rounded-2xl p-4 mb-5 flex-row items-center justify-between border shadow-2xs"
             style={{
               backgroundColor: isDark ? colors.bgSurface : "#EFF6FF",
               borderColor: isDark ? colors.border : "#BFDBFE",
@@ -150,7 +150,7 @@ const CookingModeScreen = ({ navigation, route }: any) => {
             <Animated.View
               key={r.id}
               entering={FadeInDown.duration(350).springify()}
-              className="rounded-3xl p-4 mb-4 border shadow-xs flex-row items-center justify-between"
+              className="rounded-2xl p-4 mb-4 border shadow-xs flex-row items-center justify-between"
               style={{
                 backgroundColor: isDark ? colors.bgCard : "#FFFFFF",
                 borderColor: isDark ? colors.border : "#F1F5F9",
@@ -252,7 +252,7 @@ const CookingModeScreen = ({ navigation, route }: any) => {
         {/* Step Image Hero Card */}
         <Animated.View
           entering={FadeInDown.duration(350).springify()}
-          className="relative h-60 w-full rounded-3xl overflow-hidden mb-4 shadow-xs"
+          className="relative h-60 w-full rounded-2xl overflow-hidden mb-4 shadow-xs"
         >
           <Image
             source={{
@@ -277,7 +277,7 @@ const CookingModeScreen = ({ navigation, route }: any) => {
         {/* Step Instructions Card */}
         <Animated.View
           entering={FadeInDown.duration(400).springify()}
-          className="rounded-3xl p-5 mb-4 shadow-2xs border"
+          className="rounded-2xl p-5 mb-4 shadow-2xs border"
           style={{
             backgroundColor: isDark ? colors.bgSurface : "#EFF3FE",
             borderColor: isDark ? colors.border : "transparent",

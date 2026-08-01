@@ -1,5 +1,5 @@
 import React, { ReactNode } from "react";
-import { Text, View, TouchableOpacity } from "react-native";
+import { Text, View, TouchableOpacity, Image } from "react-native";
 import { Bell, ArrowLeft } from "lucide-react-native";
 import { useAuthStore } from "../../store/useAuthStore";
 import { useNotificationStore } from "../../store/useNotificationStore";
@@ -19,12 +19,6 @@ interface IAppHeaderProps {
   onBackPress?: () => void;
 }
 
-/**
- * Main application header component
- * Why: To provide consistent navigation and branding across all screens.
- * Features: Title, optional eyebrow/subtitle, back button, notification bell, and profile avatar button.
- * @param props - Component props including title, eyebrow, and interaction handlers
- */
 const AppHeader = ({
   eyebrow,
   title,
@@ -49,35 +43,36 @@ const AppHeader = ({
   ).length;
 
   const unreadCount = typeof apiUnreadCount === "number" ? apiUnreadCount : fallbackUnreadCount;
+  const initial = user?.displayName ? user.displayName.charAt(0).toUpperCase() : "U";
 
   return (
     <View
-      className="flex-row items-center justify-between px-6 pb-4 pt-2 border-b"
+      className="flex-row items-center justify-between px-5 pb-3 pt-2 border-b"
       style={{ backgroundColor: colors.bgCanvas, borderBottomColor: colors.borderSubtle }}
     >
-      <View className="flex-row items-center flex-1">
+      <View className="flex-row items-center flex-1 mr-2">
         {showBackButton && (
           <TouchableOpacity
             onPress={onBackPress}
-            activeOpacity={0.7}
-            className="mr-3 h-9 w-9 items-center justify-center rounded-full border"
-            style={{ backgroundColor: colors.bgSurface, borderColor: colors.border }}
+            activeOpacity={0.75}
+            className="mr-3 h-10 w-10 items-center justify-center rounded-full border shadow-xs"
+            style={{ backgroundColor: colors.bgSurface, borderColor: colors.borderSubtle }}
             hitSlop={{ top: 10, right: 10, bottom: 10, left: 10 }}
           >
-            <ArrowLeft stroke={colors.icon} size={18} strokeWidth={2.2} />
+            <ArrowLeft stroke={colors.textPrimary} size={20} strokeWidth={2.2} />
           </TouchableOpacity>
         )}
         <View className="flex-1">
           {eyebrow ? (
             <Text
-              className="mb-0.5 text-[10px] font-bold uppercase tracking-[0.08em]"
+              className="mb-0.5 text-[11px] font-extrabold uppercase tracking-widest"
               style={{ color: colors.textMuted }}
             >
               {eyebrow}
             </Text>
           ) : null}
           <Text
-            className="text-[26px] font-extrabold tracking-tight leading-tight"
+            className="text-2xl font-black tracking-tight leading-tight"
             style={{ color: colors.textPrimary }}
             numberOfLines={1}
             adjustsFontSizeToFit
@@ -86,7 +81,7 @@ const AppHeader = ({
           </Text>
           {subtitle ? (
             <Text
-              className="mt-1 text-[13px] font-medium leading-5"
+              className="mt-0.5 text-[13px] font-medium leading-5"
               style={{ color: colors.textSecondary }}
             >
               {subtitle}
@@ -94,22 +89,22 @@ const AppHeader = ({
           ) : null}
         </View>
       </View>
-      <View className="flex-row items-center gap-2.5 pl-3">
+      <View className="flex-row items-center gap-2.5">
         {right}
         {showNotification && (
           <TouchableOpacity
             onPress={onNotificationPress}
-            activeOpacity={0.7}
-            className="h-9 w-9 items-center justify-center rounded-full border relative"
-            style={{ backgroundColor: colors.bgSurface, borderColor: colors.border }}
+            activeOpacity={0.75}
+            className="h-10 w-10 items-center justify-center rounded-full border shadow-xs relative"
+            style={{ backgroundColor: colors.bgSurface, borderColor: colors.borderSubtle }}
           >
-            <Bell stroke={colors.accent} size={18} strokeWidth={2} />
+            <Bell stroke={colors.textPrimary} size={19} strokeWidth={2} />
             {unreadCount > 0 && (
               <View
-                className="absolute -right-1 -top-1 h-3.5 min-w-[14px] items-center justify-center rounded-full bg-rose-500 px-1 border"
-                style={{ borderColor: colors.bgCanvas }}
+                className="absolute -right-0.5 -top-0.5 h-4 min-w-[16px] items-center justify-center rounded-full px-1 border"
+                style={{ backgroundColor: colors.danger, borderColor: colors.bgCanvas }}
               >
-                <Text className="text-[8px] font-bold text-white">
+                <Text className="text-[9px] font-black text-white">
                   {unreadCount > 99 ? "99+" : unreadCount}
                 </Text>
               </View>
@@ -120,14 +115,14 @@ const AppHeader = ({
           <TouchableOpacity
             onPress={onProfilePress}
             activeOpacity={0.8}
-            className="h-9 w-9 items-center justify-center rounded-full overflow-hidden"
-            style={{ backgroundColor: "#047857" }}
+            className="h-10 w-10 items-center justify-center rounded-full overflow-hidden border shadow-xs"
+            style={{ backgroundColor: colors.accent, borderColor: colors.borderSubtle }}
           >
-            <View className="h-full w-full items-center justify-center">
-              <Text className="text-[13px] font-bold text-white">
-                {user?.displayName ? user.displayName.charAt(0).toUpperCase() : "U"}
-              </Text>
-            </View>
+            {user?.photoURL ? (
+              <Image source={{ uri: user.photoURL }} className="h-full w-full" />
+            ) : (
+              <Text className="text-white font-black text-sm">{initial}</Text>
+            )}
           </TouchableOpacity>
         )}
       </View>

@@ -215,7 +215,7 @@ const ItemDetailScreen = ({
       >
         {/* HERO CARD */}
         <View
-          className="rounded-3xl p-5 mb-6 border shadow-sm"
+          className="rounded-2xl p-5 mb-6 border shadow-sm"
           style={{
             backgroundColor: isDark ? "#17233D" : "#FFFFFF",
             borderColor: isDark ? "#253347" : "#E2E8F0",

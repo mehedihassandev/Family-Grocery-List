@@ -24,6 +24,8 @@ import {
   useAppTheme,
   useTextFormatter,
 } from "../hooks";
+import { useUnreadNotificationCountQuery } from "../hooks/queries/useNotificationQueries";
+import { useNotificationStore } from "../store/useNotificationStore";
 
 const FALLBACK_MONTHLY_SPEND: Record<string, number> = {
   Jan: 40,
@@ -49,6 +51,14 @@ const AnalyticsScreen = ({ navigation }: AnalyticsStackScreenProps) => {
   const { data: items = [] } = useFamilyGroceryItemsBackend(user?.familyId);
   const { data: monthlyAnalytics } = useMonthlyAnalytics(user?.familyId || undefined, items);
   const { data: basketOpt } = useBasketOptimization(user?.familyId || undefined, items);
+
+  const { data: unreadData } = useUnreadNotificationCountQuery(user?.familyId);
+  const notifications = useNotificationStore((state) => state.notifications);
+  const fallbackUnreadCount = notifications.filter(
+    (n) => n.actorId !== user?.uid && !n.readBy.includes(user?.uid || ""),
+  ).length;
+  const unreadCount =
+    typeof unreadData?.unreadCount === "number" ? unreadData.unreadCount : fallbackUnreadCount;
 
   // Dynamic Spend Calculations from Real API Data
   const totalSpent = useMemo(() => {
@@ -194,13 +204,23 @@ const AnalyticsScreen = ({ navigation }: AnalyticsStackScreenProps) => {
           <TouchableOpacity
             onPress={() => navigation.navigate(ROUTES.NOTIFICATIONS)}
             activeOpacity={0.75}
-            className="h-10 w-10 rounded-full items-center justify-center border shadow-xs"
+            className="h-10 w-10 rounded-full items-center justify-center border shadow-xs relative"
             style={{
               backgroundColor: isDark ? "#17233D" : "#FFFFFF",
               borderColor: isDark ? "#253347" : "#E2E8F0",
             }}
           >
             <Bell size={19} stroke={isDark ? "#FFFFFF" : "#0F172A"} strokeWidth={2} />
+            {unreadCount > 0 ? (
+              <View
+                className="absolute -right-0.5 -top-0.5 h-4 min-w-[16px] items-center justify-center rounded-full px-1 border"
+                style={{ backgroundColor: colors.danger, borderColor: colors.bgCanvas }}
+              >
+                <Text className="text-[9px] font-black text-white">
+                  {unreadCount > 99 ? "99+" : unreadCount}
+                </Text>
+              </View>
+            ) : null}
           </TouchableOpacity>
 
           <TouchableOpacity
@@ -228,7 +248,7 @@ const AnalyticsScreen = ({ navigation }: AnalyticsStackScreenProps) => {
         {/* DYNAMIC HERO BUDGET ALERT CARD */}
         <Animated.View
           entering={FadeInDown.duration(350).springify()}
-          className="rounded-3xl p-5 mb-4 border shadow-xs"
+          className="rounded-2xl p-5 mb-4 border shadow-xs"
           style={{
             backgroundColor: isOverBudget
               ? isDark
@@ -406,7 +426,7 @@ const AnalyticsScreen = ({ navigation }: AnalyticsStackScreenProps) => {
           </Text>
 
           <View
-            className="rounded-3xl p-5 border shadow-xs"
+            className="rounded-2xl p-5 border shadow-xs"
             style={{
               backgroundColor: isDark ? "#16233B" : "#FFFFFF",
               borderColor: isDark ? "#253347" : "#F1F5F9",
@@ -541,7 +561,7 @@ const AnalyticsScreen = ({ navigation }: AnalyticsStackScreenProps) => {
           <TouchableOpacity
             onPress={() => (navigation as any).navigate(ROUTES.STORE_COMPARISON)}
             activeOpacity={0.88}
-            className="rounded-3xl p-5 shadow-lg border"
+            className="rounded-2xl p-5 shadow-lg border"
             style={{ backgroundColor: "#17233D", borderColor: "#253347" }}
           >
             <Text className="text-slate-300 text-xs font-bold mb-3">
@@ -612,7 +632,7 @@ const AnalyticsScreen = ({ navigation }: AnalyticsStackScreenProps) => {
             ).map((prod) => (
               <View
                 key={prod.name}
-                className="w-36 rounded-3xl p-4 border shadow-xs items-center mr-3"
+                className="w-36 rounded-2xl p-4 border shadow-xs items-center mr-3"
                 style={{
                   backgroundColor: isDark ? "#16233B" : "#FFFFFF",
                   borderColor: isDark ? "#253347" : "#F1F5F9",

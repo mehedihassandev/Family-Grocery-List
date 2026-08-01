@@ -22,6 +22,8 @@ import {
   useAppTheme,
   useTextFormatter,
 } from "../hooks";
+import { useUnreadNotificationCountQuery } from "../hooks/queries/useNotificationQueries";
+import { useNotificationStore } from "../store/useNotificationStore";
 
 /**
  * Basket & Store Comparison Screen - 100% Dynamic API Data Driven
@@ -37,6 +39,14 @@ const StoreComparisonScreen = ({
   const { data: items = [] } = useFamilyGroceryItemsBackend(user?.familyId);
   const { data: basketOpt } = useBasketOptimization(user?.familyId || undefined, items);
   const { data: basketSplitOpt } = useBasketSplitOptimization(user?.familyId || undefined, items);
+
+  const { data: unreadData } = useUnreadNotificationCountQuery(user?.familyId);
+  const notifications = useNotificationStore((state) => state.notifications);
+  const fallbackUnreadCount = notifications.filter(
+    (n) => n.actorId !== user?.uid && !n.readBy.includes(user?.uid || ""),
+  ).length;
+  const unreadCount =
+    typeof unreadData?.unreadCount === "number" ? unreadData.unreadCount : fallbackUnreadCount;
 
   const bestStoreName = useMemo(() => {
     return basketOpt?.cheapestStoreName || "";
@@ -122,13 +132,23 @@ const StoreComparisonScreen = ({
           <TouchableOpacity
             onPress={() => navigation.navigate(ROUTES.NOTIFICATIONS)}
             activeOpacity={0.75}
-            className="h-10 w-10 rounded-full items-center justify-center border shadow-xs"
+            className="h-10 w-10 rounded-full items-center justify-center border shadow-xs relative"
             style={{
               backgroundColor: isDark ? "#17233D" : "#FFFFFF",
               borderColor: isDark ? "#253347" : "#E2E8F0",
             }}
           >
             <Bell size={19} stroke={isDark ? "#FFFFFF" : "#0F172A"} strokeWidth={2} />
+            {unreadCount > 0 ? (
+              <View
+                className="absolute -right-0.5 -top-0.5 h-4 min-w-[16px] items-center justify-center rounded-full px-1 border"
+                style={{ backgroundColor: "#EF4444", borderColor: isDark ? "#0B0F17" : "#F8FAFC" }}
+              >
+                <Text className="text-[9px] font-black text-white">
+                  {unreadCount > 99 ? "99+" : unreadCount}
+                </Text>
+              </View>
+            ) : null}
           </TouchableOpacity>
 
           <TouchableOpacity
@@ -156,7 +176,7 @@ const StoreComparisonScreen = ({
         {/* HERO GREEN SAVINGS BANNER CARD */}
         <Animated.View
           entering={FadeInDown.duration(350).springify()}
-          className="rounded-3xl p-5 mb-5 relative overflow-hidden shadow-md"
+          className="rounded-2xl p-5 mb-5 relative overflow-hidden shadow-md"
           style={{ backgroundColor: "#006837" }}
         >
           <View
@@ -231,7 +251,7 @@ const StoreComparisonScreen = ({
                 key={store.name}
                 onPress={() => setSelectedStore(store.name)}
                 activeOpacity={0.88}
-                className="rounded-3xl p-4 mb-3 border-2 shadow-xs"
+                className="rounded-2xl p-4 mb-3 border-2 shadow-xs"
                 style={{
                   backgroundColor: store.isCheapest
                     ? isDark
@@ -340,7 +360,7 @@ const StoreComparisonScreen = ({
           {topPriceDifferences.map((item, idx) => (
             <View
               key={item.name + idx}
-              className="rounded-3xl p-4 mb-3 border shadow-xs"
+              className="rounded-2xl p-4 mb-3 border shadow-xs"
               style={{
                 backgroundColor: isDark ? "#16233B" : "#EEF4FF",
                 borderColor: isDark ? "#253347" : "#E2E8F0",
@@ -380,7 +400,7 @@ const StoreComparisonScreen = ({
           <TouchableOpacity
             onPress={() => navigation.goBack()}
             activeOpacity={0.88}
-            className="h-14 rounded-3xl flex-row items-center justify-center shadow-lg"
+            className="h-14 rounded-2xl flex-row items-center justify-center shadow-lg"
             style={{ backgroundColor: "#006837" }}
           >
             <ArrowRightLeft stroke="#FFFFFF" size={18} strokeWidth={2.5} className="mr-2" />
@@ -400,7 +420,7 @@ const StoreComparisonScreen = ({
           </Text>
 
           <View
-            className="rounded-3xl p-5 border shadow-xs"
+            className="rounded-2xl p-5 border shadow-xs"
             style={{
               backgroundColor: isDark ? "#16233B" : "#EEF4FF",
               borderColor: isDark ? "#253347" : "#E2E8F0",

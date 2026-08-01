@@ -87,8 +87,21 @@
   },
   "brand": {
     "green": "#006837",
+    "emerald": "#006C49",
+    "emeraldLight": "#10B981",
     "dark": "#00542C",
-    "accent": "#0E6E45"
+    "accent": "#0E6E45",
+    "tertiary": "#494BD6",
+    "tertiaryLight": "#9699FF",
+    "amber": "#FEA619",
+    "slateDark": "#0B1C30"
+  },
+  "tertiary": {
+    "50": "#E1E0FF",
+    "100": "#C0C1FF",
+    "500": "#494BD6",
+    "600": "#2F2EBE",
+    "700": "#1D17B2"
   },
   "handle": "#CBD5E1"
 }

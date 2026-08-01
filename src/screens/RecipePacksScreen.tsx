@@ -184,7 +184,7 @@ const RecipePacksScreen = ({ navigation }: any) => {
         {/* Hero AI Prompt Box */}
         <Animated.View
           entering={FadeInDown.duration(300).springify()}
-          className="rounded-3xl p-5 mb-5 shadow-2xs border"
+          className="rounded-2xl p-5 mb-5 shadow-2xs border"
           style={{
             backgroundColor: isDark ? colors.bgSurface : "#EFF3FE",
             borderColor: isDark ? colors.border : "transparent",
@@ -299,7 +299,7 @@ const RecipePacksScreen = ({ navigation }: any) => {
         {/* Selected Recipe Bundle Details Card */}
         <Animated.View
           entering={FadeInDown.duration(400).springify()}
-          className="rounded-3xl p-5 mb-5 shadow-2xs border"
+          className="rounded-2xl p-5 mb-5 shadow-2xs border"
           style={{
             backgroundColor: isDark ? colors.bgCard : "#FFFFFF",
             borderColor: isDark ? colors.border : "#F1F5F9",

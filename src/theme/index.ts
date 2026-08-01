@@ -70,12 +70,19 @@ export const appThemeColors = {
     icon: "#475569",
     iconMuted: "#94A3B8",
 
-    // Brand Accents (Figma Forest Emerald)
+    // Brand Accents (Figma Forest Emerald & Stitch Indigo)
     accent: "#006837",
     accentLight: "#0E6E45",
     accentDark: "#00542C",
     accentMuted: "#D1FAE5",
     accentGlow: "rgba(0, 104, 55, 0.12)",
+    tertiary: "#494BD6",
+    tertiaryLight: "#9699FF",
+    tertiaryContainer: "#E1E0FF",
+
+    // Glass & Elevation (Stitch Design)
+    bgGlass: "rgba(255, 255, 255, 0.85)",
+    borderGlass: "rgba(0, 0, 0, 0.08)",
 
     // Status Colors
     danger: "#EF4444",
@@ -120,19 +127,23 @@ export const appThemeColors = {
     categoryOther: "#64748B",
   },
   dark: {
-    // Canvas & Elevation (Ultra-Deep Slate Charcoal - Facebook Modern Dark Style)
-    bgCanvas: "#0B0F17",
-    bgSurface: "#161F2E",
-    bgCard: "#161F2E",
-    bgInput: "#212D40",
-    bgElevated: "#2A384E",
-    bgHover: "#2A384E",
-    bgPressed: "#354763",
+    // Canvas & Elevation (Stitch Deep Midnight Slate Style)
+    bgCanvas: "#0B1C30",
+    bgSurface: "#12253E",
+    bgCard: "#12253E",
+    bgInput: "#1A2E4A",
+    bgElevated: "#213654",
+    bgHover: "#213654",
+    bgPressed: "#2A4264",
     overlayBg: "rgba(0, 0, 0, 0.75)",
 
+    // Glass & Elevation (Stitch Design)
+    bgGlass: "rgba(11, 28, 48, 0.75)",
+    borderGlass: "rgba(255, 255, 255, 0.1)",
+
     // Borders & Dividers
-    border: "#253347",
-    borderSubtle: "#1B2637",
+    border: "#1E334D",
+    borderSubtle: "#16283F",
     borderFocus: "#34D399",
 
     // Typography
@@ -145,12 +156,15 @@ export const appThemeColors = {
     icon: "#94A3B8",
     iconMuted: "#64748B",
 
-    // Brand Accents (Vibrant Mint Emerald in Dark Mode)
+    // Brand Accents (Vibrant Mint Emerald & Stitch Indigo in Dark Mode)
     accent: "#34D399",
     accentLight: "#00B368",
     accentDark: "#006837",
     accentMuted: "#004021",
     accentGlow: "rgba(52, 211, 153, 0.18)",
+    tertiary: "#9699FF",
+    tertiaryLight: "#C0C1FF",
+    tertiaryContainer: "rgba(73, 75, 214, 0.25)",
 
     // Status Colors
     danger: "#F87171",
@@ -163,10 +177,10 @@ export const appThemeColors = {
     successLight: "#004021",
 
     // Navigation & Components
-    tabBarBg: "#161F2E",
-    tabBarBorder: "#253347",
-    headerBg: "#161F2E",
-    headerBgTranslucent: "rgba(22, 31, 46, 0.85)",
+    tabBarBg: "#12253E",
+    tabBarBorder: "rgba(255, 255, 255, 0.08)",
+    headerBg: "#12253E",
+    headerBgTranslucent: "rgba(11, 28, 48, 0.85)",
     white: "#FFFFFF",
     black: "#0F172A",
     bgCartActive: "#3A3219",

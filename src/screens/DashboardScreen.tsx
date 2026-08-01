@@ -25,6 +25,7 @@ import {
   useTextFormatter,
   useAppTheme,
 } from "../hooks";
+import { useUnreadNotificationCountQuery } from "../hooks/queries/useNotificationQueries";
 import { ShortcutCard, ProgressBar, DonutChart, PriorityBadge } from "../components/ui";
 import { useNotificationStore } from "../store/useNotificationStore";
 
@@ -45,12 +46,15 @@ const DashboardScreen = ({ navigation }: HomeStackScreenProps) => {
 
   const familyName = family?.name || "Mehedi";
 
+  const { data: unreadData } = useUnreadNotificationCountQuery(user?.familyId);
   const notifications = useNotificationStore((state) => state.notifications);
   const notificationError = useNotificationStore((state) => state.error);
-  const unreadCount = notifications.filter(
+  const fallbackUnreadCount = notifications.filter(
     (notification) =>
       notification.actorId !== user?.uid && !notification.readBy.includes(user?.uid || ""),
   ).length;
+  const unreadCount =
+    typeof unreadData?.unreadCount === "number" ? unreadData.unreadCount : fallbackUnreadCount;
 
   // Stats Calculations
   const pendingItems = useMemo(() => items.filter((item) => item.status === "pending"), [items]);
@@ -215,7 +219,7 @@ const DashboardScreen = ({ navigation }: HomeStackScreenProps) => {
               {/* Ultra-Aesthetic Hero Family Group Card */}
               <Animated.View
                 entering={FadeInDown.duration(350).springify()}
-                className="rounded-3xl p-5 border shadow-sm mb-5"
+                className="rounded-2xl p-5 border shadow-sm mb-5"
                 style={{ backgroundColor: colors.bgCard, borderColor: colors.borderSubtle }}
               >
                 {/* Header Row inside Card */}
@@ -370,7 +374,7 @@ const DashboardScreen = ({ navigation }: HomeStackScreenProps) => {
               {/* Quick Actions Shortcuts */}
               <Animated.View
                 entering={FadeInDown.duration(400).springify()}
-                className="mb-5 rounded-3xl p-4 border shadow-xs"
+                className="mb-5 rounded-2xl p-4 border shadow-xs"
                 style={{ backgroundColor: colors.bgCard, borderColor: colors.borderSubtle }}
               >
                 <View className="flex-row items-center justify-between mb-3 px-1">
@@ -433,7 +437,7 @@ const DashboardScreen = ({ navigation }: HomeStackScreenProps) => {
                 </Text>
 
                 <View
-                  className="rounded-3xl p-4 border shadow-xs"
+                  className="rounded-2xl p-4 border shadow-xs"
                   style={{ backgroundColor: colors.bgCard, borderColor: colors.borderSubtle }}
                 >
                   <View className="flex-row items-center justify-between mb-2">
@@ -493,8 +497,8 @@ const DashboardScreen = ({ navigation }: HomeStackScreenProps) => {
                 <TouchableOpacity
                   activeOpacity={0.9}
                   onPress={() => navigation.navigate(ROUTES.RECIPE_PACKS)}
-                  className="rounded-3xl p-5 overflow-hidden relative shadow-md"
-                  style={{ backgroundColor: "#006837" }}
+                  className="rounded-2xl p-5 overflow-hidden relative shadow-md"
+                  style={{ backgroundColor: colors.accent }}
                 >
                   {/* Decorative Background Accent Orbs */}
                   <View
@@ -533,7 +537,7 @@ const DashboardScreen = ({ navigation }: HomeStackScreenProps) => {
                 </Text>
 
                 <View
-                  className="rounded-3xl p-4 border shadow-xs"
+                  className="rounded-2xl p-4 border shadow-xs"
                   style={{ backgroundColor: colors.bgCard, borderColor: colors.borderSubtle }}
                 >
                   <View

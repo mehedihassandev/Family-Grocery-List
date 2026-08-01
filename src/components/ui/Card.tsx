@@ -18,8 +18,8 @@ export const Card = ({
   children,
   className,
   style,
-  padding = false,
-  variant = "ghost",
+  padding = true,
+  variant = "outlined",
 }: ICardProps) => {
   const { colors } = useAppTheme();
 
@@ -28,9 +28,12 @@ export const Card = ({
       className={className}
       style={[
         styles.base,
-        { borderRadius: 16 },
-        variant === "outlined" && { borderWidth: 1, borderColor: colors.border },
-        variant === "flat" && { backgroundColor: colors.bgSurface },
+        {
+          borderRadius: 16,
+          backgroundColor: colors.bgCard,
+        },
+        variant === "outlined" && { borderWidth: 1, borderColor: colors.borderSubtle },
+        variant === "flat" && { backgroundColor: colors.bgSurface, borderWidth: 0 },
         variant === "ghost" && styles.ghost,
         padding && styles.padding,
         style,
@@ -43,14 +46,14 @@ export const Card = ({
 
 const styles = StyleSheet.create({
   base: {
-    backgroundColor: "transparent",
+    overflow: "hidden",
   },
   ghost: {
     backgroundColor: "transparent",
     borderWidth: 0,
   },
   padding: {
-    padding: 0,
+    padding: 16,
   },
 });
 

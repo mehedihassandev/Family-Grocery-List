@@ -160,7 +160,7 @@ const RecipeDetailScreen = ({ navigation, route }: any) => {
           {/* Quick Info Bar (4 Stats) */}
           <Animated.View
             entering={FadeInDown.duration(350).springify()}
-            className="rounded-3xl p-4 flex-row items-center justify-between mb-4 shadow-2xs border"
+            className="rounded-2xl p-4 flex-row items-center justify-between mb-4 shadow-2xs border"
             style={{
               backgroundColor: isDark ? colors.bgSurface : "#EFF3FE",
               borderColor: isDark ? colors.border : "transparent",
@@ -216,7 +216,7 @@ const RecipeDetailScreen = ({ navigation, route }: any) => {
           {/* Missing Ingredients Banner Card */}
           <Animated.View
             entering={FadeInDown.duration(400).springify()}
-            className="rounded-3xl p-4 mb-5 flex-row items-center justify-between shadow-2xs border"
+            className="rounded-2xl p-4 mb-5 flex-row items-center justify-between shadow-2xs border"
             style={{
               backgroundColor: isDark ? colors.badgeRoseBg : "#FEE2E2",
               borderColor: isDark ? colors.badgeRoseBorder : "#FECDD3",

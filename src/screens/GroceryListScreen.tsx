@@ -46,6 +46,7 @@ import { TripSummaryModal } from "../components/TripSummaryModal";
 import { sortLegacyGroceryItemsForHome } from "../features/grocery";
 import { ProgressBar, OfflineBanner, ScannerModal } from "../components/ui";
 import { useNotificationStore } from "../store/useNotificationStore";
+import { useUnreadNotificationCountQuery } from "../hooks/queries/useNotificationQueries";
 
 interface IGrocerySection {
   key: string;
@@ -109,10 +110,13 @@ const GroceryListScreen = ({ navigation }: ListStackScreenProps) => {
   const toggleMutation = useToggleItemCompletionBackend(user?.familyId);
   const addItemMutation = useAddGroceryItemBackend(user?.familyId);
 
+  const { data: unreadData } = useUnreadNotificationCountQuery(user?.familyId);
   const notifications = useNotificationStore((state) => state.notifications);
-  const unreadCount = notifications.filter(
+  const fallbackUnreadCount = notifications.filter(
     (n) => n.actorId !== user?.uid && !n.readBy.includes(user?.uid || ""),
   ).length;
+  const unreadCount =
+    typeof unreadData?.unreadCount === "number" ? unreadData.unreadCount : fallbackUnreadCount;
 
   const handleScannedItemAdd = (scanned: {
     name: string;
@@ -462,7 +466,7 @@ const GroceryListScreen = ({ navigation }: ListStackScreenProps) => {
                 </TouchableOpacity>
               </View>
               <View
-                className="mb-5 rounded-3xl p-4 border shadow-sm relative overflow-hidden"
+                className="mb-5 rounded-2xl p-4 border shadow-sm relative overflow-hidden"
                 style={{
                   backgroundColor: isDark ? "#142238" : "#EEF4FF",
                   borderColor: isDark ? "#253347" : "#E2E8F0",

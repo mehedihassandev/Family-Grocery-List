@@ -12,6 +12,13 @@ export const appTheme = {
     "3xl": 32,
     full: 9999,
   },
+  card: {
+    borderRadius: 16,
+    borderRadiusInner: 12,
+    padding: 16,
+    paddingCompact: 12,
+    paddingLarge: 20,
+  },
   spacing: {
     xs: 4,
     sm: 8,

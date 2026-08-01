@@ -6,8 +6,12 @@ module.exports = {
     extend: {
       colors: require("./src/theme/colors.json"),
       fontFamily: {
-        sans: ["DMSans_400Regular", "DMSans_500Medium", "DMSans_700Bold"],
-        mono: ["DMMono_400Regular", "DMMono_500Medium"],
+        sans: [
+          "PlusJakartaSans_400Regular",
+          "PlusJakartaSans_500Medium",
+          "PlusJakartaSans_700Bold",
+        ],
+        mono: ["JetBrainsMono_400Regular", "JetBrainsMono_500Medium"],
       },
       borderRadius: {
         xs: "4px",

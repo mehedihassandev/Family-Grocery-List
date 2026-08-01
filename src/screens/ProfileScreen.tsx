@@ -21,23 +21,12 @@ import {
   Users,
   Bell,
   ArrowRight,
-  Trash2,
 } from "lucide-react-native";
 
 import { useAuthStore } from "../store/useAuthStore";
-import { signOut, deleteUserAccount } from "../services/auth";
+import { signOut } from "../services/auth";
 import { useTextFormatter, useAppTheme, useFamilyMembers } from "../hooks";
-import { AppHeader, StatusModal, LoadingOverlay } from "../components/ui";
-
-type TStatusModalType = "success" | "error" | "warning" | "confirm";
-
-interface IStatusModalState {
-  visible: boolean;
-  title: string;
-  message: string;
-  type: TStatusModalType;
-  onConfirm?: () => void;
-}
+import { AppHeader } from "../components/ui";
 
 /**
  * Profile Screen matching Screenshot 2 mockup design
@@ -49,42 +38,6 @@ const ProfileScreen = ({ navigation }: ProfileStackScreenProps) => {
   const { data: members = [] } = useFamilyMembers(user?.familyId);
 
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
-  const [deletingAccount, setDeletingAccount] = useState(false);
-  const [statusModal, setStatusModal] = useState<IStatusModalState>({
-    visible: false,
-    title: "",
-    message: "",
-    type: "confirm",
-  });
-
-  const handleConfirmDeleteAccount = () => {
-    setStatusModal({
-      visible: true,
-      title: "Delete Account",
-      message:
-        "Are you sure you want to delete your account? This action is permanent and cannot be undone.",
-      type: "confirm",
-      onConfirm: async () => {
-        setStatusModal((prev) => ({ ...prev, visible: false }));
-        try {
-          setDeletingAccount(true);
-          await deleteUserAccount();
-        } catch (error) {
-          setStatusModal({
-            visible: true,
-            title: "Delete Failed",
-            message:
-              error instanceof Error
-                ? error.message
-                : "Could not delete account. Please try again.",
-            type: "error",
-          });
-        } finally {
-          setDeletingAccount(false);
-        }
-      },
-    });
-  };
 
   return (
     <SafeAreaView
@@ -93,22 +46,12 @@ const ProfileScreen = ({ navigation }: ProfileStackScreenProps) => {
       style={{ backgroundColor: isDark ? colors.bgCanvas : "#F4F5FB" }}
     >
       <StatusBar barStyle={isDark ? "light-content" : "dark-content"} />
-      <LoadingOverlay visible={deletingAccount} />
 
       <AppHeader
         eyebrow="GOOD MORNING"
         title="Profile"
         onNotificationPress={() => navigation.navigate(ROUTES.NOTIFICATIONS)}
         onProfilePress={() => navigation.navigate(ROUTES.PROFILE)}
-      />
-
-      <StatusModal
-        visible={statusModal.visible}
-        title={statusModal.title}
-        message={statusModal.message}
-        type={statusModal.type}
-        onConfirm={statusModal.onConfirm}
-        onClose={() => setStatusModal((prev) => ({ ...prev, visible: false }))}
       />
 
       <ScrollView
@@ -160,32 +103,32 @@ const ProfileScreen = ({ navigation }: ProfileStackScreenProps) => {
         {/* Card 1: Appearance */}
         <Animated.View
           entering={FadeInDown.duration(400).springify()}
-          className="rounded-3xl p-4 mb-4 shadow-2xs"
-          style={{ backgroundColor: isDark ? colors.bgSurface : "#EFF3FE" }}
+          className="rounded-2xl p-4 mb-4 border shadow-xs"
+          style={{ backgroundColor: colors.bgCard, borderColor: colors.borderSubtle }}
         >
           <Text
             className="text-[12px] font-extrabold uppercase tracking-wider mb-2.5 ml-1"
-            style={{ color: isDark ? colors.accent : "#047857" }}
+            style={{ color: colors.accent }}
           >
             Appearance
           </Text>
 
           <View
-            className="flex-row items-center justify-between p-1 rounded-2xl"
-            style={{ backgroundColor: isDark ? colors.bgInput : "#E0E7FF" }}
+            className="flex-row items-center justify-between p-1 rounded-xl border"
+            style={{ backgroundColor: colors.bgInput, borderColor: colors.borderSubtle }}
           >
             <TouchableOpacity
               activeOpacity={0.8}
               onPress={() => setThemeMode("light")}
-              className="flex-1 items-center justify-center py-2.5 rounded-xl"
+              className="flex-1 items-center justify-center py-2.5 rounded-lg"
               style={[
-                themeMode === "light" ? { backgroundColor: "#FFFFFF" } : undefined,
+                themeMode === "light" ? { backgroundColor: colors.bgSurface } : undefined,
                 themeMode === "light" ? shadowStyles.xs : undefined,
               ]}
             >
               <Text
                 className="text-[13px] font-extrabold"
-                style={{ color: themeMode === "light" ? "#0F172A" : "#64748B" }}
+                style={{ color: themeMode === "light" ? colors.textPrimary : colors.textMuted }}
               >
                 Light
               </Text>
@@ -194,7 +137,7 @@ const ProfileScreen = ({ navigation }: ProfileStackScreenProps) => {
             <TouchableOpacity
               activeOpacity={0.8}
               onPress={() => setThemeMode("dark")}
-              className="flex-1 items-center justify-center py-2.5 rounded-xl"
+              className="flex-1 items-center justify-center py-2.5 rounded-lg"
               style={[
                 themeMode === "dark" ? { backgroundColor: colors.accent } : undefined,
                 themeMode === "dark" ? shadowStyles.xs : undefined,
@@ -202,7 +145,7 @@ const ProfileScreen = ({ navigation }: ProfileStackScreenProps) => {
             >
               <Text
                 className="text-[13px] font-extrabold"
-                style={{ color: themeMode === "dark" ? "#FFFFFF" : "#64748B" }}
+                style={{ color: themeMode === "dark" ? "#FFFFFF" : colors.textMuted }}
               >
                 Dark
               </Text>
@@ -211,15 +154,15 @@ const ProfileScreen = ({ navigation }: ProfileStackScreenProps) => {
             <TouchableOpacity
               activeOpacity={0.8}
               onPress={() => setThemeMode("system")}
-              className="flex-1 items-center justify-center py-2.5 rounded-xl"
+              className="flex-1 items-center justify-center py-2.5 rounded-lg"
               style={[
-                themeMode === "system" ? { backgroundColor: "#FFFFFF" } : undefined,
+                themeMode === "system" ? { backgroundColor: colors.bgSurface } : undefined,
                 themeMode === "system" ? shadowStyles.xs : undefined,
               ]}
             >
               <Text
                 className="text-[13px] font-extrabold"
-                style={{ color: themeMode === "system" ? "#0F172A" : "#64748B" }}
+                style={{ color: themeMode === "system" ? colors.textPrimary : colors.textMuted }}
               >
                 System
               </Text>
@@ -230,8 +173,8 @@ const ProfileScreen = ({ navigation }: ProfileStackScreenProps) => {
         {/* Card 2: Settings List (Notifications, Privacy, Help) */}
         <Animated.View
           entering={FadeInDown.duration(450).springify()}
-          className="rounded-3xl p-4 mb-4 shadow-2xs"
-          style={{ backgroundColor: isDark ? colors.bgSurface : "#EFF3FE" }}
+          className="rounded-2xl p-4 mb-4 border shadow-xs"
+          style={{ backgroundColor: colors.bgCard, borderColor: colors.borderSubtle }}
         >
           {/* Row 1: Notifications */}
           <View className="flex-row items-center py-2.5">
@@ -361,19 +304,6 @@ const ProfileScreen = ({ navigation }: ProfileStackScreenProps) => {
               style={{ color: isDark ? colors.textPrimary : "#1E293B" }}
             >
               Log Out
-            </Text>
-          </TouchableOpacity>
-
-          {/* Delete Account Button */}
-          <TouchableOpacity
-            activeOpacity={0.8}
-            onPress={handleConfirmDeleteAccount}
-            className="h-12 rounded-full flex-row items-center justify-center px-4"
-            style={{ backgroundColor: isDark ? colors.badgeRoseBg : "#FEE2E2" }}
-          >
-            <Trash2 stroke="#B91C1C" size={18} strokeWidth={2.2} style={{ marginRight: 8 }} />
-            <Text className="font-extrabold text-[15px]" style={{ color: "#B91C1C" }}>
-              Delete Account
             </Text>
           </TouchableOpacity>
         </Animated.View>

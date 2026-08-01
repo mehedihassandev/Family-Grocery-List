@@ -181,7 +181,7 @@ const FamilySetupScreen = ({ navigation }: any) => {
     <TouchableOpacity
       activeOpacity={0.8}
       onPress={onPress}
-      className={"w-full rounded-3xl border p-5 mb-4 " + borderClass}
+      className={"w-full rounded-2xl border p-5 mb-4 " + borderClass}
       style={{ backgroundColor: colors.bgCard }}
     >
       <View className="flex-row items-center">
@@ -256,7 +256,7 @@ const FamilySetupScreen = ({ navigation }: any) => {
 
           <View className="px-5 mt-2">
             <View
-              className="rounded-3xl border p-6"
+              className="rounded-2xl border p-6"
               style={{ backgroundColor: colors.bgCard, borderColor: colors.border }}
             >
               <Text
@@ -293,7 +293,7 @@ const FamilySetupScreen = ({ navigation }: any) => {
             </View>
 
             <View
-              className="mt-1 rounded-3xl border p-5"
+              className="mt-1 rounded-2xl border p-5"
               style={{ backgroundColor: colors.bgCard, borderColor: colors.border }}
             >
               <Text
@@ -408,7 +408,7 @@ const FamilySetupScreen = ({ navigation }: any) => {
 
             {/* Main Form Card */}
             <View
-              className="rounded-3xl border p-6"
+              className="rounded-2xl border p-6"
               style={{ backgroundColor: colors.bgCard, borderColor: colors.border }}
             >
               <Text

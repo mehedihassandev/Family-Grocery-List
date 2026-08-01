@@ -1072,15 +1072,15 @@
     "@eslint/core" "^0.17.0"
     levn "^0.4.1"
 
-"@expo-google-fonts/dm-mono@^0.4.2":
-  version "0.4.2"
-  resolved "https://registry.npmjs.org/@expo-google-fonts/dm-mono/-/dm-mono-0.4.2.tgz"
-  integrity sha512-loMaZOkQRs1r7yt4rN39zcr9e0J+smwnSx929yuODkuiPfsY4PaW18C9SEZ0BvXfcBKoRhatGoIBl8V2MOYVPQ==
+"@expo-google-fonts/jetbrains-mono@^0.4.1":
+  version "0.4.1"
+  resolved "https://registry.yarnpkg.com/@expo-google-fonts/jetbrains-mono/-/jetbrains-mono-0.4.1.tgz#39d1390c386a7dd5ed5171e8acbbf41b86afd099"
+  integrity sha512-CslACrtMOcRwoWXCO7OMEI+9w3fukWSoBtvNz46OqPoogEuuoY0tkDY1O8sFumk8t0pC6Cx0Xr95O0TOQhpkug==
 
-"@expo-google-fonts/dm-sans@^0.4.2":
+"@expo-google-fonts/plus-jakarta-sans@^0.4.2":
   version "0.4.2"
-  resolved "https://registry.npmjs.org/@expo-google-fonts/dm-sans/-/dm-sans-0.4.2.tgz"
-  integrity sha512-e/fLH5aCJzkEenz7axvEn8N7IJAKhUwNjIxS75h9j+Ip1M9S7d22M19gJN3A7QW4egVkBJRyQh1hQFhngQn9yA==
+  resolved "https://registry.yarnpkg.com/@expo-google-fonts/plus-jakarta-sans/-/plus-jakarta-sans-0.4.2.tgz#95d6640ecb3aa76c534fb4ef3490ec7b230c3b60"
+  integrity sha512-6LYVmVGwjQvH+uzzWlVc9+oMj4lkNQ41aymVDjO+x8aFk8kCye20wOyLomYMZaMezA++Uf1mZRCw3W3Fy/hxEA==
 
 "@expo/cli@^57.0.11":
   version "57.0.11"
